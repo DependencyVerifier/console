@@ -154,15 +154,18 @@
     --color-sev-low: var(--sev-low);
 }
 
+/* Same values as the design system's tokens.json. Severity colours are text on a 10 % tint (≥ 4.5:1),
+   status colours are 8px marks next to a word (≥ 3:1); --sev-medium is never text. */
 :root {
     --status-ok: oklch(0.6 0.15 150);
-    --status-warning: oklch(0.75 0.15 75);
+    --status-warning: oklch(0.62 0.14 70);
     --status-critical: oklch(0.58 0.22 27);
-    --status-unknown: oklch(0.7 0 0);
+    --status-unknown: oklch(0.6 0 0);
     --sev-critical: oklch(0.5 0.2 20);
-    --sev-high: oklch(0.62 0.2 35);
+    --sev-high: oklch(0.55 0.19 40);
     --sev-medium: oklch(0.75 0.15 75);
-    --sev-low: oklch(0.65 0.1 240);
+    --sev-low: oklch(0.5 0.12 245);
+    --signature: #facd23;
 }
 
 .dark {
@@ -170,8 +173,8 @@
     --status-warning: oklch(0.8 0.14 75);
     --status-critical: oklch(0.68 0.2 25);
     --status-unknown: oklch(0.6 0 0);
-    --sev-critical: oklch(0.65 0.21 20);
-    --sev-high: oklch(0.7 0.18 40);
+    --sev-critical: oklch(0.76 0.16 22);
+    --sev-high: oklch(0.78 0.14 48);
     --sev-medium: oklch(0.8 0.14 75);
     --sev-low: oklch(0.72 0.1 240);
 }
