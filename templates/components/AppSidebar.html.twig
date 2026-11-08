@@ -1,0 +1,38 @@
+{%- props
+    ## string Key of the active navigation entry.
+    active = 'overview'
+-%}
+{#- Demo data until the domain exists (teams, current user). -#}
+{%- set data = {
+    user: {name: 'Jane Doe', email: 'jane@example.com'},
+    teams: [
+        {name: 'Personal projects', logo: 'lucide:radar', role: 'Team admin'},
+        {name: 'Hosted for others', logo: 'lucide:server', role: 'Team member'},
+    ],
+    navMain: [
+        {key: 'overview', title: 'Overview', url: path('app_demo_host'), icon: 'lucide:layout-dashboard'},
+        {key: 'projects', title: 'Projects', url: '#', icon: 'lucide:layers'},
+        {key: 'hosts', title: 'Hosts', url: '#', icon: 'lucide:server'},
+        {key: 'findings', title: 'Findings', url: '#', icon: 'lucide:shield-alert'},
+        {key: 'agents', title: 'Agents', url: '#', icon: 'lucide:radio-tower'},
+        {key: 'tokens', title: 'Enrollment tokens', url: '#', icon: 'lucide:key-round'},
+        {key: 'notifications', title: 'Notifications', url: '#', icon: 'lucide:bell'},
+    ],
+    navSecondary: [
+        {key: 'help', title: 'Help', url: '#', icon: 'lucide:circle-help'},
+        {key: 'admin', title: 'Administration', url: '#', icon: 'lucide:shield-check'},
+    ],
+} -%}
+<twig:Sidebar {{ ...attributes.defaults({collapsible: 'icon'}) }}>
+    <twig:Sidebar:Header>
+        <twig:TeamSwitcher :teams="data.teams" />
+    </twig:Sidebar:Header>
+    <twig:Sidebar:Content>
+        <twig:NavMain :items="data.navMain" :active="active" />
+        <twig:NavMain :items="data.navSecondary" :active="active" class="mt-auto" />
+    </twig:Sidebar:Content>
+    <twig:Sidebar:Footer>
+        <twig:NavUser :user="data.user" />
+    </twig:Sidebar:Footer>
+    <twig:Sidebar:Rail />
+</twig:Sidebar>

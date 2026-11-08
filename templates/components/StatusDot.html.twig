@@ -1,0 +1,9 @@
+{%- props
+    ## 'ok'|'warning'|'critical'|'unknown' Status shown by the dot.
+    status = 'unknown'
+-%}
+{%- set colors = {ok: 'bg-status-ok', warning: 'bg-status-warning', critical: 'bg-status-critical', unknown: 'bg-status-unknown'} -%}
+<span {{ attributes.defaults({class: 'inline-flex items-center gap-1.5 text-sm'|tailwind_classes}) }}>
+    <span class="size-2 rounded-full {{ colors[status] }}" aria-hidden="true"></span>
+    {%- block content %}{% endblock -%}
+</span>

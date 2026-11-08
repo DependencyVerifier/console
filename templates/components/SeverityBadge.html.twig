@@ -1,0 +1,11 @@
+{%- props
+    ## 'critical'|'high'|'medium'|'low' Finding severity.
+    severity
+-%}
+{%- set colors = {
+    critical: 'border-sev-critical/30 bg-sev-critical/10 text-sev-critical',
+    high: 'border-sev-high/30 bg-sev-high/10 text-sev-high',
+    medium: 'border-sev-medium/40 bg-sev-medium/10 text-foreground',
+    low: 'border-sev-low/30 bg-sev-low/10 text-sev-low',
+} -%}
+<twig:Badge variant="outline" class="{{ colors[severity] }} capitalize">{{ severity }}</twig:Badge>

@@ -1,0 +1,23 @@
+{%- props
+    ## array<array{key:string,title:string,url:string,icon:string}> Flat navigation entries.
+    items,
+    ## string Key of the active entry.
+    active = null,
+    ## string|null Optional group label.
+    label = null
+-%}
+<twig:Sidebar:Group {{ ...attributes }}>
+    {%- if label %}
+        <twig:Sidebar:GroupLabel>{{ label }}</twig:Sidebar:GroupLabel>
+    {%- endif %}
+    <twig:Sidebar:Menu>
+        {%- for item in items %}
+            <twig:Sidebar:MenuItem>
+                <twig:Sidebar:MenuButton as="a" href="{{ item.url }}" :active="item.key == active" tooltip="{{ item.title }}">
+                    <twig:ux:icon name="{{ item.icon }}" />
+                    <span>{{ item.title }}</span>
+                </twig:Sidebar:MenuButton>
+            </twig:Sidebar:MenuItem>
+        {%- endfor %}
+    </twig:Sidebar:Menu>
+</twig:Sidebar:Group>

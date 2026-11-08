@@ -1,0 +1,12 @@
+{%- props
+    ## array<array{label:string,value:string,mono?:bool}> Cells of the metadata grid.
+    items
+-%}
+<dl {{ attributes.defaults({class: 'grid grid-cols-2 overflow-hidden rounded-lg border bg-card md:grid-cols-3 xl:grid-cols-6'|tailwind_classes}) }}>
+    {%- for item in items %}
+        <div class="-mb-px -me-px border-e border-b px-4 py-3">
+            <dt class="text-xs text-muted-foreground">{{ item.label }}</dt>
+            <dd class="mt-1 truncate text-sm {{ (item.mono ?? false) ? 'font-mono' : 'font-medium' }}">{{ item.value }}</dd>
+        </div>
+    {%- endfor %}
+</dl>
