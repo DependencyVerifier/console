@@ -1,0 +1,10 @@
+#!/bin/sh
+# Dump the application database to /<file> inside the database container (see `make db-dump`).
+set -eu
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: save <file.sql>" >&2
+    exit 1
+fi
+
+pg_dump --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "/$1"

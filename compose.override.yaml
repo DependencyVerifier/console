@@ -45,4 +45,18 @@ services:
   database:
     ports:
       - "5432"
+    # Dump / restore scripts used by `make db-dump` and `make db-import`.
+    volumes:
+      - ./.docker/database/scripts/reset:/usr/local/bin/reset:ro
+      - ./.docker/database/scripts/save:/usr/local/bin/save:ro
 ###< doctrine/doctrine-bundle ###
+
+  # Web UI for the dev database (PostgreSQL equivalent of phpMyAdmin). Bound to localhost only.
+  adminer:
+    image: adminer:5
+    environment:
+      ADMINER_DEFAULT_SERVER: database
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - database

@@ -76,7 +76,11 @@ make composer c='req vendor/package'      # PHP packages (let Flex recipes do th
 docker compose exec node yarn add -D …    # JS packages: always yarn via the node container, never npm
 make ux r=dialog / make icon i=lucide:bell
 make db-diff / make db-migrate
+make db-dump DUMP=backup.sql / make db-import DUMP=backup.sql   # pg_dump / psql via .docker/database/scripts, files in var/
+make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, app / !ChangeMe! / app)
 ```
+
+Database: **PostgreSQL 18**, kept on purpose over MariaDB. The design relies on partial unique indexes ("unique while active"), transactional DDL, partitioning with foreign keys, JSONB and `LISTEN/NOTIFY` (see `docs/cadrage.md` §9). Use these features rather than working around them. After `db-import`, the first request of each FrankenPHP worker may fail once (its connection was dropped), then it reconnects.
 
 ## Code conventions
 

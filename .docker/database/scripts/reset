@@ -1,0 +1,18 @@
+#!/bin/sh
+# Recreate the application database from /<file> inside the database container (see `make db-import`).
+set -eu
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: reset <file.sql>" >&2
+    exit 1
+fi
+
+if [ ! -f "/$1" ]; then
+    echo "Dump /$1 not found in the database container." >&2
+    exit 1
+fi
+
+psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d postgres \
+    -c "DROP DATABASE IF EXISTS \"$POSTGRES_DB\" WITH (FORCE)" \
+    -c "CREATE DATABASE \"$POSTGRES_DB\" OWNER \"$POSTGRES_USER\""
+psql -v ON_ERROR_STOP=1 -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "/$1"

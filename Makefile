@@ -115,6 +115,26 @@ db-reset: ## Drop, create and migrate the database
 	@echo "🚚 Run all migrations."
 	@$(MAKE) db-migrate
 
+.PHONY: db-dump
+db-dump: ## Dump the dev database to var/DUMP, example: make db-dump DUMP=backup.sql
+	@:$(if $(DUMP),,$(error Usage: make db-dump DUMP=<file.sql>))
+	@echo '🗃️ Saving database.'
+	@$(DCE) database save $(DUMP)
+	@$(DC) cp database:/$(DUMP) ./var/$(DUMP)
+	@echo '✅ Database saved to var/$(DUMP).'
+
+.PHONY: db-import
+db-import: ## Replace the dev database with var/DUMP, example: make db-import DUMP=backup.sql
+	@:$(if $(DUMP),,$(error Usage: make db-import DUMP=<file.sql>))
+	@$(DC) cp ./var/$(DUMP) database:/$(DUMP)
+	@echo '🗃️ Resetting and importing database.'
+	@$(DCE) database reset $(DUMP)
+	@echo '✅ var/$(DUMP) imported.'
+
+.PHONY: adminer
+adminer: ## Show how to reach Adminer (dev database UI)
+	@echo "Adminer: http://localhost:8080 (system PostgreSQL, server database, dev credentials app / !ChangeMe! / app)"
+
 .PHONY: db-test-prepare
 db-test-prepare: ## Create and migrate the test database
 	@$(CONSOLE) doctrine:database:create --if-not-exists --env=test
