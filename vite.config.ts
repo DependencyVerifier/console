@@ -6,7 +6,7 @@ export default defineConfig(({ command }) => ({
     build: {
         rolldownOptions: {
             input: {
-                app: './assets/app.js',
+                app: './assets/app.ts',
             },
         },
     },

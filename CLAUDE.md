@@ -50,7 +50,9 @@ Wiring: `composer.json` PSR-4 (one entry per context), `config/services.yaml` (o
 - Controllers: invokable, `#[Route(path: …, name: RouteCollection::CASE->value)]` with the context's `UI\Controller\RouteCollection` enum (implements `Shared\UI\Routing\RouteCollectionInterface`). Use `->prefixed()` for `path()` / redirects.
 - Templates: `templates/<context>/…` (snake_case). Kit and app components in `templates/components/` (`AppSidebar`, `AppFooter`, `MetaGrid`, `StatusDot`, `SeverityBadge`, `ThemeToggle`, `RomainMillanTag`). Layouts: `shared/layout/app.html.twig` (sidebar shell + footer) and `shared/layout/auth.html.twig`. Page blocks are `breadcrumb` and `main`: `content` is reserved inside component tags.
 - Footer signature: the **Romain-MILLAN-Tag git submodule** (`assets/romain-millan-tag`), imported in `assets/styles/app.css` with `layer(base)` and rendered by `<twig:RomainMillanTag />`. Update it with `git submodule update --remote console/assets/romain-millan-tag`.
-- **No external resource** (fonts, scripts, CDN): everything is served by the instance. FrankenPHP's CDN hot-reload snippet was removed on purpose; Vite handles HMR.
+- **No external resource** (fonts, scripts, CDN): everything is served by the instance. FrankenPHP's CDN hot-reload snippet was removed on purpose; Vite handles HMR (reload the page by hand after a Twig change).
+- **Front-end code is TypeScript only**: no `.js` file in `assets/`. `make typecheck` (strict `tsc`, in `make qa`) fails if one appears. Stimulus controllers are `assets/controllers/<name>_controller.ts` with `declare` typed targets and values; kit controllers coming from `make ux` must be converted. Config in `tsconfig.json`, Vite config in `vite.config.ts`.
+- **No Mercure**: removed from Caddy, Compose and Turbo (no real-time hub in this project). Don't reinstall `symfony/mercure-bundle`.
 - `templates/shared/preview/` + `Shared\UI\Controller\Preview\*` are static design previews (`/`, `/_preview/login`). Remove them when real screens land.
 
 ## Healthcheck
@@ -62,7 +64,7 @@ Wiring: `composer.json` PSR-4 (one entry per context), `config/services.yaml` (o
 
 ## Stack
 
-Symfony 8.1, PHP 8.5, FrankenPHP + Caddy (`dunglas/symfony-docker`), PostgreSQL 18, Doctrine ORM (UUID v7), Messenger, Twig + Symfony UX (Turbo, Stimulus, Twig/Live Components, Icons), Symfony Reprise + Vite, Tailwind CSS v4, UX Toolkit `shadcn` kit, self-hosted IBM Plex fonts, Lucide icons vendored in `assets/icons/`.
+Symfony 8.1, PHP 8.5, FrankenPHP + Caddy (`dunglas/symfony-docker`), PostgreSQL 18, Doctrine ORM (UUID v7), Messenger, Twig + Symfony UX (Turbo, Stimulus, Twig/Live Components, Icons), Symfony Reprise + Vite (TypeScript), Tailwind CSS v4, UX Toolkit `shadcn` kit, self-hosted IBM Plex fonts, Lucide icons vendored in `assets/icons/`.
 
 ## Commands (`make help`, from `console/`)
 
@@ -70,12 +72,13 @@ Symfony 8.1, PHP 8.5, FrankenPHP + Caddy (`dunglas/symfony-docker`), PostgreSQL 
 make start            # submodules + build + up + vendors (first run)
 make up / make stop   # containers: php, database, node (Vite dev server :5173)
 make test             # PHPUnit (prepares the test DB); FILTER=… / COVERAGE=1
-make qa               # lint + phpcs + phpstan (level max) + rector + test + infection (100% MSI): run before committing
+make qa               # lint + typecheck + phpcs + phpstan (level max) + rector + test + infection (100% MSI): run before committing
+make typecheck        # strict tsc on assets/ + vite.config.ts, and no .js allowed in assets/
 make phpcsfix / make rector-fix
 make composer c='req vendor/package'      # PHP packages (let Flex recipes do the wiring)
 docker compose exec node yarn add -D …    # JS packages: always yarn via the node container, never npm
 make ux r=dialog / make icon i=lucide:bell
-make db-diff / make db-migrate
+make db-diff / make db-migrate          # migrations are organized by year: migrations/<YYYY>/Version….php (namespace DoctrineMigrations)
 make db-dump DUMP=backup.sql / make db-import DUMP=backup.sql   # pg_dump / psql via .docker/database/scripts, files in var/
 make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, app / !ChangeMe! / app)
 ```

@@ -1,7 +1,7 @@
 import { startStimulusApp } from '@symfony/reprise/stimulus';
 
+// Registers the controllers of assets/controllers.json (Symfony UX) and assets/controllers/*_controller.ts.
 const app = startStimulusApp();
 // Keep the browser console quiet (set to true locally to trace controller lifecycles).
 app.debug = false;
-// register any custom, 3rd party controllers here
-// app.register('some_controller_name', SomeImportedController);
+// Register third-party controllers here: app.register('some-name', SomeImportedController);

@@ -16,8 +16,11 @@ services:
       #  from the bind-mount for better performance by enabling the next line:
       #- /app/vendor
     environment:
-      FRANKENPHP_WORKER_CONFIG: watch
-      MERCURE_EXTRA_DIRECTIVES: playground
+      # Restart workers on code changes, and when Vite rewrites entrypoints.json (dev server start, `yarn build`):
+      # the Reprise bundle keeps it in memory, so a stale worker would point at old asset URLs.
+      FRANKENPHP_WORKER_CONFIG: |-
+        watch ./**/*.{env,php,twig,yaml,yml}
+        watch ./public/build/entrypoints.json
       # See https://xdebug.org/docs/all_settings#mode
       XDEBUG_MODE: "${XDEBUG_MODE:-develop}"
       APP_ENV: "${APP_ENV:-dev}"
@@ -38,8 +41,6 @@ services:
     command: ["sh", "-c", "corepack enable && yarn install && yarn dev --host 0.0.0.0"]
     ports:
       - "5173:5173"
-###> symfony/mercure-bundle ###
-###< symfony/mercure-bundle ###
 
 ###> doctrine/doctrine-bundle ###
   database:

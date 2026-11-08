@@ -1,6 +1,7 @@
 doctrine_migrations:
     migrations_paths:
-        # namespace is arbitrary but should be different from App\Migrations
-        # as migrations classes should NOT be autoloaded
+        # Namespace distinct from the bounded contexts: migration classes are never autoloaded as services.
         'DoctrineMigrations': '%kernel.project_dir%/migrations'
+    # One sub-directory per year (migrations/2026/Version20261108….php); the namespace stays DoctrineMigrations.
+    organize_migrations: BY_YEAR
     enable_profiler: false

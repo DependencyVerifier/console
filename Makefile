@@ -88,9 +88,18 @@ icon: ## Vendor a Lucide icon into assets/icons, example: make icon i=lucide:bel
 	@$(CONSOLE) ux:icons:import $(i)
 
 .PHONY: ux
-ux: ## Install a UX Toolkit shadcn component, example: make ux r=dialog
+ux: ## Install a UX Toolkit shadcn component, example: make ux r=dialog (then convert its controller to TypeScript)
 	@:$(if $(r),,$(error Usage: make ux r=<recipe>))
 	@$(CONSOLE) ux:install $(r) --kit=shadcn
+	@echo "⚠️  Convert any new assets/controllers/*_controller.js to TypeScript (make typecheck fails on .js files)."
+
+.PHONY: typecheck
+typecheck: ## Type-check the front-end (tsc --noEmit, strict) and forbid JavaScript files in assets/
+	@if find assets -name '*.js' -not -path 'assets/romain-millan-tag/*' | grep .; then \
+		echo "❌ JavaScript files found in assets/: write TypeScript (.ts) only."; \
+		exit 1; \
+	fi
+	@$(YARN) tsc -p tsconfig.json
 
 ##
 ## —— Database 🗃️————————————————
@@ -189,4 +198,4 @@ audit: ## Check PHP and JS dependencies for known vulnerabilities
 	@$(YARN) npm audit --all --recursive
 
 .PHONY: qa
-qa: lint phpcs phpstan rector test infection ## Run every quality gate (what CI will run)
+qa: lint typecheck phpcs phpstan rector test infection ## Run every quality gate (what CI will run)
