@@ -13,12 +13,56 @@ doctrine:
         identity_generation_preferences:
             Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
+        # One mapping per bounded context: aggregates and entities live in src/<Context>/Domain/Model.
         mappings:
-            App:
+            Identity:
                 type: attribute
                 is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
+                dir: '%kernel.project_dir%/src/Identity/Domain/Model'
+                prefix: 'Identity\Domain\Model'
+                alias: Identity
+            Organization:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Organization/Domain/Model'
+                prefix: 'Organization\Domain\Model'
+                alias: Organization
+            Fleet:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Fleet/Domain/Model'
+                prefix: 'Fleet\Domain\Model'
+                alias: Fleet
+            Inventory:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Inventory/Domain/Model'
+                prefix: 'Inventory\Domain\Model'
+                alias: Inventory
+            Vulnerability:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Vulnerability/Domain/Model'
+                prefix: 'Vulnerability\Domain\Model'
+                alias: Vulnerability
+            Exposure:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Exposure/Domain/Model'
+                prefix: 'Exposure\Domain\Model'
+                alias: Exposure
+            Notification:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Notification/Domain/Model'
+                prefix: 'Notification\Domain\Model'
+                alias: Notification
+            Audit:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Audit/Domain/Model'
+                prefix: 'Audit\Domain\Model'
+                alias: Audit
 
 when@test:
     doctrine:

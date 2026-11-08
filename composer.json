@@ -17,6 +17,7 @@
         "symfony/flex": "^2",
         "symfony/framework-bundle": "8.1.*",
         "symfony/http-client": "8.1.*",
+        "symfony/messenger": "8.1.*",
         "symfony/reprise": "^1.4",
         "symfony/runtime": "8.1.*",
         "symfony/stimulus-bundle": "^3.7",
@@ -33,25 +34,44 @@
         "twig/html-extra": "^3.24"
     },
     "require-dev": {
-        "symfony/ux-toolkit": "^3.7"
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "infection/infection": "^0.35",
+        "phpstan/phpstan": "^2.3",
+        "phpstan/phpstan-doctrine": "^2.1",
+        "phpstan/phpstan-phpunit": "^2.1",
+        "phpstan/phpstan-symfony": "^2.1",
+        "phpunit/phpunit": "^13.4",
+        "rector/rector": "^2.8",
+        "symfony/browser-kit": "8.1.*",
+        "symfony/css-selector": "8.1.*",
+        "symfony/ux-toolkit": "^3.7.1"
     },
     "config": {
         "allow-plugins": {
             "php-http/discovery": true,
             "symfony/flex": true,
-            "symfony/runtime": true
+            "symfony/runtime": true,
+            "infection/extension-installer": true
         },
         "bump-after-update": true,
         "sort-packages": true
     },
     "autoload": {
         "psr-4": {
-            "App\\": "src/"
+            "Shared\\": "src/Shared/",
+            "Identity\\": "src/Identity/",
+            "Organization\\": "src/Organization/",
+            "Fleet\\": "src/Fleet/",
+            "Inventory\\": "src/Inventory/",
+            "Vulnerability\\": "src/Vulnerability/",
+            "Exposure\\": "src/Exposure/",
+            "Notification\\": "src/Notification/",
+            "Audit\\": "src/Audit/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "App\\Tests\\": "tests/"
+            "Tests\\": "tests/"
         }
     },
     "replace": {

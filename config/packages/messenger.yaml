@@ -1,0 +1,28 @@
+framework:
+    messenger:
+        # CQRS with three buses (same layout as the author's other Symfony projects):
+        # - command.bus: state changes, one handler, wrapped in a Doctrine transaction (handlers never flush);
+        # - query.bus: reads, one handler returning a result;
+        # - event.bus: domain events, zero or more handlers.
+        default_bus: command.bus
+        buses:
+            command.bus:
+                middleware:
+                    - doctrine_ping_connection
+                    - doctrine_close_connection
+                    - doctrine_open_transaction_logger
+                    - doctrine_transaction
+            query.bus: ~
+            event.bus:
+                default_middleware:
+                    enabled: true
+                    allow_no_handlers: true
+                middleware:
+                    - doctrine_ping_connection
+                    - doctrine_transaction
+
+        # Everything is synchronous for now. Async queues (ingest, matching, notifications, sync) arrive with
+        # the features that need them (docs/cadrage.md §9bis), on the Doctrine transport.
+        transports:
+            sync: 'sync://'
+

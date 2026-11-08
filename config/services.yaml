@@ -1,23 +1,59 @@
 # yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-# See also https://symfony.com/doc/current/service_container/import.html
+# One resource per bounded context (src/<Context>/{Domain,Application,Infrastructure,UI}).
+# Domain models (entities, value objects) are never services.
 
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
 
 services:
-    # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true
+        autoconfigure: true
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
-    App\:
-        resource: '../src/'
+    # CQRS: handlers implement a marker interface and are routed to their bus here,
+    # so the Application layer does not depend on Messenger.
+    _instanceof:
+        Shared\Application\Bus\CommandHandler:
+            tags: [{ name: messenger.message_handler, bus: command.bus }]
+        Shared\Application\Bus\QueryHandler:
+            tags: [{ name: messenger.message_handler, bus: query.bus }]
+        Shared\Application\Bus\EventHandler:
+            tags: [{ name: messenger.message_handler, bus: event.bus }]
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    Shared\:
+        resource: '../src/Shared/'
+        exclude:
+            - '../src/Shared/Kernel.php'
+            - '../src/Shared/Domain/'
+
+    Identity\:
+        resource: '../src/Identity/'
+        exclude: '../src/Identity/Domain/Model/'
+
+    Organization\:
+        resource: '../src/Organization/'
+        exclude: '../src/Organization/Domain/Model/'
+
+    Fleet\:
+        resource: '../src/Fleet/'
+        exclude: '../src/Fleet/Domain/Model/'
+
+    Inventory\:
+        resource: '../src/Inventory/'
+        exclude: '../src/Inventory/Domain/Model/'
+
+    Vulnerability\:
+        resource: '../src/Vulnerability/'
+        exclude: '../src/Vulnerability/Domain/Model/'
+
+    Exposure\:
+        resource: '../src/Exposure/'
+        exclude: '../src/Exposure/Domain/Model/'
+
+    Notification\:
+        resource: '../src/Notification/'
+        exclude: '../src/Notification/Domain/Model/'
+
+    Audit\:
+        resource: '../src/Audit/'
+        exclude: '../src/Audit/Domain/Model/'

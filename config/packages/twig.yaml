@@ -1,5 +1,8 @@
 twig:
     file_name_pattern: '*.twig'
+    paths:
+        # Romain MILLAN tag (git submodule): lets standalone pages inline tag.css with source().
+        '%kernel.project_dir%/assets/romain-millan-tag': RomainMillanTag
 
 when@test:
     twig:

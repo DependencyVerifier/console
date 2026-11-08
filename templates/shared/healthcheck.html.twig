@@ -1,0 +1,184 @@
+{#-
+    Adapted from Romain-MILLAN-Healthcheck (github.com/RomainMILLAN/Romain-MILLAN-Healthcheck, latest release):
+    same BEM markup (.rmh-*), but self-contained for DepRadar's "no external resource" rule:
+    - no web font from fonts.bunny.net (system font stack instead);
+    - tag.css inlined from the Romain-MILLAN-Tag git submodule instead of a pasted copy;
+    - the duration is the real time spent running the health probes.
+    Standalone on purpose (no Vite assets): it must render even if the asset build is broken.
+-#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>Healthcheck</title>
+    <style>
+{{ source('@RomainMillanTag/tag.css')|raw }}
+
+/* ============================================
+   Healthcheck BEM
+   ============================================ */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.rmh-healthcheck {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f3f4f6;
+}
+
+.rmh-healthcheck__card {
+    width: 100%;
+    max-width: 42rem;
+    margin: 1.5rem;
+    padding: 1.5rem;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 25px 50px -12px rgba(107, 114, 128, 0.25);
+}
+
+.rmh-healthcheck__card:focus-visible {
+    outline: 2px solid #ef4444;
+    outline-offset: 2px;
+}
+
+@media (min-width: 640px) {
+    .rmh-healthcheck__card {
+        width: 75%;
+    }
+}
+
+@media (min-width: 1280px) {
+    .rmh-healthcheck__card {
+        width: 50%;
+    }
+}
+
+.rmh-healthcheck__row {
+    display: flex;
+    align-items: center;
+}
+
+.rmh-healthcheck__status {
+    position: relative;
+    display: flex;
+    width: 0.75rem;
+    height: 0.75rem;
+    flex-shrink: 0;
+}
+
+.rmh-healthcheck__ping {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    opacity: 0.75;
+    animation: rmh-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes rmh-ping {
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+.rmh-healthcheck__dot {
+    position: relative;
+    display: inline-flex;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+}
+
+.rmh-healthcheck--up .rmh-healthcheck__dot,
+.rmh-healthcheck--up .rmh-healthcheck__ping {
+    background-color: #4ade80;
+}
+
+.rmh-healthcheck--down .rmh-healthcheck__dot,
+.rmh-healthcheck--down .rmh-healthcheck__ping {
+    background-color: #dc2626;
+}
+
+.rmh-healthcheck__content {
+    margin-left: 1.5rem;
+    min-width: 0;
+}
+
+.rmh-healthcheck__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.75rem;
+}
+
+.rmh-healthcheck__message {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.625;
+}
+
+.rmh-healthcheck__tag {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: center;
+    --rm-tag-filled-color: #9ca3af;
+    --rm-tag-stroke-color: #9ca3af;
+    --rm-tag-primary-color: #FACD23;
+}
+
+.rmh-healthcheck__tag a {
+    display: block;
+    line-height: 0;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+.rmh-healthcheck__tag a:hover {
+    opacity: 1;
+}
+    </style>
+</head>
+<body>
+    <div class="rmh-healthcheck rmh-healthcheck--{{ report.healthy ? 'up' : 'down' }}">
+        <div class="rmh-healthcheck__card" tabindex="0">
+
+            <div class="rmh-healthcheck__row">
+
+                <div class="rmh-healthcheck__status">
+                    <span class="rmh-healthcheck__ping"></span>
+                    <span class="rmh-healthcheck__dot"></span>
+                </div>
+
+                <div class="rmh-healthcheck__content">
+                    <h2 class="rmh-healthcheck__title">Application {{ report.healthy ? 'up' : 'down' }}</h2>
+                    <p class="rmh-healthcheck__message">HTTP request received. Response rendered in {{ report.durationMs|number_format(0) }}ms.</p>
+                </div>
+
+            </div>
+            <div class="rmh-healthcheck__tag">
+                <twig:RomainMillanTag size="medium" />
+            </div>
+        </div>
+    </div>
+</body>
+</html>

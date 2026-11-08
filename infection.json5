@@ -1,0 +1,40 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    // Mutation testing targets the business code: Domain and Application layers of every bounded context.
+    // Infrastructure (adapters) and UI (controllers, templates) are covered by integration/functional tests.
+    "source": {
+        "directories": [
+            "src/Shared/Domain",
+            "src/Shared/Application",
+            "src/Identity/Domain",
+            "src/Identity/Application",
+            "src/Organization/Domain",
+            "src/Organization/Application",
+            "src/Fleet/Domain",
+            "src/Fleet/Application",
+            "src/Inventory/Domain",
+            "src/Inventory/Application",
+            "src/Vulnerability/Domain",
+            "src/Vulnerability/Application",
+            "src/Exposure/Domain",
+            "src/Exposure/Application",
+            "src/Notification/Domain",
+            "src/Notification/Application",
+            "src/Audit/Domain",
+            "src/Audit/Application"
+        ]
+    },
+    "logs": {
+        "text": "var/infection.log",
+        "summary": "var/infection-summary.log"
+    },
+    "tmpDir": "var/cache/infection",
+    "phpUnit": {
+        "configDir": ".",
+        "customPath": "vendor/bin/phpunit"
+    },
+    "mutators": {
+        "@default": true
+    },
+    "testFramework": "phpunit"
+}

@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="flex min-h-svh flex-col">
+        <header class="border-b">
+            <div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+                <span class="flex items-center gap-2 font-semibold">
+                    <twig:ux:icon name="lucide:radar" class="size-5" />
+                    DepRadar
+                </span>
+                <twig:ThemeToggle />
+            </div>
+        </header>
+        <main class="flex flex-1 items-center justify-center p-6">
+            <div class="w-full max-w-sm">
+                {% block main %}{% endblock %}
+            </div>
+        </main>
+        <twig:AppFooter class="mx-auto w-full max-w-5xl border-t-0" />
+    </div>
+{% endblock %}

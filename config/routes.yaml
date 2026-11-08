@@ -1,11 +1,67 @@
 # yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
 
-# This file is the entry point to configure the routes of your app.
-# Methods with the #[Route] attribute are automatically imported.
-# See also https://symfony.com/doc/current/routing.html
+# Attribute routes, one import per bounded context (src/<Context>/UI/Controller).
+# The route name prefix is "<context>_"; each context lists its route names in a RouteCollection enum.
 
-# To list all registered routes, run the following command:
-#   bin/console debug:router
+shared:
+    resource:
+        path: ../src/Shared/UI/Controller/
+        namespace: Shared\UI\Controller
+    type: attribute
+    name_prefix: shared_
 
-controllers:
-    resource: routing.controllers
+identity:
+    resource:
+        path: ../src/Identity/UI/Controller/
+        namespace: Identity\UI\Controller
+    type: attribute
+    name_prefix: identity_
+
+organization:
+    resource:
+        path: ../src/Organization/UI/Controller/
+        namespace: Organization\UI\Controller
+    type: attribute
+    name_prefix: organization_
+
+fleet:
+    resource:
+        path: ../src/Fleet/UI/Controller/
+        namespace: Fleet\UI\Controller
+    type: attribute
+    name_prefix: fleet_
+
+inventory:
+    resource:
+        path: ../src/Inventory/UI/Controller/
+        namespace: Inventory\UI\Controller
+    type: attribute
+    name_prefix: inventory_
+
+vulnerability:
+    resource:
+        path: ../src/Vulnerability/UI/Controller/
+        namespace: Vulnerability\UI\Controller
+    type: attribute
+    name_prefix: vulnerability_
+
+exposure:
+    resource:
+        path: ../src/Exposure/UI/Controller/
+        namespace: Exposure\UI\Controller
+    type: attribute
+    name_prefix: exposure_
+
+notification:
+    resource:
+        path: ../src/Notification/UI/Controller/
+        namespace: Notification\UI\Controller
+    type: attribute
+    name_prefix: notification_
+
+audit:
+    resource:
+        path: ../src/Audit/UI/Controller/
+        namespace: Audit\UI\Controller
+    type: attribute
+    name_prefix: audit_
