@@ -1,10 +1,10 @@
-# DepRadar console (`console/`)
+# DependencyVerifier console (`console/`)
 
 Symfony web app, licensed **AGPL-3.0-only**. Multi-team UI, signed agent API, inventory store, matching engine, notifications.
 
 **Read first:** `docs/cadrage.md` §5 (data model), §7 / §7bis (security, auth, permissions), §8 (analysis engine), §9 / §9bis (stack, architecture, sizing); `docs/design.md` for every UI change. Generic Symfony guidance from the skeleton: `AGENTS.md`.
 
-Local URL: **https://console.depradar.localhost** (Caddy local CA: trust it or accept the certificate in the browser). Health: `/_healthcheck`.
+Local URL: **https://console.depverify.localhost** (Caddy local CA: trust it or accept the certificate in the browser). Health: `/_healthcheck`.
 
 ## Architecture: DDD, one bounded context per top-level namespace
 

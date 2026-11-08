@@ -17,7 +17,7 @@ help:
 ##
 ## —— Environment ⚙️ ————————————————
 .PHONY: start
-start: submodules docker-build up vendor yarn ## Start the project (submodules + Docker + vendors) on https://console.depradar.localhost
+start: submodules docker-build up vendor yarn ## Start the project (submodules + Docker + vendors) on https://console.depverify.localhost
 
 .PHONY: stop
 stop: ## Stop the project

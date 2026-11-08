@@ -1,8 +1,8 @@
 {
-    "name": "depradar/console",
+    "name": "depverify/console",
     "type": "project",
     "license": "AGPL-3.0-only",
-    "description": "DepRadar console: self-hosted monitoring of production dependencies, runtimes and CVEs.",
+    "description": "DependencyVerifier console: self-hosted monitoring of production dependencies, runtimes and CVEs.",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {

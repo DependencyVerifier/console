@@ -3,8 +3,8 @@ services:
   php:
     restart: unless-stopped
     environment:
-      SERVER_NAME: ${SERVER_NAME:-console.depradar.localhost}, php:80
-      DEFAULT_URI: ${DEFAULT_URI:-https://${SERVER_NAME:-console.depradar.localhost}:${HTTPS_PORT:-443}}
+      SERVER_NAME: ${SERVER_NAME:-console.depverify.localhost}, php:80
+      DEFAULT_URI: ${DEFAULT_URI:-https://${SERVER_NAME:-console.depverify.localhost}:${HTTPS_PORT:-443}}
       DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-18}&charset=${POSTGRES_CHARSET:-utf8}
     # Readiness = the application's own /_healthcheck (checks the database), not only Caddy being up.
     # Requested over the internal "php:80" address listed in SERVER_NAME. Never weaken it to make a deploy pass.

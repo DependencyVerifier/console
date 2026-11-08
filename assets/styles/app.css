@@ -1,5 +1,5 @@
 /*
- * DepRadar console styles: Tailwind CSS v4 + Symfony UX Toolkit "shadcn" kit.
+ * DependencyVerifier console styles: Tailwind CSS v4 + Symfony UX Toolkit "shadcn" kit.
  * Design charter: docs/design.md. Fonts are self-hosted (no external requests).
  */
 @import 'tailwindcss';
@@ -140,7 +140,7 @@
     }
 }
 
-/* ---- DepRadar additions ---- */
+/* ---- DependencyVerifier additions ---- */
 @theme inline {
     --font-sans: 'IBM Plex Sans Variable', ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;

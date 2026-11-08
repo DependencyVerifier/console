@@ -10,7 +10,7 @@ const ORDER: readonly ThemePreference[] = ['system', 'light', 'dark'];
  * base.html.twig applies it before first paint to avoid a flash.
  */
 export default class extends Controller<HTMLElement> {
-    static values = { storageKey: { type: String, default: 'depradar-theme' } };
+    static values = { storageKey: { type: String, default: 'depverify-theme' } };
 
     declare readonly storageKeyValue: string;
 
