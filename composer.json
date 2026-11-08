@@ -1,5 +1,5 @@
 {
-    "name": "depverify/console",
+    "name": "dependencyverifier/console",
     "type": "project",
     "license": "AGPL-3.0-only",
     "description": "DependencyVerifier console: self-hosted monitoring of production dependencies, runtimes and CVEs.",
