@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality gates (make qa)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true # assets/romain-millan-tag (footer signature)
+          persist-credentials: false
+
+      # Same stack as local development: php (FrankenPHP), database (PostgreSQL), node (Vite).
+      # The php entrypoint installs the Composer vendors, the node service the JS packages.
+      - name: Build images
+        run: docker compose build
+
+      - name: Start the stack
+        run: docker compose up --wait --wait-timeout 600
+
+      # The same targets as before a commit, so the CI and the Makefile never drift.
+      - name: Quality gates
+        run: make qa
+
+      - name: Production asset build
+        run: docker compose exec -T node yarn build
+
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --tail=200

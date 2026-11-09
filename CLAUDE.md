@@ -85,6 +85,8 @@ make db-dump DUMP=backup.sql / make db-import DUMP=backup.sql   # pg_dump / psql
 make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, app / !ChangeMe! / app)
 ```
 
+CI (`.github/workflows/ci.yml`, GitHub Actions): starts the same Docker stack, runs `make qa` and the production asset build on every push to `main` and every pull request. Keep `make qa` green locally: the CI runs exactly that. Dependabot updates Composer, npm, Docker, Actions and the submodule weekly.
+
 Database: **PostgreSQL 18**, kept on purpose over MariaDB. The design relies on partial unique indexes ("unique while active"), transactional DDL, partitioning with foreign keys, JSONB and `LISTEN/NOTIFY` (see `docs/cadrage.md` §9). Use these features rather than working around them. After `db-import`, the first request of each FrankenPHP worker may fail once (its connection was dropped), then it reconnects.
 
 ## Code conventions
