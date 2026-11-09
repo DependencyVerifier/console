@@ -4,6 +4,12 @@ identity:
         subject: "Your DependencyVerifier sign-in code"
         intro: "Use this code to finish signing in:"
         validity: "It is valid for {minutes} minutes and {attempts} attempts."
+    account_setup:
+        subject: "Your DependencyVerifier account"
+        intro: "An administrator created an account for you on this DependencyVerifier instance."
+        action: "Choose my password"
+        validity: "This link works once, for {days} days. A second factor is asked at every sign-in."
+        ignore: "If you were not expecting it, ignore this email: the account stays unusable."
     password_reset:
         subject: "Reset your DependencyVerifier password"
         intro: "Someone asked to reset the password of this account."

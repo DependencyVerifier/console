@@ -100,6 +100,18 @@ class User implements RecordsEvents
         return $user;
     }
 
+    /**
+     * New account created by the super admin from /admin/users: no password yet. It may log in once it has chosen
+     * one through its setup link (7 days), a password reset or a team invitation.
+     */
+    public static function invite(UserId $id, EmailAddress $email, \DateTimeImmutable $now): self
+    {
+        $user = new self($id->value, $email, $now);
+        $user->privileges = Privileges::none()->granting(Permission::AccountLogin);
+
+        return $user;
+    }
+
     public function id(): UserId
     {
         return UserId::of($this->id);
@@ -150,6 +162,23 @@ class User implements RecordsEvents
         return $this->status->isActive() && $this->credentials->hasPassword() && $this->privileges->has(Permission::AccountLogin);
     }
 
+    /**
+     * Invited and still without a password (it cannot log in yet).
+     */
+    public function awaitsPassword(): bool
+    {
+        return !$this->credentials->hasPassword();
+    }
+
+    /**
+     * May choose a password through an emailed link: active and allowed to log in (a notification-only account is
+     * not), whether it already has a password or still awaits its first one.
+     */
+    public function maySetPassword(): bool
+    {
+        return $this->status->isActive() && $this->privileges->has(Permission::AccountLogin);
+    }
+
     public function remainingBackupCodes(): int
     {
         return $this->backupCodes->filter(static fn (BackupCode $code): bool => !$code->isUsed())->count();
@@ -162,6 +191,21 @@ class User implements RecordsEvents
         $this->credentials = Credentials::password($passwordHash);
         $this->sessionVersions = $this->sessionVersions->revokeAll();
         $this->recordThat(new PasswordChanged($this->id->toRfc4122()));
+    }
+
+    /**
+     * Password from an emailed link: the first one of an invited account (no session to revoke, no alert), else a
+     * change like any other.
+     */
+    public function choosePassword(string $passwordHash): void
+    {
+        if ($this->credentials->hasPassword()) {
+            $this->changePassword($passwordHash);
+
+            return;
+        }
+
+        $this->credentials = Credentials::password($passwordHash);
     }
 
     // ---------------------------------------------------------------- email code

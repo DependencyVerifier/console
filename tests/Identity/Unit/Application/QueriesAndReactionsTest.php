@@ -126,7 +126,7 @@ final class QueriesAndReactionsTest extends TestCase
     #[Test]
     public function it_should_list_users_for_administrators_only(): void
     {
-        $summary = new UserSummary(Users::ID, 'jane@example.com', false, true, true, false, new \DateTimeImmutable());
+        $summary = new UserSummary(Users::ID, 'jane@example.com', false, true, true, false, false, new \DateTimeImmutable());
         $directory = new class([$summary]) implements UserDirectory {
             public ?PageRequest $asked = null;
 

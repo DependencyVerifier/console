@@ -23,9 +23,9 @@ use Organization\Application\Command\QuotaInput;
 use Organization\Application\Command\Team\CreateTeam;
 use Organization\Application\Command\Team\Handler\CreateTeamHandler;
 use Organization\Application\Command\Team\Handler\RenameTeamHandler;
-use Organization\Application\Command\Team\Handler\UpdateTeamQuotasHandler;
+use Organization\Application\Command\Team\Handler\UpdateTeamHandler;
 use Organization\Application\Command\Team\RenameTeam;
-use Organization\Application\Command\Team\UpdateTeamQuotas;
+use Organization\Application\Command\Team\UpdateTeam;
 use Organization\Domain\Authorization\TeamGrant;
 use Organization\Domain\Event\InvitationIssued;
 use Organization\Domain\Model\EnvironmentId;
@@ -123,13 +123,14 @@ final class TeamAndProjectHandlersTest extends TestCase
         self::assertSame('Payments', $team->name());
 
         try {
-            new UpdateTeamQuotasHandler($world->access())(new UpdateTeamQuotas(Teams::TEAM, self::quotas(1)));
+            new UpdateTeamHandler($world->access())(new UpdateTeam(Teams::TEAM, 'Checkout', self::quotas(1)));
             self::fail('Super admin only.');
         } catch (PermissionDenied) {
         }
 
         $world->asSuperAdmin();
-        new UpdateTeamQuotasHandler($world->access())(new UpdateTeamQuotas(Teams::TEAM, self::quotas(1)));
+        new UpdateTeamHandler($world->access())(new UpdateTeam(Teams::TEAM, 'Checkout', self::quotas(1)));
+        self::assertSame('Checkout', $team->name());
         self::assertSame(1, $team->quotas()->get(QuotaName::MaxProjects)->limit());
         self::assertTrue($team->quotas()->get(QuotaName::MaxAgents)->isUnlimited());
 

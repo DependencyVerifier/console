@@ -32,12 +32,12 @@ final readonly class ResetPasswordHandler implements CommandHandler
     {
         $request = $this->requests->find(Uuid::fromString($command->requestId)) ?? throw new PasswordResetLinkInvalid();
         $user = $this->users->lockById($request->userId());
-        if (null === $user || !$user->canLogIn()) {
+        if (null === $user || !$user->maySetPassword()) {
             throw new PasswordResetLinkInvalid();
         }
 
         $request->consume($this->clock->now());
         PasswordPolicy::check($command->newPassword, $user->email());
-        $user->changePassword($this->hasher->hash($command->newPassword));
+        $user->choosePassword($this->hasher->hash($command->newPassword));
     }
 }

@@ -182,6 +182,11 @@ admin:
         reactivate: Reactivate
         grant_super_admin: Make super admin
         revoke_super_admin: Revoke super admin
+        new: Create a user
+        new_description: "They receive a link by email to choose their password (valid 7 days), then set up their second factor."
+        invite: Send the invitation
+        invited: Account created, the invitation is on its way.
+        invited_status: Invited
 role:
     team_admin: Team admin
     team_member: Team member
@@ -235,6 +240,9 @@ organization:
         created: Team created, its first admin is invited.
         new: Create a team
         new_description: The first team admin receives an invitation by email.
+        edit: Edit
+        edit_title: "Edit {name}"
+        updated: Team updated.
     members:
         title: Members
         remove: Remove

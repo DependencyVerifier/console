@@ -51,6 +51,7 @@ final readonly class DbalUserDirectory implements UserDirectory
                 $active,
                 $active && 'password' === $row['credentials_kind'] && \is_array($permissions) && \in_array('account.login', $permissions, true),
                 'active_totp' === $row['second_factor_kind'],
+                'password' !== $row['credentials_kind'],
                 new \DateTimeImmutable($row['created_at']),
             );
         }, $rows), $filtered, $total);

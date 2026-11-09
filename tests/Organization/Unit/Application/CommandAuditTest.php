@@ -13,6 +13,7 @@ use Organization\Application\Command\Member\RemoveProjectMember;
 use Organization\Application\Command\Member\RemoveTeamMember;
 use Organization\Application\Command\Member\RevokeExtraPermission;
 use Organization\Application\Command\Project\CreateProject;
+use Organization\Application\Command\Team\UpdateTeam;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -46,6 +47,7 @@ final class CommandAuditTest extends TestCase
         yield 'team member removed' => [new RemoveTeamMember($t, $u), 'organization.remove_team_member', ['user_id'], 'team', $t, ['user_id' => $u]];
         yield 'project member removed' => [new RemoveProjectMember($p, $u), 'organization.remove_project_member', ['user_id'], 'project', $p, ['user_id' => $u]];
         yield 'project created' => [new CreateProject($p, $t, 'Shop'), 'organization.create_project', ['project_id'], 'team', $t, ['project_id' => $p]];
+        yield 'team updated' => [new UpdateTeam($t, 'Platform', ['max_projects' => 3]), 'organization.update_team', [], 'team', $t, []];
         yield 'environment created' => [new CreateEnvironment($i, $p, 'prod', true), 'organization.create_environment', ['environment_id'], 'project', $p, ['environment_id' => $i]];
     }
 

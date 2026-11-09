@@ -21,7 +21,8 @@ use Shared\Application\Security\ThrottleSubject;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Anti-enumeration: an unknown, disabled or password-less account does nothing, silently (the UI answers the same).
+ * Anti-enumeration: an unknown, disabled or notification-only account does nothing, silently (the UI answers the
+ * same). An invited account still without a password gets a link too: its setup link may have expired.
  * Beyond the limits (3 / h per email, 20 / h per IP), Throttled is raised and audited once; the UI still answers
  * the same and no email leaves.
  */
@@ -55,7 +56,7 @@ final readonly class RequestPasswordResetHandler implements CommandHandler
         }
 
         $user = $this->users->findByEmail($email);
-        if (null === $user || !$user->canLogIn()) {
+        if (null === $user || !$user->maySetPassword()) {
             return;
         }
 

@@ -1,1 +1,1 @@
-{{ (row.active ? 'admin.users.active' : 'admin.users.disabled')|trans }}
+{{ (not row.active ? 'admin.users.disabled' : (row.awaitingPassword ? 'admin.users.invited_status' : 'admin.users.active'))|trans }}

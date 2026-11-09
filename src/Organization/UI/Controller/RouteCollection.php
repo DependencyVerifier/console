@@ -29,7 +29,7 @@ enum RouteCollection: string implements RouteCollectionInterface
     case ENVIRONMENT_DELETE = 'environment_delete';
     case ADMIN_TEAMS = 'admin_teams';
     case ADMIN_TEAM_CREATE = 'admin_team_create';
-    case ADMIN_TEAM_QUOTAS = 'admin_team_quotas';
+    case ADMIN_TEAM_EDIT = 'admin_team_edit';
     case ADMIN_DEFAULT_QUOTAS = 'admin_default_quotas';
 
     public function prefixed(): string

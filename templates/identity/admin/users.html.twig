@@ -15,9 +15,18 @@
 {% block main %}
     {{ include('shared/_flashes.html.twig') }}
     <div id="action-alerts"></div>
-    <div>
-        <h1 class="text-2xl font-semibold tracking-tight">{{ 'admin.users.title'|trans }}</h1>
-        <p class="mt-1 text-sm text-muted-foreground">{{ 'admin.users.description'|trans }}</p>
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ 'admin.users.title'|trans }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ 'admin.users.description'|trans }}</p>
+        </div>
+        <twig:FormDialog
+            id="create-user"
+            :title="'admin.users.new'|trans"
+            :description="'admin.users.new_description'|trans"
+            :trigger="'admin.users.new'|trans"
+            :src="path('identity_admin_user_create')"
+        />
     </div>
     <twig:DataTable :table="table" />
 {% endblock %}

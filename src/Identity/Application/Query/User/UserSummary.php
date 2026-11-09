@@ -13,6 +13,7 @@ final readonly class UserSummary
         public bool $active,
         public bool $canLogIn,
         public bool $totpActive,
+        public bool $awaitingPassword,
         public \DateTimeImmutable $createdAt,
     ) {
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Identity\Domain\Model;
 
 use Doctrine\ORM\Mapping as ORM;
+use Identity\Domain\Event\AccountSetupRequested;
 use Identity\Domain\Event\PasswordResetRequested;
 use Shared\Domain\Model\EventRecording;
 use Shared\Domain\Model\RecordsEvents;
@@ -21,6 +22,9 @@ class PasswordResetRequest implements RecordsEvents
     use EventRecording;
 
     public const string VALIDITY = '+30 minutes';
+
+    /** The setup link of an account invited from /admin/users. */
+    public const string ACCOUNT_SETUP_VALIDITY = '+7 days';
 
     #[ORM\Column]
     private \DateTimeImmutable $expiresAt;
@@ -41,14 +45,26 @@ class PasswordResetRequest implements RecordsEvents
         private string $tokenHash,
         #[ORM\Column]
         private \DateTimeImmutable $createdAt,
+        string $validity,
     ) {
-        $this->expiresAt = $createdAt->modify(self::VALIDITY);
+        $this->expiresAt = $createdAt->modify($validity);
     }
 
     public static function issue(Uuid $id, UserId $userId, #[\SensitiveParameter] string $plainToken, string $tokenHash, \DateTimeImmutable $now): self
     {
-        $request = new self($id, $userId->value, $tokenHash, $now);
+        $request = new self($id, $userId->value, $tokenHash, $now, self::VALIDITY);
         $request->recordThat(new PasswordResetRequested($id->toRfc4122(), $userId->toString(), $plainToken));
+
+        return $request;
+    }
+
+    /**
+     * The first password of an invited account: the same single-use link, for 7 days, with its own email.
+     */
+    public static function issueAccountSetup(Uuid $id, UserId $userId, #[\SensitiveParameter] string $plainToken, string $tokenHash, \DateTimeImmutable $now): self
+    {
+        $request = new self($id, $userId->value, $tokenHash, $now, self::ACCOUNT_SETUP_VALIDITY);
+        $request->recordThat(new AccountSetupRequested($id->toRfc4122(), $userId->toString(), $plainToken));
 
         return $request;
     }

@@ -8,7 +8,6 @@ use Organization\Domain\Model\QuotaName;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -27,10 +26,5 @@ final class QuotasType extends AbstractType
                 'constraints' => [new Assert\PositiveOrZero(), new Assert\LessThanOrEqual(1_000_000)],
             ]);
         }
-    }
-
-    public function configureOptions(OptionsResolver $resolver): void
-    {
-        $resolver->setRequired('csrf_token_id');
     }
 }

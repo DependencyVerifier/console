@@ -40,8 +40,16 @@ final readonly class ActivateInvitedAccountHandler implements CommandHandler
         $email = EmailAddress::of($invitation->email);
         PasswordPolicy::check($command->password, $email);
         $this->lock->acquire('identity.email:'.$email->value());
-        if (null !== $this->users->findByEmail($email)) {
-            throw new AccountAlreadyActive();
+        $existing = $this->users->findByEmail($email);
+        if (null !== $existing) {
+            // An account invited from /admin/users that never chose its password completes its activation here.
+            if (!$existing->awaitsPassword() || !$existing->maySetPassword()) {
+                throw new AccountAlreadyActive();
+            }
+
+            $existing->choosePassword($this->hasher->hash($command->password));
+
+            return;
         }
 
         $this->users->add(User::activateFromInvitation(UserId::fromString($command->userId), $email, $this->hasher->hash($command->password), $this->clock->now()));
