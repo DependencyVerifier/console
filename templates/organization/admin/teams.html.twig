@@ -1,5 +1,4 @@
 {% extends 'shared/layout/app.html.twig' %}
-{% form_theme form 'shared/form/theme.html.twig' %}
 
 {% block title %}{{ 'organization.teams.title'|trans }} · DependencyVerifier{% endblock %}
 
@@ -21,12 +20,16 @@
             <h1 class="text-2xl font-semibold tracking-tight">{{ 'organization.teams.title'|trans }}</h1>
             <p class="mt-1 text-sm text-muted-foreground">{{ 'organization.teams.description'|trans }}</p>
         </div>
-        <twig:Button as="a" variant="outline" href="{{ path('organization_admin_default_quotas') }}">{{ 'organization.quotas.defaults'|trans }}</twig:Button>
+        <div class="flex shrink-0 gap-2">
+            <twig:Button as="a" variant="outline" href="{{ path('organization_admin_default_quotas') }}">{{ 'organization.quotas.defaults'|trans }}</twig:Button>
+            <twig:FormDialog
+                id="create-team"
+                :title="'organization.teams.new'|trans"
+                :description="'organization.teams.new_description'|trans"
+                :trigger="'organization.teams.new'|trans"
+                :src="path('organization_admin_team_create')"
+            />
+        </div>
     </div>
-    {{ form_start(form, {action: path('organization_admin_teams'), attr: {class: 'flex flex-wrap items-end gap-2', novalidate: 'novalidate'}}) }}
-        <div class="w-56">{{ form_row(form.name) }}</div>
-        <div class="w-64">{{ form_row(form.firstAdminEmail) }}</div>
-        <twig:Button type="submit">{{ 'organization.teams.create'|trans }}</twig:Button>
-    {{ form_end(form) }}
     <twig:DataTable :table="table" />
 {% endblock %}

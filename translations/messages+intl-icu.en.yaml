@@ -17,6 +17,7 @@ action:
     back: Back
     continue: Continue
     save: Save
+    cancel: Cancel
 frame:
     loading: Loading
     retry: Retry
@@ -231,6 +232,8 @@ organization:
         description: Teams of the instance with their usage. The first team admin is invited when the team is created.
         create: Create the team
         created: Team created, its first admin is invited.
+        new: Create a team
+        new_description: The first team admin receives an invitation by email.
     members:
         title: Members
         remove: Remove

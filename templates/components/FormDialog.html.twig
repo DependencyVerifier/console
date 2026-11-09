@@ -1,0 +1,31 @@
+{%- props
+    ## string Dialog id; its form frame is `<id>-form`, the id given to Shared\UI\Action\DialogForm on the PHP side.
+    id,
+    ## string Title of the dialog (translated).
+    title,
+    ## string URL of the form endpoint (a controller using DialogForm).
+    src,
+    ## string Label of the trigger button (translated).
+    trigger,
+    ## string|null One-line description under the title (translated).
+    description = null,
+    ## string Variant of the trigger button.
+    variant = 'default'
+-%}
+{#- One dialog for every form: the form is not in the page, it is loaded from its endpoint into a lazy frame at the
+    first opening (Skeleton placeholder, Retry on failure) and reloaded at each opening.
+    The kit Dialog appends its own `dialog` controller to the data-controller given here. -#}
+<twig:Dialog id="{{ id }}" data-controller="form-dialog" data-action="turbo:submit-end->form-dialog#submitted turbo:frame-load->form-dialog#focus">
+    <twig:Dialog:Trigger>
+        <twig:Button variant="{{ variant }}" {{ ...dialog_trigger_attrs|merge({'data-action': 'click->dialog#open click->form-dialog#load'}) }}>{{ trigger }}</twig:Button>
+    </twig:Dialog:Trigger>
+    <twig:Dialog:Content class="sm:max-w-lg">
+        <twig:Dialog:Header>
+            <twig:Dialog:Title>{{ title }}</twig:Dialog:Title>
+            {%- if description is not null %}
+                <twig:Dialog:Description>{{ description }}</twig:Dialog:Description>
+            {%- endif %}
+        </twig:Dialog:Header>
+        {{ include('shared/frame/lazy.html.twig', {id: id ~ '-form', src: src, rows: 3}) }}
+    </twig:Dialog:Content>
+</twig:Dialog>

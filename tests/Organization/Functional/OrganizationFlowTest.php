@@ -23,10 +23,9 @@ final class OrganizationFlowTest extends IdentityWebTestCase
         Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);
         $this->logIn('root@example.com');
 
-        $crawler = $this->client->request('GET', '/admin/teams');
+        $this->client->request('GET', '/admin/teams');
         self::assertResponseIsSuccessful();
-        $form = $crawler->filter('form[action="/admin/teams"]')->form(['team[name]' => 'Platform', 'team[firstAdminEmail]' => 'jane@example.com']);
-        $this->client->request('POST', '/admin/teams', $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
+        $this->createTeam('Platform', 'jane@example.com');
         self::assertResponseIsSuccessful();
         $link = $this->invitationLink();
         $teamId = $this->fetchString('SELECT id FROM organization_team');
@@ -91,8 +90,7 @@ final class OrganizationFlowTest extends IdentityWebTestCase
         Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);
         Accounts::create(self::getContainer(), 'john@example.com');
         $this->logIn('root@example.com');
-        $form = $this->client->request('GET', '/admin/teams')->filter('form[action="/admin/teams"]')->form(['team[name]' => 'Platform', 'team[firstAdminEmail]' => 'jane@example.com']);
-        $this->client->request('POST', '/admin/teams', $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
+        $this->createTeam('Platform', 'jane@example.com');
         $teamId = $this->fetchString('SELECT id FROM organization_team');
 
         $this->client->getCookieJar()->clear();
@@ -103,6 +101,17 @@ final class OrganizationFlowTest extends IdentityWebTestCase
         $denied = AuditLog::entries($this->connection(), 'query.denied');
         self::assertCount(1, $denied);
         self::assertSame('not_found', $denied[0]['reason']);
+    }
+
+    /**
+     * Through the "Create a team" dialog: the form comes from its endpoint into the dialog frame, then is posted.
+     */
+    private function createTeam(string $name, string $firstAdminEmail): void
+    {
+        $frame = ['HTTP_TURBO_FRAME' => 'create-team-form'];
+        $crawler = $this->client->request('GET', '/admin/teams/new', server: $frame);
+        $form = $crawler->filter('turbo-frame#create-team-form form')->form(['team[name]' => $name, 'team[firstAdminEmail]' => $firstAdminEmail]);
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
     }
 
     private function invitationLink(): string

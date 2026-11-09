@@ -1,0 +1,13 @@
+{#- The form of a FormDialog, alone in the dialog's frame: on opening (GET), or again with its values and errors
+    after a 422 or a refusal (ActionResponder). Variables: frame_id, form, action, submit_key. -#}
+{% form_theme form 'shared/form/theme.html.twig' %}
+<turbo-frame id="{{ frame_id }}">
+    {{ form_start(form, {action: action, attr: {class: 'grid gap-4', novalidate: 'novalidate'}}) }}
+        {{ form_errors(form) }}
+        {{ form_rest(form) }}
+        <footer class="flex justify-end gap-2">
+            <twig:Button type="button" variant="outline" data-action="dialog#close">{{ 'action.cancel'|trans }}</twig:Button>
+            <twig:Button type="submit">{{ submit_key|trans }}</twig:Button>
+        </footer>
+    {{ form_end(form, {render_rest: false}) }}
+</turbo-frame>
