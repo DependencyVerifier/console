@@ -1,0 +1,17 @@
+{#- Logo mark of docs/brand (logo-mark.svg / logo-mark-on-dark.svg): colors follow the theme through classes, so one
+    inline SVG serves both. Decorative next to the product name (aria-hidden), labelled when alone. -#}
+{%- props
+    ## string|null Accessible name when the logo is shown without the product name next to it.
+    label = null
+-%}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" {{ attributes.defaults({class: 'size-8 shrink-0'|tailwind_classes}) }}
+    {%- if label %} role="img" aria-label="{{ label }}"{% else %} aria-hidden="true"{% endif %}>
+    <rect width="48" height="48" rx="11" class="fill-neutral-900 dark:fill-neutral-50"/>
+    <g transform="translate(0 1.25)" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 15.5V30a4 4 0 0 0 4 4h3" class="stroke-neutral-50 dark:stroke-neutral-900"/>
+        <path d="M15 22h8" class="stroke-neutral-50 dark:stroke-neutral-900"/>
+        <circle cx="27.5" cy="22" r="3.5" stroke="none" class="fill-neutral-50 dark:fill-neutral-900"/>
+        <circle cx="15" cy="12" r="3.5" stroke="none" class="fill-neutral-50 dark:fill-neutral-900"/>
+        <path d="M25.5 33.5l3.5 3.5 7.5-8.5" class="stroke-[#4cb86a] dark:stroke-[#05893e]"/>
+    </g>
+</svg>

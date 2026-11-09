@@ -16,6 +16,15 @@
 } -%}
 <twig:Sidebar {{ ...attributes.defaults({collapsible: 'icon'}) }}>
     <twig:Sidebar:Header>
+        {#- Application logo first; collapsed to the mark alone in icon mode. -#}
+        <twig:Sidebar:Menu>
+            <twig:Sidebar:MenuItem>
+                <twig:Sidebar:MenuButton as="a" href="{{ path('shared_home') }}" size="lg" tooltip="DependencyVerifier">
+                    <twig:AppLogo />
+                    <span class="truncate font-semibold">DependencyVerifier</span>
+                </twig:Sidebar:MenuButton>
+            </twig:Sidebar:MenuItem>
+        </twig:Sidebar:Menu>
         <twig:TeamSwitcher :teams="data.teams" />
     </twig:Sidebar:Header>
     <twig:Sidebar:Content>
