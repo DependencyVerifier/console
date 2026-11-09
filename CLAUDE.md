@@ -101,4 +101,5 @@ Database: **PostgreSQL 18**, kept on purpose over MariaDB. The design relies on 
 ## Notes
 
 - `config/bundles.php` registers `TalesFromADevTwigExtraTailwindBundle` by hand: no Flex recipe exists, and the shadcn kit needs its `tailwind_classes` filter.
+- The shadcn kit's Tailwind utilities are **vendored** in `assets/styles/vendor/shadcn-tailwind.css` (from `shadcn@4.23.0`, MIT). Do **not** install the `shadcn` npm package, even if `make ux` suggests `npm install shadcn`: it is a whole CLI whose dependencies carried vulnerabilities (deepmerge, minimatch) for a 16 KB stylesheet. Refresh the vendored file by hand when the kit needs it.
 - Not installed yet (add with the feature that needs them): Security, Scheduler, Mailer / Notifier, rate limiter, WebAuthn, async Messenger transport.
