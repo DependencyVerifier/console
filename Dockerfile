@@ -71,17 +71,28 @@ EOF
 
 # Symfony Language Server, for editors and AI agents that don't bundle it themselves
 # https://github.com/symfony/language-tools
+# Pinned (not "latest") and checked against the release's SHA256SUMS. Editor tooling only: when GitHub
+# release downloads fail (they sometimes answer 5xx), the build warns and goes on without it.
 ARG TARGETARCH
+ARG SYMFONY_LSP_VERSION=v0.24.2
 RUN <<-EOF
 	case "$TARGETARCH" in
 		amd64) lsp_arch=x64 ;;
 		arm64) lsp_arch=arm64 ;;
 		*) echo "unsupported architecture: $TARGETARCH"; exit 1 ;;
 	esac
-	# The release URL redirects to the latest tag, no API token nor rate limit involved
-	lsp_version=$(basename "$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/symfony/language-tools/releases/latest)")
-	curl -fsSL "https://github.com/symfony/language-tools/releases/download/$lsp_version/symfony-lsp-$lsp_version-linux-$lsp_arch.tar.gz" \
-		| tar -xz -C /usr/local/bin --strip-components=1 --wildcards '*/symfony-lsp'
+	lsp_base="https://github.com/symfony/language-tools/releases/download/$SYMFONY_LSP_VERSION"
+	lsp_file="symfony-lsp-$SYMFONY_LSP_VERSION-linux-$lsp_arch.tar.gz"
+	cd /tmp || exit 1
+	# Two separate calls: with several -O, curl's exit code only reflects the last transfer.
+	if curl -fsSL --retry 3 --retry-all-errors --retry-delay 5 -o "$lsp_file" "$lsp_base/$lsp_file" \
+		&& curl -fsSL --retry 3 --retry-all-errors --retry-delay 5 -o SHA256SUMS "$lsp_base/SHA256SUMS"; then
+		grep " $lsp_file\$" SHA256SUMS | sha256sum -c -
+		tar -xzf "$lsp_file" -C /usr/local/bin --strip-components=1 --wildcards '*/symfony-lsp'
+	else
+		echo "warning: symfony-lsp $SYMFONY_LSP_VERSION could not be downloaded, skipped (editor tooling only)" >&2
+	fi
+	rm -f "/tmp/$lsp_file" /tmp/SHA256SUMS
 EOF
 
 COPY --link frankenphp/conf.d/20-app.dev.ini $PHP_INI_DIR/app.conf.d/
