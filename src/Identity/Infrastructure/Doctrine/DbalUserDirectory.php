@@ -28,16 +28,16 @@ final readonly class DbalUserDirectory implements UserDirectory
         $where = $visible;
         $parameters = [];
         if ('' !== $page->search) {
-            $where .= ' AND email LIKE :search';
+            $where .= ' AND (email LIKE :search OR LOWER(display_name) LIKE :search)';
             $parameters['search'] = '%'.u($page->search)->lower()->replace('\\', '\\\\')->replace('%', '\\%')->replace('_', '\\_')->toString().'%';
         }
 
         $filtered = Row::int($this->connection->fetchOne('SELECT COUNT(*) FROM identity_user'.$where, $parameters));
         $order = ['email' => 'email', 'created_at' => 'created_at'][$page->sortAmong(['email', 'created_at'], 'email')];
 
-        /** @var list<array{id: string, email: string, super_admin: bool, status: string, credentials_kind: string, instance_permissions: string, second_factor_kind: string, created_at: string}> $rows */
+        /** @var list<array{id: string, email: string, display_name: ?string, super_admin: bool, status: string, credentials_kind: string, instance_permissions: string, second_factor_kind: string, created_at: string}> $rows */
         $rows = $this->connection->fetchAllAssociative(
-            \sprintf('SELECT id, email, super_admin, status, credentials_kind, instance_permissions, second_factor_kind, created_at FROM identity_user%s ORDER BY %s %s LIMIT %d OFFSET %d', $where, $order, $page->descending ? 'DESC' : 'ASC', $page->limit, $page->offset),
+            \sprintf('SELECT id, email, display_name, super_admin, status, credentials_kind, instance_permissions, second_factor_kind, created_at FROM identity_user%s ORDER BY %s %s LIMIT %d OFFSET %d', $where, $order, $page->descending ? 'DESC' : 'ASC', $page->limit, $page->offset),
             $parameters,
         );
 
@@ -48,6 +48,7 @@ final readonly class DbalUserDirectory implements UserDirectory
             return new UserSummary(
                 $row['id'],
                 $row['email'],
+                $row['display_name'] ?? '',
                 (bool) $row['super_admin'],
                 $active,
                 'deleted' === $row['status'],

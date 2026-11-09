@@ -8,7 +8,7 @@
 {%- set myTeams = user ? sidebar_teams() : [] -%}
 {%- set currentTeam = team ?? (myTeams|first ? (myTeams|first).id : null) -%}
 {%- set data = {
-    user: {name: user ? user.userIdentifier|split('@')|first : '', email: user ? user.userIdentifier : ''},
+    user: {name: user ? user.label : '', email: user ? user.userIdentifier : ''},
     teams: myTeams,
     navMain: [
         {key: 'overview', title: 'nav.overview'|trans, url: path('shared_home'), icon: 'lucide:layout-dashboard'},

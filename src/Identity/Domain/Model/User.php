@@ -25,6 +25,8 @@ use Shared\Domain\Model\EventRecording;
 use Shared\Domain\Model\RecordsEvents;
 use Symfony\Component\Uid\Uuid;
 
+use function Symfony\Component\String\u;
+
 /**
  * Account aggregate: credentials, second factor (State), session versions, status and instance privileges, plus
  * its backup codes and email login codes (changed only through its methods). No public setter, and no public method
@@ -37,6 +39,8 @@ use Symfony\Component\Uid\Uuid;
 class User implements RecordsEvents
 {
     use EventRecording;
+
+    public const int DISPLAY_NAME_MAX = 100;
 
     #[ORM\Embedded(class: Credentials::class, columnPrefix: false)]
     private Credentials $credentials;
@@ -52,6 +56,10 @@ class User implements RecordsEvents
 
     #[ORM\Embedded(class: Privileges::class, columnPrefix: false)]
     private Privileges $privileges;
+
+    /** Shown in the lists and the sidebar; null: the local part of the email is shown instead. */
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $displayName = null;
 
     /** @var Collection<int, BackupCode> */
     #[ORM\OneToMany(targetEntity: BackupCode::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -120,6 +128,27 @@ class User implements RecordsEvents
     public function email(): EmailAddress
     {
         return $this->email;
+    }
+
+    /**
+     * The name given by the super admin, '' when none (never null, like every public method of the aggregate).
+     */
+    public function displayName(): string
+    {
+        return $this->displayName ?? '';
+    }
+
+    /**
+     * Empty clears the name. At most 100 characters, surrounding spaces removed.
+     */
+    public function rename(string $displayName): void
+    {
+        $name = u($displayName)->trim();
+        if ($name->length() > self::DISPLAY_NAME_MAX) {
+            throw new InvalidDisplayName();
+        }
+
+        $this->displayName = $name->isEmpty() ? null : $name->toString();
     }
 
     public function createdAt(): \DateTimeImmutable

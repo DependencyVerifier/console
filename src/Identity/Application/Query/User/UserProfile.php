@@ -12,6 +12,7 @@ final readonly class UserProfile
     public function __construct(
         public string $id,
         public string $email,
+        public string $displayName,
         public bool $superAdmin,
         public bool $active,
         public bool $canLogIn,

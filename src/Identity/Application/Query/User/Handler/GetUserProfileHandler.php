@@ -36,6 +36,7 @@ final readonly class GetUserProfileHandler implements QueryHandler
         return new UserProfile(
             $user->id()->toString(),
             $user->email()->value(),
+            $user->displayName(),
             $user->isSuperAdmin(),
             $user->status()->isActive(),
             $user->canLogIn(),

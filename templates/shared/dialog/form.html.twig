@@ -10,4 +10,5 @@
             <twig:Button type="submit">{{ submit_key|trans }}</twig:Button>
         </footer>
     {{ form_end(form, {render_rest: false}) }}
+    {% block after_form %}{% endblock %}
 </turbo-frame>

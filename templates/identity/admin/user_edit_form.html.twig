@@ -1,0 +1,21 @@
+{#- The user edit dialog: the name form, then the instance role, whose buttons keep their re-authentication and
+    alert email (they post to their own action, outside the form). -#}
+{% extends 'shared/dialog/form.html.twig' %}
+{% import 'identity/admin/_actions.html.twig' as admin %}
+
+{% block after_form %}
+    <section class="mt-6 grid gap-3 border-t pt-4">
+        <div>
+            <h3 class="text-sm font-medium">{{ 'admin.users.roles'|trans }}</h3>
+            <p class="text-xs text-muted-foreground">{{ 'admin.users.roles_help'|trans }}</p>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+            <span class="text-sm">{{ (user.superAdmin ? 'admin.users.is_super_admin' : 'admin.users.not_super_admin')|trans }}</span>
+            {% if user.superAdmin %}
+                {{ admin.action('identity_admin_user_revoke_super_admin', 'revoke_super_admin', user, 'admin.users.revoke_super_admin', 'outline') }}
+            {% else %}
+                {{ admin.action('identity_admin_user_grant_super_admin', 'grant_super_admin', user, 'admin.users.grant_super_admin', 'outline') }}
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

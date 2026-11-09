@@ -84,7 +84,7 @@ final class QueriesAndReactionsTest extends TestCase
         $user = Users::withTotp(Users::superAdmin());
         $profile = new GetUserProfileHandler(new InMemoryUsers($user), FixedActor::user(), new Grants())(new GetUserProfile(Users::ID));
 
-        self::assertEquals(new UserProfile(Users::ID, 'root@example.com', true, true, true, 'active_totp', 2, new \DateTimeImmutable('2026-11-09 08:00:00')), $profile);
+        self::assertEquals(new UserProfile(Users::ID, 'root@example.com', '', true, true, true, 'active_totp', 2, new \DateTimeImmutable('2026-11-09 08:00:00')), $profile);
         self::assertTrue($profile->isTotpActive());
         self::assertFalse($profile->isTotpPending());
     }
@@ -126,7 +126,7 @@ final class QueriesAndReactionsTest extends TestCase
     #[Test]
     public function it_should_list_users_for_administrators_only(): void
     {
-        $summary = new UserSummary(Users::ID, 'jane@example.com', false, true, false, true, false, false, new \DateTimeImmutable());
+        $summary = new UserSummary(Users::ID, 'jane@example.com', '', false, true, false, true, false, false, new \DateTimeImmutable());
         $directory = new class([$summary]) implements UserDirectory {
             public ?PageRequest $asked = null;
 

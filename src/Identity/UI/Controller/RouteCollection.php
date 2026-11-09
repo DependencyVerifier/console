@@ -26,6 +26,7 @@ enum RouteCollection: string implements RouteCollectionInterface
     case ACCOUNT_BACKUP_CODES = 'account_backup_codes';
     case ADMIN_USERS = 'admin_users';
     case ADMIN_USER_CREATE = 'admin_user_create';
+    case ADMIN_USER_EDIT = 'admin_user_edit';
     case ADMIN_USER_RESET_SECOND_FACTOR = 'admin_user_reset_second_factor';
     case ADMIN_USER_DEACTIVATE = 'admin_user_deactivate';
     case ADMIN_USER_REACTIVATE = 'admin_user_reactivate';

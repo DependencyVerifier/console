@@ -35,10 +35,13 @@ final readonly class DialogForm
     /**
      * @param FormInterface<covariant mixed> $form
      * @param \Closure(): AuditableCommand   $toCommand called once the form is valid (read its fields with FormData)
+     * @param string                         $template  a template extending shared/dialog/form.html.twig (block `after_form`)
+     * @param array<string, mixed>           $context   extra variables of that template
      */
-    public function handle(Request $request, FormInterface $form, string $dialogId, string $submitKey, \Closure $toCommand, ResponseFormat $format, RouteReference $page): Response
+    public function handle(Request $request, FormInterface $form, string $dialogId, string $submitKey, \Closure $toCommand, ResponseFormat $format, RouteReference $page, string $template = self::TEMPLATE, array $context = []): Response
     {
-        $action = new ActionForm($form, $dialogId.self::FRAME_SUFFIX, self::TEMPLATE, [
+        $action = new ActionForm($form, $dialogId.self::FRAME_SUFFIX, $template, [
+            ...$context,
             'action' => $request->getBaseUrl().$request->getPathInfo(),
             'submit_key' => $submitKey,
         ]);
@@ -51,7 +54,7 @@ final readonly class DialogForm
             return new RedirectResponse($this->urls->generate($page->name, $page->parameters), Response::HTTP_SEE_OTHER);
         }
 
-        return FrameEndpoint::uncached(new Response($this->twig->render(self::TEMPLATE, [
+        return FrameEndpoint::uncached(new Response($this->twig->render($template, [
             ...$action->templateContext,
             'form' => $form->createView(),
             'frame_id' => $action->frameId,

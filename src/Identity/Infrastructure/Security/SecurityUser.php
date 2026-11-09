@@ -10,6 +10,8 @@ use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+use function Symfony\Component\String\u;
+
 /**
  * Snapshot of an account for the firewall. Equality covers id, authVersion and the super admin flag: bumping the
  * version logs every session out (native Symfony invalidation). Only the id, email, authVersion and super admin flag
@@ -26,6 +28,7 @@ final class SecurityUser implements UserInterface, PasswordAuthenticatedUserInte
         public readonly bool $superAdmin,
         private bool $totpActive,
         private bool $canLogIn,
+        private string $displayName,
     ) {
     }
 
@@ -40,7 +43,17 @@ final class SecurityUser implements UserInterface, PasswordAuthenticatedUserInte
             $user->isSuperAdmin(),
             $user->secondFactor()->state()->isTotpActive(),
             $user->canLogIn(),
+            $user->displayName(),
         );
+    }
+
+    /**
+     * The display name, else the local part of the email. Rebuilt from the database at every request (the session
+     * keeps the id, the email and the versions only).
+     */
+    public function label(): string
+    {
+        return '' !== $this->displayName ? $this->displayName : u($this->email)->before('@')->toString();
     }
 
     public function getUserIdentifier(): string
@@ -98,6 +111,7 @@ final class SecurityUser implements UserInterface, PasswordAuthenticatedUserInte
         $this->passwordHash = null;
         $this->trustedDeviceVersion = 0;
         $this->totpActive = false;
+        $this->displayName = '';
         $this->canLogIn = false;
     }
 }

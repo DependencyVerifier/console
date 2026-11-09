@@ -64,6 +64,7 @@ identity:
     back_to_login: Back to sign in
     field:
         email: Email
+        display_name: Display name
         password: Password
         new_password: New password
         repeat_password: Repeat the password
@@ -194,6 +195,14 @@ admin:
         restore: Restore
         show_deleted: Show deleted
         hide_deleted: Hide deleted
+        edit: Edit
+        edit_title: "Edit {email}"
+        updated: Account updated.
+        display_name_help: Shown in the lists and the sidebar. Leave empty to show the start of the email.
+        roles: Instance role
+        roles_help: "Granting or revoking super admin asks for your password again, and the holder is told by email."
+        is_super_admin: Super admin of the instance
+        not_super_admin: Regular account
 role:
     team_admin: Team admin
     team_member: Team member

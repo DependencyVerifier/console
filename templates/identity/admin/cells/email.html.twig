@@ -1,2 +1,2 @@
-<span class="font-medium">{{ row.email }}</span>
+{%- if row.displayName %}<span class="block font-medium">{{ row.displayName }}</span><span class="text-muted-foreground">{{ row.email }}</span>{% else %}<span class="font-medium">{{ row.email }}</span>{% endif -%}
 {%- if row.superAdmin %} <twig:Badge variant="secondary" class="ms-1">{{ 'admin.users.super_admin'|trans }}</twig:Badge>{% endif -%}
