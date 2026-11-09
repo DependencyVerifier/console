@@ -64,6 +64,6 @@ final readonly class QuotasPage
             }
         }
 
-        return new Response($this->twig->render('organization/admin/quotas.html.twig', [...$context, 'form' => $form->createView(), 'nav_active' => 'admin']), $status);
+        return new Response($this->twig->render('organization/admin/quotas.html.twig', [...$context, 'form' => $form->createView(), 'nav_active' => 'admin_teams']), $status);
     }
 }

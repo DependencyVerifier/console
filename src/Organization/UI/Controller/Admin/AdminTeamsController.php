@@ -29,6 +29,6 @@ final class AdminTeamsController extends AbstractController
             return $table->getResponse();
         }
 
-        return $this->render('organization/admin/teams.html.twig', ['table' => $table, 'nav_active' => 'admin']);
+        return $this->render('organization/admin/teams.html.twig', ['table' => $table, 'nav_active' => 'admin_teams']);
     }
 }

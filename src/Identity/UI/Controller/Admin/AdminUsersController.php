@@ -29,6 +29,6 @@ final class AdminUsersController extends AbstractController
             return $table->getResponse();
         }
 
-        return $this->render('identity/admin/users.html.twig', ['nav_active' => 'admin', 'table' => $table]);
+        return $this->render('identity/admin/users.html.twig', ['nav_active' => 'admin_users', 'table' => $table]);
     }
 }

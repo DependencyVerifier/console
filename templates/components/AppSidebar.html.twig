@@ -16,7 +16,7 @@
         {key: 'team', title: 'nav.team'|trans, url: path('organization_team', {teamId: currentTeam}), icon: 'lucide:users'},
     ] : []),
     navSecondary: is_granted('ROLE_SUPER_ADMIN') ? [
-        {key: 'admin', title: 'nav.administration'|trans, url: path('identity_admin_users'), icon: 'lucide:shield-check'},
+        {key: 'admin_users', title: 'nav.users'|trans, url: path('identity_admin_users'), icon: 'lucide:shield-check'},
         {key: 'admin_teams', title: 'nav.teams'|trans, url: path('organization_admin_teams'), icon: 'lucide:building-2'},
     ] : [],
 } -%}
@@ -35,7 +35,9 @@
     </twig:Sidebar:Header>
     <twig:Sidebar:Content>
         <twig:NavMain :items="data.navMain" :active="active" />
-        <twig:NavMain :items="data.navSecondary" :active="active" class="mt-auto" />
+        {%- if data.navSecondary %}
+            <twig:NavMain :items="data.navSecondary" :active="active" :label="'nav.administration'|trans" class="mt-auto" />
+        {%- endif %}
     </twig:Sidebar:Content>
     <twig:Sidebar:Footer>
         <twig:NavUser :user="data.user" />
