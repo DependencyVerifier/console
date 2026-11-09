@@ -5,7 +5,9 @@ services:
     environment:
       SERVER_NAME: ${SERVER_NAME:-console.depverify.localhost}, php:80
       DEFAULT_URI: ${DEFAULT_URI:-https://${SERVER_NAME:-console.depverify.localhost}:${HTTPS_PORT:-443}}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-18}&charset=${POSTGRES_CHARSET:-utf8}
+      # Runtime role only (no DDL, append-only audit). The owner's credentials never reach the web workers:
+      # they are passed to CLI commands by the Makefile (see .docker/database/owner.env.dist).
+      DATABASE_URL: postgresql://depverify_app:${DEPVERIFY_APP_PASSWORD:-!ChangeMeApp!}@database:5432/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-18}&charset=${POSTGRES_CHARSET:-utf8}
     # Readiness = the application's own /_healthcheck (checks the database), not only Caddy being up.
     # Requested over the internal "php:80" address listed in SERVER_NAME. Never weaken it to make a deploy pass.
     healthcheck:
@@ -39,6 +41,9 @@ services:
       # You should definitely change the password in production
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
       POSTGRES_USER: ${POSTGRES_USER:-app}
+      # Passwords of the application roles created by .docker/database/roles.sh.
+      DEPVERIFY_APP_PASSWORD: ${DEPVERIFY_APP_PASSWORD:-!ChangeMeApp!}
+      DEPVERIFY_OWNER_PASSWORD: ${DEPVERIFY_OWNER_PASSWORD:-!ChangeMeOwner!}
     healthcheck:
       test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
       timeout: 5s
@@ -47,6 +52,8 @@ services:
     volumes:
       # PostgreSQL 18+ images store data under /var/lib/postgresql/<major>/ : mount the parent directory.
       - database_data:/var/lib/postgresql:rw
+      # Creates depverify_owner / depverify_app on a fresh volume (`make db-roles` for an existing one).
+      - ./.docker/database/roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
 ###< doctrine/doctrine-bundle ###
 
 volumes:

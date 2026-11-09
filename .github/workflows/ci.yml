@@ -31,6 +31,10 @@ jobs:
       - name: Start the stack
         run: docker compose up --wait --wait-timeout 600
 
+      # Fresh volume: the database container created both roles (roles.sh); migrations run as the owner role.
+      - name: Migrate the database
+        run: make db-migrate
+
       # The same targets as before a commit, so the CI and the Makefile never drift.
       - name: Quality gates
         run: make qa

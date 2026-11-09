@@ -29,3 +29,7 @@
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+
+###> depverify ###
+/.docker/database/owner.env
+###< depverify ###

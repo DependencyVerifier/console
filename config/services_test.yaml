@@ -1,0 +1,31 @@
+# Test-only services: fixtures exercising the buses and middlewares (tests/Fixtures).
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: true
+
+    _instanceof:
+        Shared\Application\Bus\CommandHandler:
+            tags: [{ name: messenger.message_handler, bus: command.bus }]
+        Shared\Application\Bus\EventHandler:
+            tags: [{ name: messenger.message_handler, bus: event.bus }]
+
+    Tests\Fixtures\Messenger\FixtureCommandHandler: ~
+    Tests\Fixtures\Messenger\FixtureEventHandler: ~
+
+    # Ports used directly by the integration tests (otherwise inlined or removed from the compiled container).
+    test.attempt_throttle:
+        alias: Shared\Application\Security\AttemptThrottle
+        public: true
+    test.exclusive_section:
+        alias: Shared\Application\Security\ExclusiveSection
+        public: true
+    test.token_hasher:
+        alias: Shared\Application\Crypto\TokenHasher
+        public: true
+
+    # The default kernel logger writes warnings and errors to stderr, and Infection aborts its initial test run on the
+    # first stderr output. Tests that expect an error log would therefore break mutation testing.
+    logger:
+        class: Psr\Log\NullLogger

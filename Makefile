@@ -10,6 +10,15 @@ COMPOSER=$(DCE) php composer
 YARN=$(DCE) node yarn
 ENV ?= dev
 
+# Owner role credentials (migrations, audit partitions): read on the host, passed only to the CLI commands below
+# with `-e DATABASE_MIGRATIONS_URL` (no value on the command line, so it never shows in `ps`). Never loaded by
+# symfony/runtime, hence never visible to the web workers. owner.env (git-ignored) overrides the dev defaults.
+OWNER_ENV := $(firstword $(wildcard .docker/database/owner.env) .docker/database/owner.env.dist)
+include $(OWNER_ENV)
+export DATABASE_MIGRATIONS_URL
+# Runs bin/console as the owner role: DATABASE_URL is swapped inside the container, never on the host command line.
+OWNER_CONSOLE=$(DCE) -e DATABASE_MIGRATIONS_URL php sh -c 'DATABASE_URL="$$DATABASE_MIGRATIONS_URL" exec bin/console "$$@"' --
+
 .PHONY: help
 help:
 	@grep -E '(^([a-zA-Z_-]+ ?)+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -17,7 +26,7 @@ help:
 ##
 ## —— Environment ⚙️ ————————————————
 .PHONY: start
-start: submodules docker-build up vendor yarn ## Start the project (submodules + Docker + vendors) on https://console.depverify.localhost
+start: submodules docker-build up vendor yarn db-migrate ## Start the project (submodules + Docker + vendors) on https://console.depverify.localhost
 
 .PHONY: stop
 stop: ## Stop the project
@@ -103,26 +112,38 @@ typecheck: ## Type-check the front-end (tsc --noEmit, strict) and forbid JavaScr
 
 ##
 ## —— Database 🗃️————————————————
+.PHONY: db-roles
+db-roles: ## (Re)create the depverify_owner / depverify_app roles on an existing volume (idempotent)
+	@$(DCE) database sh /docker-entrypoint-initdb.d/10-roles.sh
+
 .PHONY: db-diff
-db-diff: ## Generate a new migration
-	@$(CONSOLE) doctrine:migrations:diff
+db-diff: ## Generate a new migration (as the owner role)
+	@$(OWNER_CONSOLE) doctrine:migrations:diff
 
 .PHONY: db-migrate
-db-migrate: ## Execute all pending migrations
-	@$(CONSOLE) doctrine:migrations:migrate --no-interaction
+db-migrate: ## Execute all pending migrations (as the owner role)
+	@$(OWNER_CONSOLE) doctrine:migrations:migrate --no-interaction
 
 .PHONY: db-migrate-prev
-db-migrate-prev: ## Revert the last migration
-	@$(CONSOLE) doctrine:migrations:migrate 'prev' --no-interaction
+db-migrate-prev: ## Revert the last migration (as the owner role)
+	@$(OWNER_CONSOLE) doctrine:migrations:migrate 'prev' --no-interaction
 
 .PHONY: db-reset
-db-reset: ## Drop, create and migrate the database
+db-reset: ## Drop, create and migrate the database (as the owner role)
 	@echo "💥 Drop the database."
-	@$(CONSOLE) doctrine:database:drop --force --if-exists
+	@$(OWNER_CONSOLE) doctrine:database:drop --force --if-exists
 	@echo "🏗️ Create new database."
-	@$(CONSOLE) doctrine:database:create
+	@$(OWNER_CONSOLE) doctrine:database:create
 	@echo "🚚 Run all migrations."
 	@$(MAKE) db-migrate
+
+.PHONY: audit-partitions
+audit-partitions: ## Create the next audit partitions and drop the expired ones (as the owner role)
+	@$(OWNER_CONSOLE) app:audit:maintain-partitions
+
+.PHONY: rate-limiter-prune
+rate-limiter-prune: ## Delete expired rate limiter states
+	@$(CONSOLE) app:rate-limiter:prune
 
 .PHONY: db-dump
 db-dump: ## Dump the dev database to var/DUMP, example: make db-dump DUMP=backup.sql
@@ -142,28 +163,28 @@ db-import: ## Replace the dev database with var/DUMP, example: make db-import DU
 
 .PHONY: adminer
 adminer: ## Show how to reach Adminer (dev database UI)
-	@echo "Adminer: http://localhost:8080 (system PostgreSQL, server database, dev credentials app / !ChangeMe! / app)"
+	@echo "Adminer: http://localhost:8080 (system PostgreSQL, server database, database app). Roles: depverify_app / !ChangeMeApp! (runtime), depverify_owner / !ChangeMeOwner! (owner), app / !ChangeMe! (superuser, init only)"
 
 .PHONY: db-test-prepare
-db-test-prepare: ## Create and migrate the test database
-	@$(CONSOLE) doctrine:database:create --if-not-exists --env=test
-	@$(CONSOLE) doctrine:migrations:migrate --no-interaction --allow-no-migration --env=test
+db-test-prepare: ## Create and migrate the test database (as the owner role)
+	@$(OWNER_CONSOLE) doctrine:database:create --if-not-exists --env=test
+	@$(OWNER_CONSOLE) doctrine:migrations:migrate --no-interaction --allow-no-migration --env=test
 
 ##
 ## —— Tests 📊 & Code Quality ✅————————————————
 .PHONY: test
 test: db-test-prepare ## Run PHPUnit (FILTER=… to filter, COVERAGE=1 for an HTML report in var/phpunit-coverage)
 ifdef FILTER
-	@$(DC) exec -e APP_ENV=test php vendor/bin/phpunit --filter $(FILTER)
+	@$(DC) exec -e APP_ENV=test -e TEST_OWNER_DATABASE_URL="$$DATABASE_MIGRATIONS_URL" php vendor/bin/phpunit --filter $(FILTER)
 else ifdef COVERAGE
-	@$(DC) exec -e APP_ENV=test -e XDEBUG_MODE=coverage php vendor/bin/phpunit --coverage-html var/phpunit-coverage
+	@$(DC) exec -e APP_ENV=test -e XDEBUG_MODE=coverage -e TEST_OWNER_DATABASE_URL="$$DATABASE_MIGRATIONS_URL" php vendor/bin/phpunit --coverage-html var/phpunit-coverage
 else
-	@$(DC) exec -e APP_ENV=test php vendor/bin/phpunit
+	@$(DC) exec -e APP_ENV=test -e TEST_OWNER_DATABASE_URL="$$DATABASE_MIGRATIONS_URL" php vendor/bin/phpunit
 endif
 
 .PHONY: infection
 infection: db-test-prepare ## Run mutation tests on Domain/Application layers (100% MSI required)
-	@$(DC) exec -e APP_ENV=test -e XDEBUG_MODE=coverage php vendor/bin/infection --min-msi=100 --min-covered-msi=100 --threads=max
+	@$(DC) exec -e APP_ENV=test -e XDEBUG_MODE=coverage -e TEST_OWNER_DATABASE_URL="$$DATABASE_MIGRATIONS_URL" php vendor/bin/infection --min-msi=100 --min-covered-msi=100 --threads=max
 
 .PHONY: phpcs
 phpcs: ## Check PHP code style (dry-run)
@@ -190,7 +211,7 @@ rector-fix: ## Apply Rector refactorings
 lint: ## Lint container, Twig and YAML
 	@$(CONSOLE) lint:container
 	@$(CONSOLE) lint:twig templates/
-	@$(CONSOLE) lint:yaml config
+	@$(CONSOLE) lint:yaml config --parse-tags
 
 .PHONY: audit
 audit: ## Check PHP and JS dependencies for known vulnerabilities

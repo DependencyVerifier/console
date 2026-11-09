@@ -1,28 +1,43 @@
 framework:
     messenger:
-        # CQRS with three buses (same layout as the author's other Symfony projects):
+        # CQRS with three buses:
         # - command.bus: state changes, one handler, wrapped in a Doctrine transaction (handlers never flush);
         # - query.bus: reads, one handler returning a result;
         # - event.bus: domain events, zero or more handlers.
         default_bus: command.bus
         buses:
             command.bus:
+                # Order matters (outermost first):
+                # 1. PublishDomainEvents: after the commit, publishes the collected events; a failing reaction is
+                #    audited as event.handler_failed and never requalifies the committed command;
+                # 2. AuditFailure: after the rollback, audits the failure / refusal on a clean connection, then
+                #    rethrows it wrapped in AlreadyAudited (what the bus throws);
+                # 2 bis. ResetUnitOfWorkOnFailure: resolves the audit scope, then clears the EntityManager;
+                # 3. Doctrine middlewares, ending with doctrine_transaction;
+                # 3 bis. LockTimeout: SET LOCAL lock_timeout, only valid inside the transaction;
+                # 4. AuditSuccess: writes the success entry inside the transaction, atomic with the effect.
                 middleware:
+                    - Shared\Infrastructure\Messenger\PublishDomainEventsMiddleware
+                    - Shared\Infrastructure\Messenger\AuditFailureMiddleware
+                    - Shared\Infrastructure\Messenger\ResetUnitOfWorkOnFailureMiddleware
                     - doctrine_ping_connection
                     - doctrine_close_connection
                     - doctrine_open_transaction_logger
                     - doctrine_transaction
-            query.bus: ~
+                    - Shared\Infrastructure\Messenger\LockTimeoutMiddleware
+                    - Shared\Infrastructure\Messenger\AuditSuccessMiddleware
+            query.bus:
+                middleware:
+                    # A query handler is the single judge of scope and permission; its refusals are audited here.
+                    - Shared\Infrastructure\Messenger\AuditDeniedQueryMiddleware
+            # No transaction on the event bus: a reaction dispatches a command, which has its own (single-level)
+            # transaction. Event handlers never change persistent state themselves.
             event.bus:
                 default_middleware:
                     enabled: true
                     allow_no_handlers: true
-                middleware:
-                    - doctrine_ping_connection
-                    - doctrine_transaction
 
         # Everything is synchronous for now. Async queues (ingest, matching, notifications, sync) arrive with
         # the features that need them (docs/cadrage.md §9bis), on the Doctrine transport.
         transports:
             sync: 'sync://'
-

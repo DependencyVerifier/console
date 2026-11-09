@@ -45,6 +45,10 @@ Wiring: `composer.json` PSR-4 (one entry per context), `config/services.yaml` (o
 - `event.bus`: domain events (`Shared\Domain\Event\DomainEvent`), zero or more handlers.
 - Messages implement `Shared\Application\Bus\{Command, Query<TResult>}`. Handlers implement `{CommandHandler, QueryHandler, EventHandler}`, which `_instanceof` in `services.yaml` routes to the right bus, so there is **no `#[AsMessageHandler]`** in Application.
 - Dispatch through the ports `CommandBus` / `QueryBus` / `EventBus` (Messenger adapters in `Shared\Infrastructure\Bus` unwrap `HandlerFailedException`).
+- `command.bus` middleware order (`config/packages/messenger.yaml`, do not reorder): `PublishDomainEvents` (outermost: publishes collected domain events after the commit; a failing reaction is audited as `event.handler.failed`, never requalifies the command) → `AuditFailure` (writes the `failure` / `denied` entry after the rollback) → `ResetUnitOfWorkOnFailure` (resolves the audit scope, then clears the EntityManager) → Doctrine ping / close / transaction → `LockTimeout` (`SET LOCAL lock_timeout '5s'`) → `AuditSuccess` (innermost: `success` entry inside the transaction). `query.bus` has `AuditDeniedQueryMiddleware`; `event.bus` has **no transaction** (it belongs to the command).
+- An audited refusal or failure always leaves a bus as `Shared\Application\Audit\AlreadyAudited`: read `cause()` (the business exception) and never audit it again. Commands declare their audit through `AuditableCommand`; refusals are `PermissionDenied` (403), `ResourceNotFound` (404) or a `Shared\Domain\BusinessRuleViolated` subclass (422, `rule:<ruleKey>`).
+- Aggregates implement `RecordsEvents` with the `EventRecording` trait; `DomainEventCollector` (Doctrine `onFlush`) gathers the events.
+- **No event handler changes persistent state**: it dispatches a command, queues a deferred email, or republishes an integration event.
 - Naming: `Application/Command/<Feature>/<VerbNoun>.php` → `Application/Command/<Feature>/Handler/<VerbNoun>Handler.php`, same for `Query/`. Example: `Shared\Application\Health\Query\GetHealthReport` + `Handler\GetHealthReportHandler`.
 
 ## UI conventions
@@ -64,6 +68,21 @@ Wiring: `composer.json` PSR-4 (one entry per context), `config/services.yaml` (o
 - Unhealthy: 503 JSON `{"status":"down","checks":{…}}`, without failure details.
 - Always `no-store` and `noindex`. The `php` container healthcheck (`compose.yaml`) calls it over `http://php/_healthcheck`. Add a probe per critical dependency (queues, mailer…); never weaken it. Keep it public when the firewall arrives.
 
+## Database roles, audit log, rate limiting
+
+- **Two PostgreSQL roles**, created by `.docker/database/roles.sh` (run by `initdb` on a fresh volume, `make db-roles` on an existing one):
+  - `depverify_app`: runtime role of the web workers (`DATABASE_URL`), no DDL, `INSERT` / `SELECT` only on `audit.*`;
+  - `depverify_owner`: owns the database, runs migrations and audit partition maintenance, **CLI only**. Its URL (`DATABASE_MIGRATIONS_URL`) lives in `.docker/database/owner.env` (git-ignored, copied from `owner.env.dist`), is never in a `.env*` file nor visible to the web container, and is injected by the Makefile into `db-migrate`, `db-diff`, `db-migrate-prev`, `db-reset`, `db-test-prepare` and `audit-partitions`. `OwnerRoleGuardDriverMiddleware` refuses the owner role outside the CLI.
+  - The FrankenPHP entrypoint therefore **does not migrate**: run `make db-migrate` (part of `make start`, and a CI step).
+- **Audit log** (`audit.audit_log`, `Audit\Infrastructure\DbalAuditTrail`): append-only, monthly partitions plus `DEFAULT`, row and `TRUNCATE` triggers refuse every change. `make audit-partitions` (`app:audit:maintain-partitions`, owner role) creates the next 12 months, moves `DEFAULT` rows and drops partitions older than `AUDIT_RETENTION_DAYS`. Never put a password, token, code, secret or request body in an audit context (typed, allow-listed keys, 4 KB max).
+- **Rate limiting**: always `symfony/rate-limiter` through the `AttemptThrottle` port (never `RateLimiterFactory` in Application). States in `rate_limiter_state` via `DbalRateLimiterStorage`, on the dedicated autocommit `rate_limiter` connection (`lock_timeout 2s`, `statement_timeout 5s`), **fail-closed** (`RateLimiterStorageUnavailable`) and never retried, because the same connection holds the advisory locks (`ExclusiveSection`). Keys are HMAC-hashed. `make rate-limiter-prune` deletes expired states.
+- **Secrets** (fail-closed outside dev/test): `APP_SECRET` (≥ 32 bytes), `APP_ENCRYPTION_KEYS` (`kid=base64,…`, AES-256-GCM `SecretBox`, first key encrypts), `APP_HASH_PEPPER` (same format, `TokenHasher` HMAC-SHA-256). Values only in `.env.dev` / `.env.test`.
+- **HTTP headers** (`SecurityHeadersSubscriber`): strict CSP with a per-request nonce (`csp_nonce()` in Twig, `CspNonce`), no `'unsafe-inline'`, so **no `style=` attribute and no inline script without nonce** in templates; `Referrer-Policy: no-referrer`, `nosniff`, `X-Frame-Options: DENY`, HSTS outside dev, server-generated `X-Request-Id`. Trusted proxies come from `SYMFONY_TRUSTED_PROXIES` (empty by default).
+
+## FrankenPHP worker mode
+
+The console runs as a long-lived FrankenPHP worker, in production too. **No mutable `static` property**; every stateful service implements `ResetInterface`; the EntityManager is reset after a failed command; connections outside the bus (rate limiter, sessions) get session-level timeouts at connect time.
+
 ## Stack
 
 Symfony 8.1, PHP 8.5, FrankenPHP + Caddy (`dunglas/symfony-docker`), PostgreSQL 18, Doctrine ORM (UUID v7), Messenger, Twig + Symfony UX (Turbo, Stimulus, Twig/Live Components, Icons), Symfony Reprise + Vite (TypeScript), Tailwind CSS v4, UX Toolkit `shadcn` kit, self-hosted IBM Plex fonts, Lucide icons vendored in `assets/icons/`.
@@ -82,7 +101,8 @@ docker compose exec node yarn add -D …    # JS packages: always yarn via the n
 make ux r=dialog / make icon i=lucide:bell
 make db-diff / make db-migrate          # migrations are organized by year: migrations/<YYYY>/Version….php (namespace DoctrineMigrations)
 make db-dump DUMP=backup.sql / make db-import DUMP=backup.sql   # pg_dump / psql via .docker/database/scripts, files in var/
-make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, app / !ChangeMe! / app)
+make db-roles / make audit-partitions / make rate-limiter-prune
+make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, user depverify_app or depverify_owner, database app)
 ```
 
 CI (`.github/workflows/ci.yml`, GitHub Actions): starts the same Docker stack, runs `make qa` and the production asset build on every push to `main` and every pull request. Keep `make qa` green locally: the CI runs exactly that. Dependabot updates Composer, npm, Docker, Actions and the submodule weekly.
@@ -102,4 +122,5 @@ Database: **PostgreSQL 18**, kept on purpose over MariaDB. The design relies on 
 
 - `config/bundles.php` registers `TalesFromADevTwigExtraTailwindBundle` by hand: no Flex recipe exists, and the shadcn kit needs its `tailwind_classes` filter.
 - The shadcn kit's Tailwind utilities are **vendored** in `assets/styles/vendor/shadcn-tailwind.css` (from `shadcn@4.23.0`, MIT). Do **not** install the `shadcn` npm package, even if `make ux` suggests `npm install shadcn`: it is a whole CLI whose dependencies carried vulnerabilities (deepmerge, minimatch) for a 16 KB stylesheet. Refresh the vendored file by hand when the kit needs it.
-- Not installed yet (add with the feature that needs them): Security, Scheduler, Mailer / Notifier, rate limiter, WebAuthn, async Messenger transport.
+- Not installed yet (add with the feature that needs them): Security, Scheduler, Mailer / Notifier, WebAuthn, async Messenger transport.
+- Tests: integration tests run inside a DAMA transaction on the `default` connection; the `rate_limiter` connection is not static (it must see committed data). Concurrency and timeout tests commit through `tests/Support/OwnerConnection` and clean up explicitly. The test logger is a `NullLogger`: Infection aborts on any stderr output.

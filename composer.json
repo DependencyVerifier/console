@@ -12,12 +12,15 @@
         "doctrine/doctrine-bundle": "^3.3",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.7",
+        "symfony/clock": "8.1.*",
         "symfony/console": "8.1.*",
         "symfony/dotenv": "8.1.*",
         "symfony/flex": "^2",
         "symfony/framework-bundle": "8.1.*",
         "symfony/http-client": "8.1.*",
+        "symfony/lock": "8.1.*",
         "symfony/messenger": "8.1.*",
+        "symfony/rate-limiter": "8.1.*",
         "symfony/reprise": "^1.4",
         "symfony/runtime": "8.1.*",
         "symfony/stimulus-bundle": "^3.7",
@@ -34,6 +37,7 @@
         "twig/html-extra": "^3.24"
     },
     "require-dev": {
+        "dama/doctrine-test-bundle": "^8.7",
         "friendsofphp/php-cs-fixer": "^3.95",
         "infection/infection": "^0.35",
         "phpstan/phpstan": "^2.3",

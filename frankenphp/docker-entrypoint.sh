@@ -33,9 +33,8 @@ if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 			echo 'The database is now ready and reachable'
 		fi
 
-		if find ./migrations -iname '*.php' -print -quit | grep --quiet .; then
-			php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing
-		fi
+		# No migration here: the web container runs as the runtime role (depverify_app), which has no DDL right.
+		# Migrations run from the CLI as the owner role (`make db-migrate`, see .docker/database/owner.env.dist).
 	fi
 
 	echo 'PHP app ready!'

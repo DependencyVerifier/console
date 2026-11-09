@@ -2,7 +2,8 @@
     ## boolean Whether to render a placeholder icon next to the label.
     showIcon = false
 -%}
-{%- set _skeleton_width = 50 + random(40) -%}
+{#- Width steps as classes, not a --skeleton-width style attribute: the CSP forbids inline styles. -#}
+{%- set _skeleton_width = random(['max-w-1/2', 'max-w-3/5', 'max-w-2/3', 'max-w-3/4', 'max-w-4/5', 'max-w-[90%]']) -%}
 <div
     data-slot="sidebar-menu-skeleton"
     {{ attributes.defaults({
@@ -12,5 +13,5 @@
     {%- if showIcon -%}
         <div class="size-4 animate-pulse rounded-md bg-sidebar-accent/50"></div>
     {%- endif -%}
-    <div class="h-4 max-w-(--skeleton-width) flex-1 animate-pulse rounded-md bg-sidebar-accent/50" style="--skeleton-width: {{ _skeleton_width }}%;"></div>
+    <div class="h-4 {{ _skeleton_width }} flex-1 animate-pulse rounded-md bg-sidebar-accent/50"></div>
 </div>

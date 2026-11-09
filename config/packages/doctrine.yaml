@@ -1,12 +1,17 @@
 doctrine:
     dbal:
-        url: '%env(resolve:DATABASE_URL)%'
-
-        # IMPORTANT: You MUST configure your server version,
-        # either here or in the DATABASE_URL env var (see .env file)
-        #server_version: '16'
-
-        profiling_collect_backtrace: '%kernel.debug%'
+        default_connection: default
+        connections:
+            # Runtime role (depverify_app) for the web workers. CLI owner commands (migrations, audit partitions)
+            # swap DATABASE_URL for the owner's one inside the container (see Makefile, OWNER_CONSOLE).
+            default:
+                url: '%env(resolve:DATABASE_URL)%'
+                profiling_collect_backtrace: '%kernel.debug%'
+            # Rate limiter states and advisory locks: same runtime role, autocommit, outside any command
+            # transaction (a rollback never gives a consumed token back). Session timeouts are set at connect
+            # time by Shared\Infrastructure\Doctrine\SessionTimeoutsDriverMiddleware.
+            rate_limiter:
+                url: '%env(resolve:DATABASE_URL)%'
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore
@@ -67,8 +72,30 @@ doctrine:
 when@test:
     doctrine:
         dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
-            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+            connections:
+                # "TEST_TOKEN" is typically set by ParaTest
+                default:
+                    dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+                rate_limiter:
+                    dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
+        orm:
+            mappings:
+                TestFixtures:
+                    type: attribute
+                    is_bundle: false
+                    dir: '%kernel.project_dir%/tests/Fixtures/Doctrine'
+                    prefix: 'Tests\Fixtures\Doctrine'
+                    alias: TestFixtures
+
+    # Every test runs in a transaction rolled back afterwards (default connection only). Tests that need
+    # committed data across connections (concurrency, lock timeouts, privileges) opt out explicitly.
+    dama_doctrine_test:
+        enable_static_connection:
+            default: true
+            rate_limiter: false
+        enable_static_meta_data_cache: true
+        enable_static_query_cache: true
 
 when@prod:
     doctrine:

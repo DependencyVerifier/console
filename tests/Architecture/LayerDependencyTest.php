@@ -23,11 +23,14 @@ final class LayerDependencyTest extends TestCase
 {
     private const array CONTEXTS = ['Shared', 'Identity', 'Organization', 'Fleet', 'Inventory', 'Vulnerability', 'Exposure', 'Notification', 'Audit'];
 
-    /** Vendor namespaces the Domain layer may use (mapping metadata, identifiers). */
-    private const array DOMAIN_ALLOWED_VENDORS = ['Doctrine\ORM\Mapping', Types::class, 'Symfony\Component\Uid'];
+    /** Vendor namespaces the Domain layer may use (mapping metadata, identifiers, pure string functions u() / b()). */
+    private const array DOMAIN_ALLOWED_VENDORS = ['Doctrine\ORM\Mapping', Types::class, 'Symfony\Component\Uid', 'Symfony\Component\String\u', 'Symfony\Component\String\b'];
 
-    /** Vendor namespaces the Application layer may use (DI metadata, contracts). */
-    private const array APPLICATION_ALLOWED_VENDORS = ['Symfony\Component\DependencyInjection\Attribute', 'Symfony\Component\Uid', 'Psr\\'];
+    /**
+     * Vendor namespaces the Application layer may use (DI metadata, contracts, pure string functions). Everything
+     * else (Security, Mailer, Lock, RateLimiter, scheb…) stays behind ports.
+     */
+    private const array APPLICATION_ALLOWED_VENDORS = ['Symfony\Component\DependencyInjection\Attribute', 'Symfony\Component\Uid', 'Symfony\Component\String\u', 'Symfony\Component\String\b', 'Psr\\'];
 
     /**
      * @return iterable<string, array{string, string, string, list<string>}>

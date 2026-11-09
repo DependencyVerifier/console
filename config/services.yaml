@@ -20,6 +20,20 @@ services:
         Shared\Application\Bus\EventHandler:
             tags: [{ name: messenger.message_handler, bus: event.bus }]
 
+    # Locks of the rate limiters and of ExclusiveSection: PostgreSQL advisory locks on the "rate_limiter"
+    # connection (no fourth connection per worker).
+    app.rate_limiter.lock_store:
+        class: Symfony\Component\Lock\Store\DoctrineDbalPostgreSqlStore
+        arguments: ['@doctrine.dbal.rate_limiter_connection']
+    app.rate_limiter.lock_factory:
+        class: Symfony\Component\Lock\LockFactory
+        arguments: ['@app.rate_limiter.lock_store']
+
+    # Ports implemented in Shared (Identity decorates CurrentActor once the firewall exists).
+    Shared\Application\Security\CurrentActor: '@Shared\Infrastructure\Security\RuntimeCurrentActor'
+    # Fail-closed until Organization provides the PermissionResolver.
+    Shared\Application\Authorization\PermissionChecker: '@Shared\Infrastructure\Authorization\DenyAllPermissionChecker'
+
     Shared\:
         resource: '../src/Shared/'
         exclude:
@@ -57,3 +71,18 @@ services:
     Audit\:
         resource: '../src/Audit/'
         exclude: '../src/Audit/Domain/Model/'
+
+    # Explicit definitions after the resources (a resource registered later would replace them).
+    # AttemptThrottle adapter: one limiter per Shared\Application\Security\ThrottleName.
+    Shared\Infrastructure\RateLimiting\SymfonyRateLimiterThrottle:
+        arguments:
+            $limiters: !service_locator
+                second_factor_short: '@limiter.second_factor_short'
+                second_factor_long: '@limiter.second_factor_long'
+                second_factor_ip: '@limiter.second_factor_ip'
+                second_factor_alert: '@limiter.second_factor_alert'
+                password_reset_email: '@limiter.password_reset_email'
+                password_reset_ip: '@limiter.password_reset_ip'
+                email_code_resend: '@limiter.email_code_resend'
+                invitation_resend: '@limiter.invitation_resend'
+                invitation_resend_team: '@limiter.invitation_resend_team'
