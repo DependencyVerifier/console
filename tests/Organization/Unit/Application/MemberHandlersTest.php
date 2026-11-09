@@ -26,6 +26,7 @@ use Organization\Application\Command\Member\SuspendMembershipsOfUser;
 use Organization\Application\EventHandler\CascadeAccountStatus;
 use Organization\Application\EventHandler\SendInvitation;
 use Organization\Application\Port\InvitationSender;
+use Organization\Domain\Authorization\ProjectGrant;
 use Organization\Domain\Authorization\TeamGrant;
 use Organization\Domain\Event\InvitationIssued;
 use Organization\Domain\Event\InvitationReissued;
@@ -110,7 +111,7 @@ final class MemberHandlersTest extends TestCase
     public function it_should_grant_and_revoke_extras_held_by_the_actor(): void
     {
         $world = $this->world();
-        $change = new ExtraPermissionChange($world->access(), $this->grants($world));
+        $change = new ExtraPermissionChange($world->access(), $world->roles(), $this->grants($world));
 
         new GrantExtraPermissionHandler($change)(new GrantExtraPermission(Teams::TEAM, null, Teams::MEMBER, 'host.enroll'));
         self::assertSame([Permission::HostEnroll], $this->team->membershipOf(Uuid::fromString(Teams::MEMBER))->extraPermissions());
@@ -140,8 +141,8 @@ final class MemberHandlersTest extends TestCase
     public function it_should_refuse_to_grant_a_permission_the_actor_lacks(): void
     {
         $world = $this->world();
-        $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Member, [Permission::TeamMembersManage, Permission::ProjectMembersManage])]);
-        $change = new ExtraPermissionChange($world->access(), $this->grants($world));
+        $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Member, [Permission::TeamMembersManage, Permission::ProjectMembersManage])], [new ProjectGrant(Teams::PROJECT, Teams::TEAM, ProjectRole::Viewer)]);
+        $change = new ExtraPermissionChange($world->access(), $world->roles(), $this->grants($world));
 
         foreach ([[null, 'host.enroll', Teams::MEMBER], [Teams::PROJECT, 'finding.accept_risk', Teams::GUEST]] as [$projectId, $permission, $userId]) {
             try {
@@ -157,7 +158,7 @@ final class MemberHandlersTest extends TestCase
         $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Viewer)]);
         foreach ([null, Teams::PROJECT] as $projectId) {
             try {
-                new RevokeExtraPermissionHandler(new ExtraPermissionChange($world->access(), $this->grants($world)))(new RevokeExtraPermission(Teams::TEAM, $projectId, Teams::MEMBER, 'host.enroll'));
+                new RevokeExtraPermissionHandler(new ExtraPermissionChange($world->access(), $world->roles(), $this->grants($world)))(new RevokeExtraPermission(Teams::TEAM, $projectId, Teams::MEMBER, 'host.enroll'));
                 self::fail('Denied.');
             } catch (PermissionDenied) {
             }

@@ -72,7 +72,7 @@ final class LocksAndRanksTest extends TestCase
         $gestures = [
             'rename' => static fn (World $w) => new RenameProjectHandler($w->access())(new RenameProject(Teams::PROJECT, 'Store')),
             'role' => fn (World $w) => new ChangeProjectRoleHandler($w->access(), $w->roles(), $this->grants($w))(new ChangeProjectRole(Teams::PROJECT, Teams::GUEST, 'project_member')),
-            'extra' => fn (World $w) => new GrantExtraPermissionHandler(new ExtraPermissionChange($w->access(), $this->grants($w)))(new GrantExtraPermission(Teams::TEAM, Teams::PROJECT, Teams::GUEST, 'project.scan_now')),
+            'extra' => fn (World $w) => new GrantExtraPermissionHandler(new ExtraPermissionChange($w->access(), $w->roles(), $this->grants($w)))(new GrantExtraPermission(Teams::TEAM, Teams::PROJECT, Teams::GUEST, 'project.scan_now')),
             'remove' => fn (World $w) => new RemoveProjectMemberHandler($w->access(), $w->roles(), $this->grants($w))(new RemoveProjectMember(Teams::PROJECT, Teams::GUEST)),
             'revoke invitation' => static fn (World $w) => new RevokeInvitationHandler(new InvitationAccess($w->access(), $w->invitations))(new RevokeInvitation(self::INVITATION)),
             'delete' => static fn (World $w) => new DeleteProjectHandler($w->access(), $w->projects, $w->invitations, [])(new DeleteProject(Teams::PROJECT)),
@@ -98,6 +98,8 @@ final class LocksAndRanksTest extends TestCase
             'promote to admin' => fn () => new ChangeProjectRoleHandler($world->access(), $world->roles(), $this->grants($world))(new ChangeProjectRole(Teams::PROJECT, Teams::GUEST, 'project_admin')),
             'demote an admin' => fn () => new ChangeProjectRoleHandler($world->access(), $world->roles(), $this->grants($world))(new ChangeProjectRole(Teams::PROJECT, Teams::ADMIN, 'project_viewer')),
             'remove an admin' => fn () => new RemoveProjectMemberHandler($world->access(), $world->roles(), $this->grants($world))(new RemoveProjectMember(Teams::PROJECT, Teams::ADMIN)),
+            'grant an extra to an admin' => fn () => new GrantExtraPermissionHandler(new ExtraPermissionChange($world->access(), $world->roles(), $this->grants($world)))(new GrantExtraPermission(Teams::TEAM, Teams::PROJECT, Teams::ADMIN, 'project.scan_now')),
+            'revoke an extra from an admin' => fn () => new RevokeExtraPermissionHandler(new ExtraPermissionChange($world->access(), $world->roles(), $this->grants($world)))(new RevokeExtraPermission(Teams::TEAM, Teams::PROJECT, Teams::ADMIN, 'project.scan_now')),
         ];
         foreach ($gestures as $name => $gesture) {
             try {
@@ -113,7 +115,19 @@ final class LocksAndRanksTest extends TestCase
     public function it_should_keep_team_roles_above_the_manager_out_of_reach(): void
     {
         $world = $this->world();
-        $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Member, [Permission::TeamMembersManage])]);
+        $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Member, [Permission::TeamMembersManage, Permission::HostEnroll])]);
+        $change = new ExtraPermissionChange($world->access(), $world->roles(), $this->grants($world));
+        foreach ([
+            'grant an extra to an admin' => static fn () => new GrantExtraPermissionHandler($change)(new GrantExtraPermission(Teams::TEAM, null, Teams::ADMIN, 'host.enroll')),
+            'revoke an extra from an admin' => static fn () => new RevokeExtraPermissionHandler($change)(new RevokeExtraPermission(Teams::TEAM, null, Teams::ADMIN, 'host.enroll')),
+        ] as $name => $gesture) {
+            try {
+                $gesture();
+                self::fail($name);
+            } catch (RoleNotAssignable) {
+            }
+        }
+        self::assertSame([], $world->grants->grants);
 
         $this->expectException(RoleNotAssignable::class);
         $this->invite($world)(new InviteMember(Uuid::v7()->toRfc4122(), Teams::TEAM, null, 'a@example.com', 'team_admin'));
@@ -151,9 +165,9 @@ final class LocksAndRanksTest extends TestCase
     public function it_should_hold_a_project_extra_to_grant_it_but_not_to_revoke_it(): void
     {
         $world = $this->world();
-        $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Viewer, [Permission::ProjectMembersManage])]);
+        $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Guest)], [new ProjectGrant(Teams::PROJECT, Teams::TEAM, ProjectRole::Viewer, [Permission::ProjectMembersManage])]);
         $this->project->grantExtra(Uuid::fromString(Teams::GUEST), Permission::ProjectScanNow);
-        $change = new ExtraPermissionChange($world->access(), $this->grants($world));
+        $change = new ExtraPermissionChange($world->access(), $world->roles(), $this->grants($world));
 
         new RevokeExtraPermissionHandler($change)(new RevokeExtraPermission(Teams::TEAM, Teams::PROJECT, Teams::GUEST, 'project.scan_now'));
         self::assertSame([], $this->project->membershipOf(Uuid::fromString(Teams::GUEST))->extraPermissions());

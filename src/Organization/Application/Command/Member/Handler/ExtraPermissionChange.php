@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Organization\Application\Command\Member\Handler;
 
 use Organization\Application\Security\OrganizationAccess;
+use Organization\Application\Security\RoleAuthority;
 use Organization\Domain\Model\GrantChange;
 use Organization\Domain\Model\PermissionNotGrantable;
 use Organization\Domain\Model\ProjectId;
@@ -19,7 +20,7 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class ExtraPermissionChange
 {
-    public function __construct(private OrganizationAccess $access, private MemberGrants $grants)
+    public function __construct(private OrganizationAccess $access, private RoleAuthority $roles, private MemberGrants $grants)
     {
     }
 
@@ -37,6 +38,8 @@ final readonly class ExtraPermissionChange
 
             $this->access->lockTeam($project->teamId());
             $this->access->assert(Permission::ProjectMembersManage, $project->teamId(), $project->id());
+            // Same rank rule as changing or removing: never touch a member ranked above the actor.
+            $this->roles->assertProjectRole($project->teamId(), $project->id(), $project->membershipOf($user)->role());
             if ($grant && !$this->access->holds($permission, $project->teamId(), $project->id())) {
                 throw new PermissionNotGrantable();
             }
@@ -50,6 +53,7 @@ final readonly class ExtraPermissionChange
         $id = TeamId::fromString($teamId);
         $team = $this->access->lockTeam($id);
         $this->access->assert(Permission::TeamMembersManage, $id);
+        $this->roles->assertTeamRole($id, $team->membershipOf($user)->role());
         if ($grant && !$this->access->holds($permission, $id)) {
             throw new PermissionNotGrantable();
         }
