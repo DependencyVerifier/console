@@ -20,6 +20,8 @@
             <h1 class="text-2xl font-semibold tracking-tight">{{ 'admin.users.title'|trans }}</h1>
             <p class="mt-1 text-sm text-muted-foreground">{{ 'admin.users.description'|trans }}</p>
         </div>
+        <div class="flex shrink-0 gap-2">
+        <twig:Button as="a" variant="ghost" href="{{ path('identity_admin_users', include_deleted ? {} : {deleted: 1}) }}">{{ (include_deleted ? 'admin.users.hide_deleted' : 'admin.users.show_deleted')|trans }}</twig:Button>
         <twig:FormDialog
             id="create-user"
             :title="'admin.users.new'|trans"
@@ -27,6 +29,7 @@
             :trigger="'admin.users.new'|trans"
             :src="path('identity_admin_user_create')"
         />
+        </div>
     </div>
     <twig:DataTable :table="table" />
 {% endblock %}

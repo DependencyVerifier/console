@@ -34,6 +34,7 @@ final class OrganizationFlowTest extends IdentityWebTestCase
         $draw = DataTables::draw($this->client, '/admin/teams', 'teams');
         self::assertSame(1, $draw['recordsTotal']);
         self::assertStringContainsString('Platform', $draw['data'][0]['name']);
+        self::assertSame(['0', '0'], [u($draw['data'][0]['members'])->trim()->toString(), u($draw['data'][0]['projects'])->trim()->toString()], 'The counters are shown, zero included.');
 
         // The invitee, in a fresh browser.
         $this->client->getCookieJar()->clear();

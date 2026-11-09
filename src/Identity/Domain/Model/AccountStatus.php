@@ -7,13 +7,15 @@ namespace Identity\Domain\Model;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * `active` or `disabled(since)`. Accounts are deactivated, never deleted (decision 21).
+ * `active`, `disabled(since)` or `deleted(since)`. Deleted is a soft delete: deactivated and hidden from the
+ * administration list, reversible (restored as `disabled`); no row is ever removed (decision 21).
  */
 #[ORM\Embeddable]
 final class AccountStatus
 {
     private const string ACTIVE = 'active';
     private const string DISABLED = 'disabled';
+    private const string DELETED = 'deleted';
 
     private function __construct(
         #[ORM\Column(name: 'status', length: 16)]
@@ -31,6 +33,16 @@ final class AccountStatus
     public static function disabled(\DateTimeImmutable $since): self
     {
         return new self(self::DISABLED, $since);
+    }
+
+    public static function deleted(\DateTimeImmutable $since): self
+    {
+        return new self(self::DELETED, $since);
+    }
+
+    public function isDeleted(): bool
+    {
+        return self::DELETED === $this->kind;
     }
 
     public function isActive(): bool

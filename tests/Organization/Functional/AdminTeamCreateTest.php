@@ -7,6 +7,7 @@ namespace Tests\Organization\Functional;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\Accounts;
 use Tests\Support\AuditLog;
+use Tests\Support\DataTables;
 use Tests\Support\IdentityWebTestCase;
 
 /**
@@ -71,6 +72,13 @@ final class AdminTeamCreateTest extends IdentityWebTestCase
         self::assertStringContainsString('target="action-alerts"', (string) $this->client->getResponse()->getContent());
         self::assertSame('Platform', $this->fetchString('SELECT name FROM organization_team'));
         self::assertEmailCount(1, message: 'The first admin is invited.');
+
+        $teamId = $this->fetchString('SELECT id FROM organization_team');
+        $draw = DataTables::draw($this->client, '/teams/'.$teamId, 'invitations');
+        self::assertSame(1, $draw['recordsTotal']);
+        $actions = DataTables::cell($draw['data'][0]['actions']);
+        self::assertCount(1, $actions->filter(\sprintf('form[action^="/teams/%s/invitations/"][action$="/resend"]', $teamId)));
+        self::assertCount(1, $actions->filter(\sprintf('form[action^="/teams/%s/invitations/"][action$="/revoke"]', $teamId)));
     }
 
     #[Test]

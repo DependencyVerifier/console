@@ -24,8 +24,8 @@ final class TeamsTable implements DataTableTypeInterface
         $dataTable
             ->setName('teams')
             ->add('name', TwigColumn::class, ['label' => 'organization.field.team_name', 'orderable' => true, 'template' => 'organization/cells/team_name.html.twig'])
-            ->add('members', TwigColumn::class, ['label' => 'organization.field.members', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'])
-            ->add('projects', TwigColumn::class, ['label' => 'organization.field.projects', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'])
+            ->add('members', TwigColumn::class, ['field' => 'members', 'label' => 'organization.field.members', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'])
+            ->add('projects', TwigColumn::class, ['field' => 'projects', 'label' => 'organization.field.projects', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'])
             ->add('actions', TwigColumn::class, ['label' => 'admin.users.actions', 'orderable' => false, 'className' => 'text-end', 'template' => 'organization/cells/team_actions.html.twig'])
             ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListTeams => new ListTeams($page)]);
     }

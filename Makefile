@@ -220,7 +220,7 @@ rector-fix: ## Apply Rector refactorings
 lint: ## Lint container, Twig and YAML
 	@$(CONSOLE) lint:container
 	@$(CONSOLE) lint:twig templates/
-	@$(CONSOLE) lint:yaml config --parse-tags
+	@$(CONSOLE) lint:yaml config translations --parse-tags
 
 .PHONY: audit
 audit: ## Check PHP and JS dependencies for known vulnerabilities

@@ -7,7 +7,7 @@
 {%- set config = datatable_config(table) -%}
 <div data-controller="datatable"
      data-datatable-name-value="{{ config.name }}"
-     data-datatable-url-value="{{ app.request.pathInfo }}"
+     data-datatable-url-value="{{ app.request.requestUri }}"
      data-datatable-columns-value="{{ config.columns|json_encode }}"
      data-datatable-language-value="{{ config.language|json_encode }}"
      data-datatable-page-length-value="{{ config.pageLength }}"

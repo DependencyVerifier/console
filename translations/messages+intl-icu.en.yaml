@@ -161,13 +161,15 @@ identity:
                 reset_second_factor: Second factor reset.
                 deactivate: Account deactivated.
                 reactivate: Account reactivated.
+                delete: Account deleted.
+                restore: Account restored, still deactivated.
                 grant_super_admin: Super admin granted.
                 revoke_super_admin: Super admin revoked.
 admin:
     title: Administration
     users:
         title: Users
-        description: Accounts of the instance. Accounts are deactivated, never deleted.
+        description: "Accounts of the instance. A deleted account is only hidden: restore it to see it again (as deactivated)."
         empty: No account yet.
         status: Status
         second_factor: Second factor
@@ -187,6 +189,11 @@ admin:
         invite: Send the invitation
         invited: Account created, the invitation is on its way.
         invited_status: Invited
+        deleted: Deleted
+        delete: Delete
+        restore: Restore
+        show_deleted: Show deleted
+        hide_deleted: Hide deleted
 role:
     team_admin: Team admin
     team_member: Team member

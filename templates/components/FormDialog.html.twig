@@ -21,8 +21,8 @@
     <twig:Dialog:Trigger>
         <twig:Button variant="{{ variant }}" size="{{ size }}" {{ ...dialog_trigger_attrs|merge({'data-action': 'click->dialog#open click->form-dialog#load'}) }}>{{ trigger }}</twig:Button>
     </twig:Dialog:Trigger>
-    <twig:Dialog:Content class="sm:max-w-lg">
-        <twig:Dialog:Header>
+    <twig:Dialog:Content class="text-start sm:max-w-lg">
+        <twig:Dialog:Header class="items-start pe-8 text-start">
             <twig:Dialog:Title>{{ title }}</twig:Dialog:Title>
             {%- if description is not null %}
                 <twig:Dialog:Description>{{ description }}</twig:Dialog:Description>

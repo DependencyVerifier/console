@@ -370,8 +370,40 @@ class User implements RecordsEvents
             return;
         }
 
+        if ($this->status->isDeleted()) {
+            throw new AccountDeleted();
+        }
+
         $this->status = AccountStatus::active();
         $this->recordThat(new UserReactivated($this->id->toRfc4122()));
+    }
+
+    /**
+     * Soft delete: an active account is deactivated first (sessions revoked, memberships suspended through
+     * UserDeactivated), a deactivated one is only hidden. Idempotent.
+     */
+    public function delete(\DateTimeImmutable $now): void
+    {
+        if ($this->status->isDeleted()) {
+            return;
+        }
+
+        if ($this->status->isActive()) {
+            $this->sessionVersions = $this->sessionVersions->revokeAll();
+            $this->recordThat(new UserDeactivated($this->id->toRfc4122()));
+        }
+
+        $this->status = AccountStatus::deleted($now);
+    }
+
+    /**
+     * Back in the list as deactivated, never active: giving the access back stays an explicit reactivation.
+     */
+    public function restore(\DateTimeImmutable $now): void
+    {
+        if ($this->status->isDeleted()) {
+            $this->status = AccountStatus::disabled($now);
+        }
     }
 
     public function grantSuperAdmin(): void

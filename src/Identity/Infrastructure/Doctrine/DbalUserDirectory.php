@@ -21,13 +21,14 @@ final readonly class DbalUserDirectory implements UserDirectory
     {
     }
 
-    public function page(PageRequest $page): Page
+    public function page(PageRequest $page, bool $includeDeleted): Page
     {
-        $total = Row::int($this->connection->fetchOne('SELECT COUNT(*) FROM identity_user'));
-        $where = '';
+        $visible = $includeDeleted ? ' WHERE TRUE' : " WHERE status <> 'deleted'";
+        $total = Row::int($this->connection->fetchOne('SELECT COUNT(*) FROM identity_user'.$visible));
+        $where = $visible;
         $parameters = [];
         if ('' !== $page->search) {
-            $where = ' WHERE email LIKE :search';
+            $where .= ' AND email LIKE :search';
             $parameters['search'] = '%'.u($page->search)->lower()->replace('\\', '\\\\')->replace('%', '\\%')->replace('_', '\\_')->toString().'%';
         }
 
@@ -49,6 +50,7 @@ final readonly class DbalUserDirectory implements UserDirectory
                 $row['email'],
                 (bool) $row['super_admin'],
                 $active,
+                'deleted' === $row['status'],
                 $active && 'password' === $row['credentials_kind'] && \is_array($permissions) && \in_array('account.login', $permissions, true),
                 'active_totp' === $row['second_factor_kind'],
                 'password' !== $row['credentials_kind'],

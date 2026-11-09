@@ -126,9 +126,12 @@ final class QueriesAndReactionsTest extends TestCase
     #[Test]
     public function it_should_list_users_for_administrators_only(): void
     {
-        $summary = new UserSummary(Users::ID, 'jane@example.com', false, true, true, false, false, new \DateTimeImmutable());
+        $summary = new UserSummary(Users::ID, 'jane@example.com', false, true, false, true, false, false, new \DateTimeImmutable());
         $directory = new class([$summary]) implements UserDirectory {
             public ?PageRequest $asked = null;
+
+            /** @var list<bool> */
+            public array $includeDeleted = [];
 
             /**
              * @param list<UserSummary> $users
@@ -137,9 +140,10 @@ final class QueriesAndReactionsTest extends TestCase
             {
             }
 
-            public function page(PageRequest $page): Page
+            public function page(PageRequest $page, bool $includeDeleted): Page
             {
                 $this->asked = $page;
+                $this->includeDeleted[] = $includeDeleted;
 
                 return new Page($this->users, 1, 1);
             }
@@ -154,6 +158,8 @@ final class QueriesAndReactionsTest extends TestCase
         $page = new ListUsersHandler($directory, new Grants([Permission::InstanceUsersManage]))(new ListUsers($request));
         self::assertSame([$summary], $page->items);
         self::assertSame($request, $directory->asked);
+        new ListUsersHandler($directory, new Grants([Permission::InstanceUsersManage]))(new ListUsers($request, true));
+        self::assertSame([false, true], $directory->includeDeleted, 'Deleted accounts are hidden unless asked for.');
 
         $accounts = new FindAccountsHandler($directory)(new FindAccounts([Users::ID]));
         self::assertEquals([Users::ID => new AccountView(Users::ID, 'jane@example.com', true)], $accounts);

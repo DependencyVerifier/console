@@ -1,5 +1,6 @@
 {%- import 'organization/_actions.html.twig' as ui -%}
+{%- set teamId = app.request.attributes.get('teamId') -%}
 <div class="flex justify-end gap-1">
-    {{ ui.button(path('organization_invitation_resend', {invitationId: row.id}), 'invitation_resend:' ~ row.id, 'organization.invitations.resend', 'outline') }}
-    {{ ui.button(path('organization_invitation_revoke', {invitationId: row.id}), 'invitation_revoke:' ~ row.id, 'organization.invitations.revoke', 'destructive') }}
+    {{ ui.button(path('organization_invitation_resend', {teamId: teamId, invitationId: row.id}), 'invitation_resend:' ~ row.id, 'organization.invitations.resend', 'outline') }}
+    {{ ui.button(path('organization_invitation_revoke', {teamId: teamId, invitationId: row.id}), 'invitation_revoke:' ~ row.id, 'organization.invitations.revoke', 'destructive') }}
 </div>

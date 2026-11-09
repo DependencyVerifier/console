@@ -11,6 +11,7 @@ final readonly class UserSummary
         public string $email,
         public bool $superAdmin,
         public bool $active,
+        public bool $deleted,
         public bool $canLogIn,
         public bool $totpActive,
         public bool $awaitingPassword,

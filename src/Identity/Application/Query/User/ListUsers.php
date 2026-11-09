@@ -13,7 +13,10 @@ use Shared\Application\Query\PageRequest;
  */
 final readonly class ListUsers implements Query
 {
-    public function __construct(public PageRequest $page = new PageRequest())
+    /**
+     * @param bool $includeDeleted soft-deleted accounts are hidden unless asked for
+     */
+    public function __construct(public PageRequest $page = new PageRequest(), public bool $includeDeleted = false)
     {
     }
 }

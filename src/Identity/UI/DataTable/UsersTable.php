@@ -24,6 +24,6 @@ final class UsersTable implements DataTableTypeInterface
             ->add('active', TwigColumn::class, ['label' => 'admin.users.status', 'orderable' => false, 'template' => 'identity/admin/cells/status.html.twig'])
             ->add('totpActive', TwigColumn::class, ['label' => 'admin.users.second_factor', 'orderable' => false, 'template' => 'identity/admin/cells/second_factor.html.twig'])
             ->add('actions', TwigColumn::class, ['label' => 'admin.users.actions', 'orderable' => false, 'className' => 'text-end', 'template' => 'identity/admin/cells/actions.html.twig'])
-            ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListUsers => new ListUsers($page)]);
+            ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListUsers => new ListUsers($page, true === ($options['includeDeleted'] ?? false))]);
     }
 }

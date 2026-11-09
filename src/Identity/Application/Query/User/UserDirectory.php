@@ -16,7 +16,7 @@ interface UserDirectory
     /**
      * @return Page<UserSummary>
      */
-    public function page(PageRequest $page): Page;
+    public function page(PageRequest $page, bool $includeDeleted): Page;
 
     /**
      * @param list<string> $userIds

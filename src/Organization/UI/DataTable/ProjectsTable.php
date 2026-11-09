@@ -30,8 +30,8 @@ final class ProjectsTable implements DataTableTypeInterface
         $dataTable
             ->setName('projects')
             ->add('name', TwigColumn::class, [...['label' => 'organization.field.name', 'orderable' => true, 'template' => 'organization/cells/project_name.html.twig'], 'globalSearchable' => false])
-            ->add('environments', TwigColumn::class, [...['label' => 'organization.field.environments', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'], 'globalSearchable' => false])
-            ->add('members', TwigColumn::class, [...['label' => 'organization.field.members', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'], 'globalSearchable' => false])
+            ->add('environments', TwigColumn::class, [...['field' => 'environments', 'label' => 'organization.field.environments', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'], 'globalSearchable' => false])
+            ->add('members', TwigColumn::class, [...['field' => 'members', 'label' => 'organization.field.members', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'], 'globalSearchable' => false])
             ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListProjects => new ListProjects($id, $page)]);
     }
 }

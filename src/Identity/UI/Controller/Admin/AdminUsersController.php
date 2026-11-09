@@ -24,11 +24,12 @@ final class AdminUsersController extends AbstractController
 
     public function __invoke(Request $request): Response
     {
-        $table = $this->tables->createFromType(UsersTable::class)->handleRequest($request);
+        $includeDeleted = $request->query->getBoolean('deleted');
+        $table = $this->tables->createFromType(UsersTable::class, ['includeDeleted' => $includeDeleted])->handleRequest($request);
         if ($table->isCallback()) {
             return $table->getResponse();
         }
 
-        return $this->render('identity/admin/users.html.twig', ['nav_active' => 'admin_users', 'table' => $table]);
+        return $this->render('identity/admin/users.html.twig', ['nav_active' => 'admin_users', 'table' => $table, 'include_deleted' => $includeDeleted]);
     }
 }

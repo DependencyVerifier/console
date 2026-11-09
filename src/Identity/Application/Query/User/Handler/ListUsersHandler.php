@@ -28,6 +28,6 @@ final readonly class ListUsersHandler implements QueryHandler
             throw PermissionDenied::for(Permission::InstanceUsersManage->value);
         }
 
-        return $this->directory->page($query->page);
+        return $this->directory->page($query->page, $query->includeDeleted);
     }
 }
