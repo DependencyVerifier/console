@@ -1,0 +1,40 @@
+{% extends 'shared/layout/auth.html.twig' %}
+
+{% block title %}{{ 'identity.login.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block main %}
+    <div class="flex flex-col gap-6">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.login.title'|trans }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ 'identity.login.description'|trans }}</p>
+        </div>
+
+        {{ include('shared/_flashes.html.twig') }}
+        {% if error_key %}
+            <twig:Alert variant="destructive">
+                <twig:ux:icon name="lucide:circle-alert" />
+                <twig:Alert:Description>{{ error_key|trans }}</twig:Alert:Description>
+            </twig:Alert>
+        {% endif %}
+
+        <form method="post" action="{{ path('identity_login') }}" class="flex flex-col gap-6" data-turbo="false">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            <twig:Field:Group>
+                <twig:Field>
+                    <twig:Field:Label for="username">{{ 'identity.field.email'|trans }}</twig:Field:Label>
+                    <twig:Input id="username" type="email" name="_username" value="{{ last_username }}" autocomplete="username" required autofocus />
+                </twig:Field>
+                <twig:Field>
+                    <div class="flex items-center">
+                        <twig:Field:Label for="password">{{ 'identity.field.password'|trans }}</twig:Field:Label>
+                        <a href="{{ path('identity_password_forgot') }}" class="ms-auto text-sm text-muted-foreground underline-offset-4 hover:underline">{{ 'identity.login.forgot'|trans }}</a>
+                    </div>
+                    <twig:Input id="password" type="password" name="_password" autocomplete="current-password" required />
+                </twig:Field>
+                <twig:Button type="submit" class="w-full">{{ 'identity.login.submit'|trans }}</twig:Button>
+            </twig:Field:Group>
+        </form>
+
+        <p class="text-center text-xs text-muted-foreground">{{ 'identity.login.invitation_only'|trans }}</p>
+    </div>
+{% endblock %}

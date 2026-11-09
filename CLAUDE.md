@@ -20,7 +20,7 @@ src/<Context>/
 
 | Namespace | Responsibility (`docs/cadrage.md`) |
 |---|---|
-| `Shared\` | Kernel, CQRS buses, health probes, routing helpers, web shell (layouts, sidebar, footer, previews) |
+| `Shared\` | Kernel, CQRS buses, health probes, routing helpers, web shell (layouts, sidebar, footer, home), UI foundation (Turbo Frames, ActionResponder, CSRF rejection) |
 | `Identity\` | Accounts, authentication (password + TOTP / email code, optional passkeys), invitations, notification-only accounts |
 | `Organization\` | Teams, quotas, projects, environments, memberships, permissions (`PermissionResolver`, voters) |
 | `Fleet\` | Hosts, cloud scopes, agents, enrollment tokens, signed agent API, orders |
@@ -59,7 +59,11 @@ Wiring: `composer.json` PSR-4 (one entry per context), `config/services.yaml` (o
 - **No external resource** (fonts, scripts, CDN): everything is served by the instance. FrankenPHP's CDN hot-reload snippet was removed on purpose; Vite handles HMR (reload the page by hand after a Twig change).
 - **Front-end code is TypeScript only**: no `.js` file in `assets/`. `make typecheck` (strict `tsc`, in `make qa`) fails if one appears. Stimulus controllers are `assets/controllers/<name>_controller.ts` with `declare` typed targets and values; kit controllers coming from `make ux` must be converted. Config in `tsconfig.json`, Vite config in `vite.config.ts`.
 - **No Mercure**: removed from Caddy, Compose and Turbo (no real-time hub in this project). Don't reinstall `symfony/mercure-bundle`.
-- `templates/shared/preview/` + `Shared\UI\Controller\Preview\*` are static design previews (`/`, `/_preview/login`). Remove them when real screens land.
+- **Turbo Frames (decision 31)**: heavy zones only (lists, quota gauges, audit log) are lazy frames rendered with `shared/frame/lazy.html.twig` (Skeleton placeholder + server-rendered error template, `frame_state_controller.ts`). A context declares its frames in a `UI\Frame\TurboFrame` enum (`Shared\UI\Frame\Frame`), with **exactly one** `FrameView` per case (it asks the query bus: the query handler is the only judge). Frame endpoints go through `FrameEndpoint` (303 to the fallback page without `Turbo-Frame`, `private, no-store`, `Vary: Accept, Turbo-Frame`); refusals are rendered in the frame by `FrameExceptionRenderer`. Frame route names end with `_frame`.
+- **Actions of the authenticated area** go through `Shared\UI\Action\ActionResponder::handle()`: CSRF failure → `CsrfRejection` (403, one `csrf.rejected` entry), invalid form → 422, refusal (`AlreadyAudited`) → the form again with the status of `RefusalResponseTable`, success → `StreamOrRedirect` (Turbo Stream refreshing the frames of the context's `ActionFrameMap`, else 303). A button alone is a field-less `ActionButtonType` form with its own CSRF token id. Commands showing a secret once implement `RevealsSecret` and need `SecretRevealingResponse` (200, `no-store`, never a redirect or the session). The command closure takes no argument: read the validated fields with `FormData::string()`.
+- The authentication pages (login, 2FA, `/reauthenticate`, password forgot / reset, invitations) are plain pages (`data-turbo="false"`) that use the same `CsrfRejection` and refusal table.
+- Form theme: `shared/form/theme.html.twig`; refusals added by the app are translation keys. UI strings go through the translator (`translations/messages+intl-icu.en.yaml`, emails in `email+intl-icu.en.yaml`).
+- The authenticated layout sets `turbo-cache-control: no-cache` and `turbo-prefetch: false`. Never a `style` attribute in templates (CSP, `NoInlineStyleTest`), kit components included (CSS variables become `[--var:value]` classes).
 
 ## Healthcheck
 
@@ -78,6 +82,18 @@ Wiring: `composer.json` PSR-4 (one entry per context), `config/services.yaml` (o
 - **Rate limiting**: always `symfony/rate-limiter` through the `AttemptThrottle` port (never `RateLimiterFactory` in Application). States in `rate_limiter_state` via `DbalRateLimiterStorage`, on the dedicated autocommit `rate_limiter` connection (`lock_timeout 2s`, `statement_timeout 5s`), **fail-closed** (`RateLimiterStorageUnavailable`) and never retried, because the same connection holds the advisory locks (`ExclusiveSection`). Keys are HMAC-hashed. `make rate-limiter-prune` deletes expired states.
 - **Secrets** (fail-closed outside dev/test): `APP_SECRET` (≥ 32 bytes), `APP_ENCRYPTION_KEYS` (`kid=base64,…`, AES-256-GCM `SecretBox`, first key encrypts), `APP_HASH_PEPPER` (same format, `TokenHasher` HMAC-SHA-256). Values only in `.env.dev` / `.env.test`.
 - **HTTP headers** (`SecurityHeadersSubscriber`): strict CSP with a per-request nonce (`csp_nonce()` in Twig, `CspNonce`), no `'unsafe-inline'`, so **no `style=` attribute and no inline script without nonce** in templates; `Referrer-Policy: no-referrer`, `nosniff`, `X-Frame-Options: DENY`, HSTS outside dev, server-generated `X-Request-Id`. Trusted proxies come from `SYMFONY_TRUSTED_PROXIES` (empty by default).
+
+## Identity (authentication)
+
+- Login: email + password (`form_login`, CSRF id `authenticate`, `login_throttling` through `LoginRateLimiter`: account + IP 5 / 15 min, IP 50 / 15 min, a success resets the account + IP window only), then **always a second factor** (scheb/2fa): TOTP when active (`TotpProvider`), else an email code (`EmailCodeProvider`), backup codes through `BackupCodeManager` (only `xxxxx-xxxxx` inputs are dispatched). Trusted device: 30 days, `__Host-depverify_trusted`, revoked by `trustedDeviceVersion`. The providers only dispatch `VerifyTotp` / `VerifyEmailLoginCode` / `UseBackupCode` and read `GetCodeVerificationOutcome`: the single algorithm is `Identity\Application\SecondFactor\SecondFactorAttempt` (User lock, IP exclusive section, peek, aggregate, consume on `Rejected` only, one audit entry).
+- `SecurityUser` is a snapshot whose session form holds id, email, authVersion and super admin flag only. Bumping `SessionVersions` (every credential or second factor change, deactivation, super admin revocation) logs every session out.
+- scheb redirects to the target page first; the 2FA form comes at the next request. The first-factor post-authentication event is suppressed by scheb: account checks are in `checkPreAuth` (with a dummy hash for equal timing).
+- Sessions in PostgreSQL (`sessions`, `PdoSessionHandler` on a native PDO DSN with session timeouts, `__Host-depverify_session`, Secure: functional tests use HTTPS). 30 min idle / 12 h absolute in `SessionLifetimeSubscriber`. Sensitive actions carry `#[RequiresRecentAuthentication(returnRoute: …)]` (10 min).
+- Emails leave after the response (`DeferredMailQueue`, `mailer.message_bus: false`); in dev they land in Mailpit (http://localhost:8025, `make mailpit`).
+- `access_control`: several roles in one rule mean **any** of them; `/admin` requires `ROLE_SUPER_ADMIN`, which only a fully authenticated token carries.
+- First account: `make super-admin email=you@example.com` (runtime role, hidden password or `--password-file` with mode 600).
+- Permissions: `InstancePermissionChecker` (super admin: everything; others: instance permissions such as `account.login`); team and project scopes are denied until Organization.
+- The email code exclusion constraint (`identity_email_login_code_one_active`, deferred) is invisible to Doctrine: `make db-diff` proposes to drop its index, delete that line.
 
 ## FrankenPHP worker mode
 
@@ -102,6 +118,7 @@ make ux r=dialog / make icon i=lucide:bell
 make db-diff / make db-migrate          # migrations are organized by year: migrations/<YYYY>/Version….php (namespace DoctrineMigrations)
 make db-dump DUMP=backup.sql / make db-import DUMP=backup.sql   # pg_dump / psql via .docker/database/scripts, files in var/
 make db-roles / make audit-partitions / make rate-limiter-prune
+make super-admin email=you@example.com / make mailpit
 make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, user depverify_app or depverify_owner, database app)
 ```
 
@@ -122,5 +139,8 @@ Database: **PostgreSQL 18**, kept on purpose over MariaDB. The design relies on 
 
 - `config/bundles.php` registers `TalesFromADevTwigExtraTailwindBundle` by hand: no Flex recipe exists, and the shadcn kit needs its `tailwind_classes` filter.
 - The shadcn kit's Tailwind utilities are **vendored** in `assets/styles/vendor/shadcn-tailwind.css` (from `shadcn@4.23.0`, MIT). Do **not** install the `shadcn` npm package, even if `make ux` suggests `npm install shadcn`: it is a whole CLI whose dependencies carried vulnerabilities (deepmerge, minimatch) for a 16 KB stylesheet. Refresh the vendored file by hand when the kit needs it.
-- Not installed yet (add with the feature that needs them): Security, Scheduler, Mailer / Notifier, WebAuthn, async Messenger transport.
+- Not installed yet (add with the feature that needs them): Scheduler, Notifier, WebAuthn (passkeys, step 1b), async Messenger transport, ExpressionLanguage.
+- The kit's `input-otp` is not used: scheb expects a single code field and backup codes are alphanumeric (one `one-time-code` input instead).
+- Infection runs with `--with-uncovered`: uncovered Domain / Application code counts as escaped. Doctrine mapping attributes are excluded (`global-ignoreSourceCodeByRegex`). Methods returning an outcome while changing state carry `@phpstan-impure`.
+- Identity test doubles live in `tests/Identity/Support` (in-memory repositories, scripted throttle…); functional tests of the flows extend `Tests\Support\IdentityWebTestCase` (HTTPS client, limiter states emptied) and create accounts with `Tests\Support\Accounts`. The test kernel reboots between requests: change data through the client's container before the request, never on an entity loaded earlier.
 - Tests: integration tests run inside a DAMA transaction on the `default` connection; the `rate_limiter` connection is not static (it must see committed data). Concurrency and timeout tests commit through `tests/Support/OwnerConnection` and clean up explicitly. The test logger is a `NullLogger`: Infection aborts on any stderr output.

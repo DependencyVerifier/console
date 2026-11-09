@@ -1,0 +1,51 @@
+{% extends 'shared/layout/auth.html.twig' %}
+
+{% block title %}{{ 'identity.two_factor.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block main %}
+    <div class="flex flex-col gap-6">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.two_factor.title'|trans }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ (email_code ? 'identity.two_factor.email_description' : 'identity.two_factor.totp_description')|trans }}</p>
+        </div>
+
+        {% if error_key %}
+            <twig:Alert variant="{{ error_key == 'identity.two_factor.code_resent' ? 'default' : 'destructive' }}">
+                <twig:ux:icon name="lucide:info" />
+                <twig:Alert:Description>{{ error_key|trans }}</twig:Alert:Description>
+            </twig:Alert>
+        {% endif %}
+
+        <form method="post" action="{{ checkPathUrl ? checkPathUrl : path(checkPathRoute) }}" class="flex flex-col gap-6" data-turbo="false">
+            <input type="hidden" name="{{ csrfParameterName }}" value="{{ csrf_token(csrfTokenId) }}">
+            <twig:Field:Group>
+                <twig:Field>
+                    <twig:Field:Label for="auth-code">{{ 'identity.field.code'|trans }}</twig:Field:Label>
+                    <twig:Input id="auth-code" type="text" name="{{ authCodeParameterName }}" autocomplete="one-time-code" inputmode="{{ email_code ? 'numeric' : 'text' }}" required autofocus />
+                    {% if not email_code %}
+                        <p class="text-sm text-muted-foreground">{{ 'identity.two_factor.backup_hint'|trans }}</p>
+                    {% endif %}
+                </twig:Field>
+                {% if displayTrustedOption %}
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="{{ trustedParameterName }}" value="1" class="size-4 rounded border-input">
+                        {{ 'identity.two_factor.trust_device'|trans }}
+                    </label>
+                {% endif %}
+                <twig:Button type="submit" class="w-full">{{ 'identity.two_factor.submit'|trans }}</twig:Button>
+            </twig:Field:Group>
+        </form>
+
+        {% if email_code %}
+            <form method="post" action="{{ path('identity_two_factor_resend') }}" data-turbo="false">
+                <input type="hidden" name="action[_token]" value="{{ csrf_token('two_factor_resend') }}">
+                <twig:Button type="submit" variant="link" class="w-full">{{ 'identity.two_factor.resend'|trans }}</twig:Button>
+            </form>
+        {% endif %}
+
+        <form method="post" action="{{ logoutPath }}" data-turbo="false">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+            <twig:Button type="submit" variant="ghost" class="w-full">{{ 'identity.two_factor.cancel'|trans }}</twig:Button>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'shared/layout/auth.html.twig' %}
+{% form_theme form 'shared/form/theme.html.twig' %}
+
+{% block title %}{{ 'identity.reauthenticate.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block main %}
+    <div class="flex flex-col gap-6">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.reauthenticate.title'|trans }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ 'identity.reauthenticate.description'|trans }}</p>
+        </div>
+        {{ form_start(form, {attr: {class: 'flex flex-col gap-6', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
+            {{ form_errors(form) }}
+            {{ form_row(form.password) }}
+            {% if with_code %}
+                {{ form_row(form.code) }}
+                <p class="text-sm text-muted-foreground">{{ (totp ? 'identity.reauthenticate.totp_hint' : 'identity.reauthenticate.email_hint')|trans }}</p>
+            {% endif %}
+            <twig:Button type="submit" class="w-full">{{ 'identity.reauthenticate.submit'|trans }}</twig:Button>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

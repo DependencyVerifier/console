@@ -1,0 +1,79 @@
+{% extends 'shared/layout/app.html.twig' %}
+{% form_theme password_form 'shared/form/theme.html.twig' %}
+{% form_theme totp_confirm_form 'shared/form/theme.html.twig' %}
+
+{% block title %}{{ 'identity.account.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ 'identity.account.title'|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    {{ include('shared/_flashes.html.twig') }}
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.account.title'|trans }}</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ profile.email }}</p>
+    </div>
+
+    {% if profile.superAdmin and not profile.totpActive %}
+        <twig:Alert>
+            <twig:ux:icon name="lucide:shield-alert" />
+            <twig:Alert:Title>{{ 'identity.account.totp_recommended.title'|trans }}</twig:Alert:Title>
+            <twig:Alert:Description>{{ 'identity.account.totp_recommended.description'|trans }}</twig:Alert:Description>
+        </twig:Alert>
+    {% endif %}
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <twig:Card>
+            <twig:Card:Header>
+                <twig:Card:Title>{{ 'identity.account.password.title'|trans }}</twig:Card:Title>
+                <twig:Card:Description>{{ 'identity.account.password.description'|trans }}</twig:Card:Description>
+            </twig:Card:Header>
+            <twig:Card:Content>
+                {{ form_start(password_form, {action: path('identity_account_password'), attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
+                    {{ form_row(password_form.password) }}
+                    <twig:Button type="submit">{{ 'identity.account.password.submit'|trans }}</twig:Button>
+                {{ form_end(password_form) }}
+            </twig:Card:Content>
+        </twig:Card>
+
+        <twig:Card>
+            <twig:Card:Header>
+                <twig:Card:Title>{{ 'identity.account.totp.title'|trans }}</twig:Card:Title>
+                <twig:Card:Description>
+                    {{ (profile.totpActive ? 'identity.account.totp.active' : 'identity.account.totp.inactive')|trans }}
+                </twig:Card:Description>
+            </twig:Card:Header>
+            <twig:Card:Content class="flex flex-col gap-4">
+                {% if profile.totpActive %}
+                    <p class="text-sm">{{ 'identity.account.backup_codes.remaining'|trans({count: profile.remainingBackupCodes}) }}</p>
+                    <div class="flex flex-wrap gap-2">
+                        {{ form_start(backup_codes_form, {action: path('identity_account_backup_codes'), attr: {'data-turbo': 'false'}}) }}
+                            <twig:Button type="submit" variant="outline">{{ 'identity.account.backup_codes.regenerate'|trans }}</twig:Button>
+                        {{ form_end(backup_codes_form) }}
+                        {{ form_start(totp_disable_form, {action: path('identity_account_totp_disable'), attr: {'data-turbo': 'false'}}) }}
+                            <twig:Button type="submit" variant="destructive">{{ 'identity.account.totp.disable'|trans }}</twig:Button>
+                        {{ form_end(totp_disable_form) }}
+                    </div>
+                {% elseif provisioning %}
+                    <p class="text-sm">{{ 'identity.account.totp.scan'|trans }}</p>
+                    <div class="w-60 rounded-lg bg-white p-2">{{ provisioning.qr|raw }}</div>
+                    <p class="text-sm text-muted-foreground">{{ 'identity.account.totp.manual'|trans }}</p>
+                    <code class="w-fit rounded bg-muted px-2 py-1 font-mono text-sm break-all">{{ provisioning.secret }}</code>
+                    {{ form_start(totp_confirm_form, {action: path('identity_account_totp_confirm'), attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
+                        {{ form_row(totp_confirm_form.code) }}
+                        <twig:Button type="submit">{{ 'identity.account.totp.confirm'|trans }}</twig:Button>
+                    {{ form_end(totp_confirm_form) }}
+                {% else %}
+                    {{ form_start(totp_start_form, {action: path('identity_account_totp_start'), attr: {'data-turbo': 'false'}}) }}
+                        <twig:Button type="submit">{{ 'identity.account.totp.start'|trans }}</twig:Button>
+                    {{ form_end(totp_start_form) }}
+                {% endif %}
+            </twig:Card:Content>
+        </twig:Card>
+    </div>
+{% endblock %}

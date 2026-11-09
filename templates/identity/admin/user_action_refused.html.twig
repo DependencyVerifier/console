@@ -1,0 +1,10 @@
+{#- Refusal of a user list button, rendered inside the list frame with the status of the refusal table. -#}
+<turbo-frame id="{{ frame_id }}">
+    <twig:Alert variant="destructive">
+        <twig:ux:icon name="lucide:circle-alert" />
+        <twig:Alert:Description>
+            {%- for error in form.vars.errors -%}{{ error.message|trans }} {% endfor -%}
+            <a href="{{ path('identity_admin_users') }}" data-turbo-frame="_top" class="underline underline-offset-4">{{ 'frame.retry'|trans }}</a>
+        </twig:Alert:Description>
+    </twig:Alert>
+</turbo-frame>

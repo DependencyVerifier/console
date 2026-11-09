@@ -1,4 +1,5 @@
-# Accept the CSRF token sent in a header, as Turbo form submissions do
+# CSRF tokens are stateful and checked by the Form component (including field-less buttons, ActionButtonType):
+# the header relay of csrf_protection_controller.ts (check_header) is not used.
 framework:
     csrf_protection:
-        check_header: true
+        check_header: false

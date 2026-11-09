@@ -1,0 +1,8 @@
+# Stateful CSRF tokens (session), one token id per form / action. SameSite=Strict alone does not protect against a
+# sibling subdomain.
+framework:
+    form:
+        csrf_protection:
+            enabled: true
+    csrf_protection:
+        enabled: true

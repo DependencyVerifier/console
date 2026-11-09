@@ -35,24 +35,24 @@
                 </twig:DropdownMenu:Label>
                 <twig:DropdownMenu:Separator />
                 <twig:DropdownMenu:Group>
-                    <twig:DropdownMenu:Item>
-                        <twig:ux:icon name="lucide:user-round" />
-                        Account
-                    </twig:DropdownMenu:Item>
-                    <twig:DropdownMenu:Item>
-                        <twig:ux:icon name="lucide:key-round" />
-                        Security &amp; passkeys
-                    </twig:DropdownMenu:Item>
-                    <twig:DropdownMenu:Item>
-                        <twig:ux:icon name="lucide:bell" />
-                        Notifications
-                    </twig:DropdownMenu:Item>
+                    <a href="{{ path('identity_account_security') }}" class="contents">
+                        <twig:DropdownMenu:Item>
+                            <twig:ux:icon name="lucide:key-round" />
+                            {{ 'nav.account_security'|trans }}
+                        </twig:DropdownMenu:Item>
+                    </a>
                 </twig:DropdownMenu:Group>
                 <twig:DropdownMenu:Separator />
-                <twig:DropdownMenu:Item>
-                    <twig:ux:icon name="lucide:log-out" />
-                    Log out
-                </twig:DropdownMenu:Item>
+                {#- Logout is a POST with a CSRF token (it also purges Turbo's page cache). -#}
+                <form method="post" action="{{ path('identity_logout') }}" data-turbo="false">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                    <button type="submit" class="w-full text-start">
+                        <twig:DropdownMenu:Item>
+                            <twig:ux:icon name="lucide:log-out" />
+                            {{ 'nav.logout'|trans }}
+                        </twig:DropdownMenu:Item>
+                    </button>
+                </form>
             </twig:DropdownMenu:Content>
         </twig:DropdownMenu>
     </twig:Sidebar:MenuItem>

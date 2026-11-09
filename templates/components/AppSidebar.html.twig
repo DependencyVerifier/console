@@ -2,26 +2,17 @@
     ## string Key of the active navigation entry.
     active = 'overview'
 -%}
-{#- Demo data until the domain exists (teams, current user). -#}
+{#- Teams arrive with Organization; until then the switcher is empty (it renders nothing without teams). -#}
+{%- set user = app.user -%}
 {%- set data = {
-    user: {name: 'Jane Doe', email: 'jane@example.com'},
-    teams: [
-        {name: 'Personal projects', logo: 'lucide:radar', role: 'Team admin'},
-        {name: 'Hosted for others', logo: 'lucide:server', role: 'Team member'},
-    ],
+    user: {name: user ? user.userIdentifier|split('@')|first : '', email: user ? user.userIdentifier : ''},
+    teams: [],
     navMain: [
-        {key: 'overview', title: 'Overview', url: path('shared_preview_host'), icon: 'lucide:layout-dashboard'},
-        {key: 'projects', title: 'Projects', url: '#', icon: 'lucide:layers'},
-        {key: 'hosts', title: 'Hosts', url: '#', icon: 'lucide:server'},
-        {key: 'findings', title: 'Findings', url: '#', icon: 'lucide:shield-alert'},
-        {key: 'agents', title: 'Agents', url: '#', icon: 'lucide:radio-tower'},
-        {key: 'tokens', title: 'Enrollment tokens', url: '#', icon: 'lucide:key-round'},
-        {key: 'notifications', title: 'Notifications', url: '#', icon: 'lucide:bell'},
+        {key: 'overview', title: 'nav.overview'|trans, url: path('shared_home'), icon: 'lucide:layout-dashboard'},
     ],
-    navSecondary: [
-        {key: 'help', title: 'Help', url: '#', icon: 'lucide:circle-help'},
-        {key: 'admin', title: 'Administration', url: '#', icon: 'lucide:shield-check'},
-    ],
+    navSecondary: is_granted('ROLE_SUPER_ADMIN') ? [
+        {key: 'admin', title: 'nav.administration'|trans, url: path('identity_admin_users'), icon: 'lucide:shield-check'},
+    ] : [],
 } -%}
 <twig:Sidebar {{ ...attributes.defaults({collapsible: 'icon'}) }}>
     <twig:Sidebar:Header>

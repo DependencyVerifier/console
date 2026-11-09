@@ -16,6 +16,7 @@
         {# Per-request CSP nonce: Turbo reads the first meta (progress bar style), Vite's dev client the second. #}
         <meta name="csp-nonce" content="{{ csp_nonce() }}">
         <meta property="csp-nonce" nonce="{{ csp_nonce() }}">
+        {% block head_meta %}{% endblock %}
         {# Apply the theme before first paint (see assets/controllers/theme_controller.ts). #}
         <script nonce="{{ csp_nonce() }}">
             (() => {

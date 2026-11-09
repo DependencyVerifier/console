@@ -1,0 +1,6 @@
+{#- Decision 26: no action link. -#}
+{% extends 'email/layout.html.twig' %}
+{% block content %}
+    <p>{{ ('identity.alert.' ~ alert)|trans({}, 'email') }}</p>
+    <p style="color:#71717a">{{ 'identity.alert.not_you'|trans({}, 'email') }}</p>
+{% endblock %}

@@ -181,4 +181,14 @@ final class ValueObjectsTest extends TestCase
         self::assertSame($at, $entry->occurredAt);
         self::assertSame('a.b', $entry->action->name);
     }
+
+    #[Test]
+    public function it_should_build_a_system_actor_without_id(): void
+    {
+        $system = Actor::system();
+
+        self::assertSame(ActorType::System, $system->type);
+        self::assertNull($system->idForStorage());
+        self::assertFalse($system->isUser());
+    }
 }

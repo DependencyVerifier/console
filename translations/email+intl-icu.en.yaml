@@ -1,0 +1,24 @@
+identity:
+    not_you: "If you did not try to sign in, someone knows your password: change it, then contact the administrator of the instance."
+    login_code:
+        subject: "Your DependencyVerifier sign-in code"
+        intro: "Use this code to finish signing in:"
+        validity: "It is valid for {minutes} minutes and {attempts} attempts."
+    password_reset:
+        subject: "Reset your DependencyVerifier password"
+        intro: "Someone asked to reset the password of this account."
+        action: "Choose a new password"
+        validity: "This link works once, for {minutes} minutes. The second factor is still required at the next sign-in."
+        ignore: "If you did not ask for it, ignore this email: your password does not change."
+    alert:
+        subject: "Security change on your DependencyVerifier account"
+        not_you: "If this was not you, contact the administrator of the instance."
+        password_changed: "The password of your account was changed. Every session was signed out."
+        totp_enabled: "An authenticator app is now the second factor of your account."
+        totp_disabled: "The authenticator app was removed from your account: the email code is the second factor again."
+        backup_codes_regenerated: "New backup codes were generated for your account; the previous ones no longer work."
+        second_factor_reset: "An administrator reset the second factor of your account."
+        super_admin_granted: "Your account is now a super admin of the instance."
+        super_admin_revoked: "Your account is no longer a super admin of the instance."
+        second_factor_throttled: "Your password was entered correctly, but the second factor failed many times: the second factor is blocked for 24 hours. Change your password, it stops the attack."
+        trusted_device_registered: "A new device was trusted for 30 days: the second factor is skipped on it."

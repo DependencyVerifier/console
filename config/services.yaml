@@ -29,10 +29,16 @@ services:
         class: Symfony\Component\Lock\LockFactory
         arguments: ['@app.rate_limiter.lock_store']
 
-    # Ports implemented in Shared (Identity decorates CurrentActor once the firewall exists).
-    Shared\Application\Security\CurrentActor: '@Shared\Infrastructure\Security\RuntimeCurrentActor'
-    # Fail-closed until Organization provides the PermissionResolver.
-    Shared\Application\Authorization\PermissionChecker: '@Shared\Infrastructure\Authorization\DenyAllPermissionChecker'
+    # Sessions in PostgreSQL through a native PDO DSN (Identity\Infrastructure\Session).
+    app.session_handler:
+        class: Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler
+        factory: ['Identity\Infrastructure\Session\DatabaseSessionHandlerFactory', 'create']
+        arguments: ['%env(DATABASE_URL)%']
+
+    # The security token's user (also during the second factor), else cli / anonymous.
+    Shared\Application\Security\CurrentActor: '@Identity\Infrastructure\Security\AuthenticatedCurrentActor'
+    # Instance permissions (super admin, account.login); team and project scopes are denied until Organization.
+    Shared\Application\Authorization\PermissionChecker: '@Identity\Infrastructure\Security\InstancePermissionChecker'
 
     Shared\:
         resource: '../src/Shared/'

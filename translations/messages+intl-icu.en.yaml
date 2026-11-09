@@ -1,0 +1,151 @@
+nav:
+    overview: Overview
+    administration: Administration
+    account_security: Account security
+    logout: Log out
+home:
+    title: Overview
+    description: Teams, projects and hosts arrive with the next steps.
+    admin:
+        title: Instance administration
+        description: Accounts, second factor resets and super admins.
+action:
+    done: Done.
+    retry: Try again
+    back: Back
+frame:
+    loading: Loading
+    retry: Retry
+    error:
+        '403': You are not allowed to see this section.
+        '404': This section does not exist.
+        '422': This section could not be loaded.
+        '500': Couldn't load this section.
+        '503': The service is temporarily unavailable.
+csrf:
+    title: Request refused
+    description: The form expired or was not sent from this site. Go back, reload the page and try again.
+refusal:
+    forbidden: You are not allowed to do this.
+    not_found: This item does not exist.
+    throttled: Too many attempts. Try again later.
+    conflict: This was already done.
+    unavailable: The service is temporarily unavailable. Try again in a moment.
+    error: Something went wrong. Try again.
+rule:
+    invalid_email_address: This email address is not valid.
+    password_policy: "The password needs 12 to 4096 characters and must not contain your email address."
+    email_already_registered: An account already uses this email address.
+    invalid_second_factor_transition: This change is not possible with the current second factor.
+    super_admin_revocation_forbidden: "The instance must keep an active super admin, and you cannot revoke yourself."
+    self_management_forbidden: You cannot deactivate your own account.
+    password_reset_link_invalid: This link is expired or was already used.
+identity:
+    back_to_login: Back to sign in
+    field:
+        email: Email
+        password: Password
+        new_password: New password
+        repeat_password: Repeat the password
+        code: Code
+    password:
+        mismatch: The passwords do not match.
+        rules: "12 to 4096 characters, without your email address. A passphrase works well."
+    login:
+        title: Sign in
+        description: Enter your account details to continue.
+        forgot: Forgot password?
+        submit: Sign in
+        invitation_only: Accounts are created by invitation. Ask your team administrator for access.
+        error:
+            invalid_credentials: Invalid email or password.
+            throttled: Too many attempts. Try again later.
+    two_factor:
+        title: Second factor
+        email_description: We sent a 6-digit code to your email address.
+        totp_description: Enter the code shown by your authenticator app.
+        backup_hint: "Lost your device? Enter one of your backup codes (xxxxx-xxxxx)."
+        trust_device: Trust this device for 30 days
+        submit: Verify
+        resend: Resend code
+        cancel: Cancel and sign out
+        code_resent: A new code was sent.
+        error:
+            invalid_code: Invalid code.
+    reauthenticate:
+        title: Confirm it's you
+        description: This action is sensitive. Enter your password, then your second factor.
+        totp_hint: Code from your authenticator app, or a backup code.
+        email_hint: We sent a code to your email address.
+        submit: Confirm
+        error:
+            invalid: Invalid password or code.
+    password_forgot:
+        title: Forgot password
+        description: Enter your email address. If an account uses it, you will receive a link.
+        submit: Send the link
+        sent_title: Check your email
+        sent: If an account uses this address, a link to reset its password is on its way. It works once, for 30 minutes.
+    password_reset:
+        title: Choose a new password
+        submit: Save the password
+        done: Your password was changed. Sign in with it.
+        invalid_title: Link expired
+        invalid: This link is expired, was already used or was replaced by a newer one.
+        ask_again: Ask for a new link
+    account:
+        title: Account security
+        totp_recommended:
+            title: An authenticator app is recommended
+            description: As a super admin, your mailbox is your only second factor until you enable TOTP.
+        password:
+            title: Password
+            description: Changing it signs every session out, this one included.
+            submit: Change the password
+            done: Password changed. Sign in again.
+        totp:
+            title: Authenticator app (TOTP)
+            active: Active. Email codes are no longer accepted.
+            inactive: Not configured. Your second factor is a code sent by email.
+            start: Set up an authenticator app
+            started: Scan the QR code, then enter the first code.
+            scan: Scan this QR code with your authenticator app.
+            manual: Or enter this key by hand.
+            confirm: Confirm
+            disable: Turn off
+            disabled: Authenticator app removed. Sign in again.
+            enabled: The authenticator app is active. Keep these backup codes now.
+        backup_codes:
+            title: Backup codes
+            remaining: "{count} backup codes left."
+            regenerate: Generate new backup codes
+            regenerated: The previous backup codes no longer work.
+            once: These codes are shown only once. Each works a single time. Keep them somewhere safe.
+            signed_out: For your security, every session was signed out. Sign in again with your new second factor.
+    admin:
+        users:
+            done:
+                reset_second_factor: Second factor reset.
+                deactivate: Account deactivated.
+                reactivate: Account reactivated.
+                grant_super_admin: Super admin granted.
+                revoke_super_admin: Super admin revoked.
+admin:
+    title: Administration
+    users:
+        title: Users
+        description: Accounts of the instance. Accounts are deactivated, never deleted.
+        empty: No account yet.
+        status: Status
+        second_factor: Second factor
+        actions: Actions
+        super_admin: Super admin
+        active: Active
+        disabled: Deactivated
+        totp: Authenticator app
+        email_code: Email code
+        reset_second_factor: Reset 2FA
+        deactivate: Deactivate
+        reactivate: Reactivate
+        grant_super_admin: Make super admin
+        revoke_super_admin: Revoke super admin

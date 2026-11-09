@@ -161,6 +161,15 @@ db-import: ## Replace the dev database with var/DUMP, example: make db-import DU
 	@$(DCE) database reset $(DUMP)
 	@echo '✅ var/$(DUMP) imported.'
 
+.PHONY: mailpit
+mailpit: ## Show how to reach Mailpit (dev mail catcher)
+	@echo "Mailpit: http://localhost:8025 (SMTP mailpit:1025 inside the Docker network)"
+
+.PHONY: super-admin
+super-admin: ## Create a super admin (runtime role, password typed hidden), example: make super-admin email=you@example.com
+	@:$(if $(email),,$(error Usage: make super-admin email=<address>))
+	@$(DC) exec php bin/console app:user:create-super-admin $(email)
+
 .PHONY: adminer
 adminer: ## Show how to reach Adminer (dev database UI)
 	@echo "Adminer: http://localhost:8080 (system PostgreSQL, server database, database app). Roles: depverify_app / !ChangeMeApp! (runtime), depverify_owner / !ChangeMeOwner! (owner), app / !ChangeMe! (superuser, init only)"
@@ -184,7 +193,7 @@ endif
 
 .PHONY: infection
 infection: db-test-prepare ## Run mutation tests on Domain/Application layers (100% MSI required)
-	@$(DC) exec -e APP_ENV=test -e XDEBUG_MODE=coverage -e TEST_OWNER_DATABASE_URL="$$DATABASE_MIGRATIONS_URL" php vendor/bin/infection --min-msi=100 --min-covered-msi=100 --threads=max
+	@$(DC) exec -e APP_ENV=test -e XDEBUG_MODE=coverage -e TEST_OWNER_DATABASE_URL="$$DATABASE_MIGRATIONS_URL" php vendor/bin/infection --with-uncovered --min-msi=100 --min-covered-msi=100 --threads=max
 
 .PHONY: phpcs
 phpcs: ## Check PHP code style (dry-run)

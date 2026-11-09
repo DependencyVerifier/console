@@ -15,6 +15,7 @@
 {%- set _sidebar_provider_id = id ?? ('sidebar-provider-' ~ random()) -%}
 {%- do provide('sidebar.id', _sidebar_provider_id) -%}
 {%- do provide('sidebar.defaultOpen', defaultOpen) -%}
+{#- CSS variables as classes, not a style attribute: the CSP has no 'unsafe-inline' for styles. -#}
 <div
     id="{{ _sidebar_provider_id }}"
     data-slot="sidebar-provider"
@@ -25,10 +26,9 @@
     data-sidebar-keyboard-shortcut-value="{{ keyboardShortcut }}"
     data-state="{{ defaultOpen ? 'expanded' : 'collapsed' }}"
     {{ attributes.defaults({
-        class: 'group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar'|tailwind_classes,
+        class: 'group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar [--sidebar-width:16rem] [--sidebar-width-icon:3rem] [--sidebar-width-mobile:18rem]'|tailwind_classes,
         'data-controller': 'sidebar',
         'data-action': 'keydown@window->sidebar#handleKeydown',
-        style: '--sidebar-width: 16rem; --sidebar-width-icon: 3rem; --sidebar-width-mobile: 18rem;',
     }) }}
 >
     {##- Typically a `Sidebar` and a `Sidebar:Inset` (with one or more `Sidebar:Trigger` inside). -#}

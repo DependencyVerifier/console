@@ -1,0 +1,8 @@
+{%- for type, messages in app.flashes -%}
+    {%- for message in messages -%}
+        <twig:Alert variant="{{ type == 'error' ? 'destructive' : 'default' }}">
+            <twig:ux:icon name="{{ type == 'error' ? 'lucide:circle-alert' : 'lucide:circle-check' }}" />
+            <twig:Alert:Description>{{ message|trans }}</twig:Alert:Description>
+        </twig:Alert>
+    {%- endfor -%}
+{%- endfor -%}

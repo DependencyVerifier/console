@@ -27,9 +27,10 @@ framework:
             <<: *limiter
             limit: 20
             interval: '1 hour'
+        # One first code at login plus three resends.
         email_code_resend:
             <<: *limiter
-            limit: 3
+            limit: 4
             interval: '15 minutes'
         invitation_resend:
             <<: *limiter

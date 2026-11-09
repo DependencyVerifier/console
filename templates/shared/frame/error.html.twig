@@ -1,0 +1,12 @@
+{#- Frame refused or failed: rendered by the server (translated), with a Retry link reloading the frame. -#}
+<turbo-frame id="{{ id }}">
+    <twig:Alert variant="destructive">
+        <twig:ux:icon name="lucide:circle-alert" />
+        <twig:Alert:Title>{{ ('frame.error.' ~ (status in [403, 404, 422, 503] ? status : 500))|trans }}</twig:Alert:Title>
+        <twig:Alert:Description>
+            {%- if status >= 500 -%}
+                <button type="button" class="underline underline-offset-4" data-action="frame-state#retry">{{ 'frame.retry'|trans }}</button>
+            {%- endif -%}
+        </twig:Alert:Description>
+    </twig:Alert>
+</turbo-frame>

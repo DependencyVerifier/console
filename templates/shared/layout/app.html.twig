@@ -1,5 +1,12 @@
 {% extends 'base.html.twig' %}
 
+{#- Authenticated area: Turbo's page cache ignores Cache-Control, so a back navigation must never show a page
+    without asking the server again; no prefetch on hover. -#}
+{% block head_meta %}
+    <meta name="turbo-cache-control" content="no-cache">
+    <meta name="turbo-prefetch" content="false">
+{% endblock %}
+
 {% block body %}
     {#- Page blocks are rendered outside the component tags: Twig components reserve block names inside their content. -#}
     {%- set _breadcrumb %}{% block breadcrumb %}{% endblock %}{% endset -%}

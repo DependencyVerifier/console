@@ -1,0 +1,33 @@
+{% extends 'shared/layout/app.html.twig' %}
+
+{% block title %}{{ 'home.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ 'home.title'|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    {{ include('shared/_flashes.html.twig') }}
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">{{ 'home.title'|trans }}</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ 'home.description'|trans }}</p>
+    </div>
+    {% if is_granted('ROLE_SUPER_ADMIN') %}
+        <twig:Card>
+            <twig:Card:Header>
+                <twig:Card:Title>{{ 'home.admin.title'|trans }}</twig:Card:Title>
+                <twig:Card:Description>{{ 'home.admin.description'|trans }}</twig:Card:Description>
+            </twig:Card:Header>
+            <twig:Card:Content>
+                <twig:Button as="a" href="{{ path('identity_admin_users') }}" variant="outline">
+                    <twig:ux:icon name="lucide:users" />
+                    {{ 'admin.users.title'|trans }}
+                </twig:Button>
+            </twig:Card:Content>
+        </twig:Card>
+    {% endif %}
+{% endblock %}

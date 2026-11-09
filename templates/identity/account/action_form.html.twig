@@ -1,0 +1,21 @@
+{#- A refused account action, rendered on its own (the forms post without Turbo). -#}
+{% extends 'shared/layout/app.html.twig' %}
+{% form_theme form 'shared/form/theme.html.twig' %}
+
+{% block title %}{{ title_key|trans }} · DependencyVerifier{% endblock %}
+
+{% block main %}
+    <div class="flex max-w-xl flex-col gap-6" id="{{ frame_id|default('account-security') }}">
+        <h1 class="text-2xl font-semibold tracking-tight">{{ title_key|trans }}</h1>
+        {{ form_start(form, {action: path(action_route), attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
+            {{ form_errors(form) }}
+            {% for child in form %}
+                {% if child.vars.name != '_token' %}{{ form_row(child) }}{% endif %}
+            {% endfor %}
+            <div class="flex gap-2">
+                <twig:Button type="submit">{{ 'action.retry'|trans }}</twig:Button>
+                <twig:Button as="a" variant="ghost" href="{{ path('identity_account_security') }}">{{ 'action.back'|trans }}</twig:Button>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

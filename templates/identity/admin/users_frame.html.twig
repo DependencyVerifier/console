@@ -1,0 +1,43 @@
+{%- if users is empty -%}
+    <p class="text-sm text-muted-foreground">{{ 'admin.users.empty'|trans }}</p>
+{%- else -%}
+    <twig:Table>
+        <twig:Table:Header>
+            <twig:Table:Row>
+                <twig:Table:Head>{{ 'identity.field.email'|trans }}</twig:Table:Head>
+                <twig:Table:Head>{{ 'admin.users.status'|trans }}</twig:Table:Head>
+                <twig:Table:Head>{{ 'admin.users.second_factor'|trans }}</twig:Table:Head>
+                <twig:Table:Head class="text-end">{{ 'admin.users.actions'|trans }}</twig:Table:Head>
+            </twig:Table:Row>
+        </twig:Table:Header>
+        <twig:Table:Body>
+            {%- for user in users -%}
+                <twig:Table:Row>
+                    <twig:Table:Cell class="font-medium">
+                        {{ user.email }}
+                        {% if user.superAdmin %}<twig:Badge variant="secondary" class="ms-1">{{ 'admin.users.super_admin'|trans }}</twig:Badge>{% endif %}
+                    </twig:Table:Cell>
+                    <twig:Table:Cell>{{ (user.active ? 'admin.users.active' : 'admin.users.disabled')|trans }}</twig:Table:Cell>
+                    <twig:Table:Cell>{{ (user.totpActive ? 'admin.users.totp' : 'admin.users.email_code')|trans }}</twig:Table:Cell>
+                    <twig:Table:Cell>
+                        {#- Macros are imported inside the component block: blocks of Twig components are separate templates. -#}
+                        {%- import 'identity/admin/_actions.html.twig' as admin -%}
+                        <div class="flex flex-wrap justify-end gap-1">
+                            {{ admin.action('identity_admin_user_reset_second_factor', 'reset_second_factor', user, 'admin.users.reset_second_factor', 'outline') }}
+                            {% if user.active %}
+                                {{ admin.action('identity_admin_user_deactivate', 'deactivate', user, 'admin.users.deactivate', 'destructive') }}
+                            {% else %}
+                                {{ admin.action('identity_admin_user_reactivate', 'reactivate', user, 'admin.users.reactivate', 'outline') }}
+                            {% endif %}
+                            {% if user.superAdmin %}
+                                {{ admin.action('identity_admin_user_revoke_super_admin', 'revoke_super_admin', user, 'admin.users.revoke_super_admin', 'ghost') }}
+                            {% else %}
+                                {{ admin.action('identity_admin_user_grant_super_admin', 'grant_super_admin', user, 'admin.users.grant_super_admin', 'ghost') }}
+                            {% endif %}
+                        </div>
+                    </twig:Table:Cell>
+                </twig:Table:Row>
+            {%- endfor -%}
+        </twig:Table:Body>
+    </twig:Table>
+{%- endif -%}

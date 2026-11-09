@@ -1,0 +1,20 @@
+# Second factor at every login (decision 2): TOTP when active, else an email code (custom providers backed by the
+# command bus, Identity\Infrastructure\Security\TwoFactor). Backup codes go through UseBackupCode.
+scheb_two_factor:
+    # Tokens after which the second factor is required (form_login issues a UsernamePasswordToken).
+    security_tokens:
+        - Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken
+        - Symfony\Component\Security\Http\Authenticator\Token\PostAuthenticationToken
+    backup_codes:
+        enabled: true
+        manager: Identity\Infrastructure\Security\TwoFactor\BackupCodeManager
+    # 30 days, admins included (decision 2), revoked by the account's trustedDeviceVersion. Signed with APP_SECRET.
+    trusted_device:
+        enabled: true
+        manager: Identity\Infrastructure\Security\TwoFactor\AlertingTrustedDeviceManager
+        lifetime: 2592000
+        extend_lifetime: false
+        cookie_name: __Host-depverify_trusted
+        cookie_secure: true
+        cookie_same_site: strict
+        cookie_path: /

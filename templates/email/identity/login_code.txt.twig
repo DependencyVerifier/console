@@ -1,0 +1,7 @@
+{{ 'identity.login_code.intro'|trans({}, 'email') }}
+
+{{ code }}
+
+{{ 'identity.login_code.validity'|trans({minutes: validity_minutes, attempts: max_attempts}, 'email') }}
+
+{{ 'identity.not_you'|trans({}, 'email') }}

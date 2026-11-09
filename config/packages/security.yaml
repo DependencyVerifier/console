@@ -1,0 +1,69 @@
+security:
+    password_hashers:
+        Identity\Infrastructure\Security\SecurityUser:
+            algorithm: argon2id
+
+    providers:
+        accounts:
+            id: Identity\Infrastructure\Security\SecurityUserProvider
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
+            security: false
+        main:
+            lazy: true
+            provider: accounts
+            user_checker: Identity\Infrastructure\Security\AccountChecker
+            form_login:
+                login_path: identity_login
+                check_path: identity_login
+                username_parameter: _username
+                password_parameter: _password
+                enable_csrf: true
+                csrf_token_id: authenticate
+                default_target_path: shared_home
+                # No client-supplied return URL (open redirect): the parameter name is never sent by our forms.
+                target_path_parameter: _depverify_no_target_path
+                use_referer: false
+                failure_handler: Identity\Infrastructure\Security\LoginFailureHandler
+            login_throttling:
+                limiter: Identity\Infrastructure\Security\LoginRateLimiter
+            two_factor:
+                auth_form_path: 2fa_login
+                check_path: 2fa_login_check
+                default_target_path: shared_home
+                prepare_on_login: true
+                prepare_on_access_denied: true
+                enable_csrf: true
+                csrf_token_id: two_factor
+                trusted_parameter_name: _trusted
+                failure_handler: Identity\Infrastructure\Security\TwoFactorFailureHandler
+            logout:
+                path: identity_logout
+                target: identity_login
+                enable_csrf: true
+                csrf_token_id: logout
+                clear_site_data: ['cache', 'cookies', 'storage']
+
+    # Only the first matching rule applies.
+    access_control:
+        - { path: ^/_healthcheck$, roles: PUBLIC_ACCESS }
+        - { path: ^/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/logout$, roles: PUBLIC_ACCESS }
+        - { path: ^/password/forgot$, roles: PUBLIC_ACCESS }
+        - { path: ^/password/reset/new$, roles: PUBLIC_ACCESS, methods: [GET, POST] }
+        - { path: '^/password/reset/[A-Za-z0-9_-]{43}$', roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/2fa, roles: IS_AUTHENTICATED_2FA_IN_PROGRESS }
+        # One role only: several roles in a rule mean "any of them". ROLE_SUPER_ADMIN exists on a fully
+        # authenticated token only (a second factor in progress has no role).
+        - { path: ^/admin, roles: ROLE_SUPER_ADMIN }
+        - { path: ^/, roles: IS_AUTHENTICATED_FULLY }
+
+when@test:
+    security:
+        password_hashers:
+            Identity\Infrastructure\Security\SecurityUser:
+                algorithm: argon2id
+                time_cost: 3
+                memory_cost: 10

@@ -1,0 +1,7 @@
+{% extends 'email/layout.html.twig' %}
+{% block content %}
+    <p>{{ 'identity.login_code.intro'|trans({}, 'email') }}</p>
+    <p style="font-size:28px;font-weight:600;letter-spacing:6px;font-family:monospace">{{ code }}</p>
+    <p>{{ 'identity.login_code.validity'|trans({minutes: validity_minutes, attempts: max_attempts}, 'email') }}</p>
+    <p style="color:#71717a">{{ 'identity.not_you'|trans({}, 'email') }}</p>
+{% endblock %}

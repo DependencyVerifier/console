@@ -1,0 +1,18 @@
+{#- A lazy frame with its Skeleton placeholder and the translated error template (decision 31).
+    Variables: id, src, rows (number of skeleton lines). -#}
+<turbo-frame id="{{ id }}" src="{{ src }}" loading="lazy" data-controller="frame-state" data-action="turbo:frame-missing->frame-state#missing turbo:fetch-request-error->frame-state#failed">
+    <div class="flex flex-col gap-3" aria-busy="true" aria-label="{{ 'frame.loading'|trans }}">
+        {%- for i in 1..(rows|default(4)) -%}
+            <twig:Skeleton class="{{ cycle(['h-6 w-full', 'h-6 w-5/6', 'h-6 w-2/3', 'h-6 w-3/4'], loop.index0) }}" />
+        {%- endfor -%}
+    </div>
+    <template data-frame-state-target="error">
+        <twig:Alert variant="destructive">
+            <twig:ux:icon name="lucide:circle-alert" />
+            <twig:Alert:Title>{{ 'frame.error.500'|trans }}</twig:Alert:Title>
+            <twig:Alert:Description>
+                <button type="button" class="underline underline-offset-4" data-action="frame-state#retry">{{ 'frame.retry'|trans }}</button>
+            </twig:Alert:Description>
+        </twig:Alert>
+    </template>
+</turbo-frame>

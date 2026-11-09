@@ -1,0 +1,6 @@
+framework:
+    mailer:
+        dsn: '%env(MAILER_DSN)%'
+        # Never through Messenger: the command bus and its audit middlewares are not a mail queue. Emails leave from
+        # Shared\Infrastructure\Mail\DeferredMailQueue after the response.
+        message_bus: false

@@ -1,0 +1,41 @@
+{#- Form theme on the shadcn kit classes. Errors added by the application (refusals) are translation keys; constraint
+    violations are already translated (validators domain). -#}
+{% use 'form_div_layout.html.twig' %}
+
+{%- block form_row -%}
+    <div data-slot="field" class="group/field flex w-full flex-col gap-2"{% if not valid %} data-invalid="true"{% endif %}>
+        {{- form_label(form) -}}
+        {{- form_widget(form) -}}
+        {{- form_errors(form) -}}
+    </div>
+{%- endblock form_row -%}
+
+{%- block form_label -%}
+    {%- if label is not same as(false) -%}
+        <label for="{{ id }}" data-slot="field-label" class="flex w-fit items-center gap-2 text-sm leading-snug font-medium select-none">
+            {{- (label is empty ? name|humanize : label)|trans({}, translation_domain) -}}
+        </label>
+    {%- endif -%}
+{%- endblock form_label -%}
+
+{%- block form_widget_simple -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30')|trim}) -%}
+    {%- if not valid -%}{%- set attr = attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
+    {{- parent() -}}
+{%- endblock form_widget_simple -%}
+
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <div role="alert" data-slot="field-error" class="text-sm font-normal text-destructive">
+            {%- for error in errors -%}
+                <p>{{ error.cause is null ? error.message|trans : error.message }}</p>
+            {%- endfor -%}
+        </div>
+    {%- endif -%}
+{%- endblock form_errors -%}
+
+{%- block repeated_row -%}
+    {{- form_row(form.first) -}}
+    {{- form_row(form.second) -}}
+    {{- form_errors(form) -}}
+{%- endblock repeated_row -%}

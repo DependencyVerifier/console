@@ -7,6 +7,8 @@ doctrine:
             default:
                 url: '%env(resolve:DATABASE_URL)%'
                 profiling_collect_backtrace: '%kernel.debug%'
+                # Tables written in raw SQL migrations, outside the ORM mapping: never diffed (nor dropped).
+                schema_filter: '~^(?!audit\.|rate_limiter_state$)~'
             # Rate limiter states and advisory locks: same runtime role, autocommit, outside any command
             # transaction (a rollback never gives a consumed token back). Session timeouts are set at connect
             # time by Shared\Infrastructure\Doctrine\SessionTimeoutsDriverMiddleware.

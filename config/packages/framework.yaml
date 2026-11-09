@@ -2,8 +2,20 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    # Sessions in PostgreSQL (decision 29): own PDO connection with session-level timeouts, advisory locks.
+    # __Host- cookie (Secure, Path=/, no Domain): no cookie tossing from a sibling subdomain. 12 h maximum; the
+    # 30 min idle / 12 h absolute limits are enforced by SessionLifetimeSubscriber, the GC only cleans up.
+    session:
+        handler_id: app.session_handler
+        name: __Host-depverify_session
+        cookie_secure: true
+        cookie_httponly: true
+        cookie_samesite: strict
+        cookie_path: /
+        cookie_lifetime: 0
+        gc_maxlifetime: 43200
+        gc_probability: 1
+        gc_divisor: 100
 
     # Client IP for limiters and audit: only through explicitly trusted proxies (none by default).
     trusted_proxies: '%env(default::SYMFONY_TRUSTED_PROXIES)%'
@@ -16,4 +28,5 @@ when@test:
     framework:
         test: true
         session:
+            handler_id: null
             storage_factory_id: session.storage.factory.mock_file

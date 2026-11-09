@@ -1,0 +1,7 @@
+{#- One user list button: a field-less form `action`, CSRF token id `<action>:<user id>`. -#}
+{%- macro action(route, action, user, label, variant) -%}
+    <form method="post" action="{{ path(route, {userId: user.id}) }}">
+        <input type="hidden" name="action[_token]" value="{{ csrf_token(action ~ ':' ~ user.id) }}">
+        <twig:Button type="submit" size="xs" variant="{{ variant }}">{{ label|trans }}</twig:Button>
+    </form>
+{%- endmacro -%}

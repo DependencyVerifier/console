@@ -1,0 +1,7 @@
+{%- for stream in streams -%}{{ stream|raw }}{%- endfor -%}
+<turbo-stream action="update" target="action-alerts"><template>
+    <twig:Alert>
+        <twig:ux:icon name="lucide:circle-check" />
+        <twig:Alert:Description>{{ success_key|trans }}</twig:Alert:Description>
+    </twig:Alert>
+</template></turbo-stream>

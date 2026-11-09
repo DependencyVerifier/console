@@ -29,3 +29,10 @@ services:
     # first stderr output. Tests that expect an error log would therefore break mutation testing.
     logger:
         class: Psr\Log\NullLogger
+
+    test.secret_box:
+        alias: Shared\Application\Crypto\SecretBox
+        public: true
+    test.password_hasher_factory:
+        alias: security.password_hasher_factory
+        public: true

@@ -34,7 +34,10 @@
         "customPath": "vendor/bin/phpunit"
     },
     "mutators": {
-        "@default": true
+        "@default": true,
+        // Doctrine mapping attributes are fixed by the migrations (and checked by the integration tests), not by
+        // unit tests.
+        "global-ignoreSourceCodeByRegex": ["#\\[ORM\\\\.*"]
     },
     "testFramework": "phpunit"
 }

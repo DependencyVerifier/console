@@ -10,6 +10,7 @@ use Shared\Application\Audit\Outcome;
 use Shared\Application\Authorization\PermissionDenied;
 use Shared\Application\Authorization\ResourceNotFound;
 use Shared\Application\Security\Contended;
+use Shared\Application\Security\RateLimiterStorageUnavailable;
 use Shared\Application\Security\Throttled;
 use Shared\Domain\BusinessRuleViolated;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
@@ -27,6 +28,7 @@ final class RefusalClassifier
             $cause instanceof BusinessRuleViolated => Outcome::denied('rule:'.$cause->ruleKey()),
             $cause instanceof Throttled => Outcome::denied('throttled'),
             $cause instanceof Contended => Outcome::denied('lock_contention'),
+            $cause instanceof RateLimiterStorageUnavailable => Outcome::failure('throttle_storage_failed'),
             $cause instanceof UniqueConstraintViolationException => Outcome::failure('conflict'),
             $cause instanceof LockWaitTimeoutException => Outcome::failure('technical'),
             default => Outcome::failure('technical'),
