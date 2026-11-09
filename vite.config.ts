@@ -7,6 +7,8 @@ export default defineConfig(({ command }) => ({
         rolldownOptions: {
             input: {
                 app: './assets/app.ts',
+                // Style entry: a <link> tag in dev too, so the page never paints unstyled while the JS loads.
+                styles: './assets/styles/app.css',
             },
         },
     },
