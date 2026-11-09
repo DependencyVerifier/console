@@ -1,17 +1,23 @@
 {%- props
     ## string Key of the active navigation entry.
-    active = 'overview'
+    active = 'overview',
+    ## string|null Id of the team being browsed.
+    team = null
 -%}
-{#- Teams arrive with Organization; until then the switcher is empty (it renders nothing without teams). -#}
 {%- set user = app.user -%}
+{%- set myTeams = user ? sidebar_teams() : [] -%}
+{%- set currentTeam = team ?? (myTeams|first ? (myTeams|first).id : null) -%}
 {%- set data = {
     user: {name: user ? user.userIdentifier|split('@')|first : '', email: user ? user.userIdentifier : ''},
-    teams: [],
+    teams: myTeams,
     navMain: [
         {key: 'overview', title: 'nav.overview'|trans, url: path('shared_home'), icon: 'lucide:layout-dashboard'},
-    ],
+    ]|merge(currentTeam ? [
+        {key: 'team', title: 'nav.team'|trans, url: path('organization_team', {teamId: currentTeam}), icon: 'lucide:users'},
+    ] : []),
     navSecondary: is_granted('ROLE_SUPER_ADMIN') ? [
         {key: 'admin', title: 'nav.administration'|trans, url: path('identity_admin_users'), icon: 'lucide:shield-check'},
+        {key: 'admin_teams', title: 'nav.teams'|trans, url: path('organization_admin_teams'), icon: 'lucide:building-2'},
     ] : [],
 } -%}
 <twig:Sidebar {{ ...attributes.defaults({collapsible: 'icon'}) }}>
@@ -25,7 +31,7 @@
                 </twig:Sidebar:MenuButton>
             </twig:Sidebar:MenuItem>
         </twig:Sidebar:Menu>
-        <twig:TeamSwitcher :teams="data.teams" />
+        <twig:TeamSwitcher :teams="data.teams" :current="currentTeam" />
     </twig:Sidebar:Header>
     <twig:Sidebar:Content>
         <twig:NavMain :items="data.navMain" :active="active" />

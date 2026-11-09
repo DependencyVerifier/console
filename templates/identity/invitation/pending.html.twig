@@ -1,0 +1,41 @@
+{% extends 'shared/layout/auth.html.twig' %}
+
+{% block title %}{{ 'identity.invitation.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block main %}
+    <div class="flex flex-col gap-6">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.invitation.title'|trans }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">
+                {{ 'identity.invitation.description'|trans({team: invitation.teamName, project: invitation.projectName ?? '', role: ('role.' ~ invitation.role)|trans}) }}
+            </p>
+            <p class="mt-1 font-mono text-sm">{{ invitation.email }}</p>
+        </div>
+        {{ include('shared/_flashes.html.twig') }}
+
+        {% if accept_form is defined %}
+            {% if signed_in_as_invitee %}
+                {% form_theme accept_form 'shared/form/theme.html.twig' %}
+                {{ form_start(accept_form, {action: path('identity_invitation_accept'), attr: {'data-turbo': 'false'}}) }}
+                    {{ form_errors(accept_form) }}
+                    <twig:Button type="submit" class="w-full">{{ 'identity.invitation.accept'|trans }}</twig:Button>
+                {{ form_end(accept_form) }}
+            {% else %}
+                <twig:Alert variant="destructive">
+                    <twig:ux:icon name="lucide:circle-alert" />
+                    <twig:Alert:Description>{{ 'identity.invitation.other_account'|trans }}</twig:Alert:Description>
+                </twig:Alert>
+            {% endif %}
+        {% else %}
+            {% form_theme activate_form 'shared/form/theme.html.twig' %}
+            <p class="text-sm">{{ 'identity.invitation.choose_password'|trans }}</p>
+            {{ form_start(activate_form, {attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
+                {{ form_errors(activate_form) }}
+                {{ form_row(activate_form.password) }}
+                <twig:Button type="submit" class="w-full">{{ 'identity.invitation.create_account'|trans }}</twig:Button>
+            {{ form_end(activate_form) }}
+            <twig:Field:Separator>{{ 'identity.invitation.or'|trans }}</twig:Field:Separator>
+            <twig:Button as="a" variant="outline" href="{{ path('identity_login') }}" class="w-full">{{ 'identity.invitation.sign_in'|trans }}</twig:Button>
+        {% endif %}
+    </div>
+{% endblock %}

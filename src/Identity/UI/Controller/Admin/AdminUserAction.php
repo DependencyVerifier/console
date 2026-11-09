@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Identity\UI\Controller\Admin;
 
 use Identity\UI\Controller\RouteCollection;
-use Identity\UI\Frame\TurboFrame;
 use Shared\Application\Audit\AuditableCommand;
 use Shared\UI\Action\ActionButtonType;
 use Shared\UI\Action\ActionForm;
@@ -17,8 +16,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * One button of the user list: a field-less form named `action`, CSRF token id `<action>:<user id>`. Success
- * refreshes the list frame (Turbo Stream); a refusal is rendered inside that frame with its status.
+ * One button of the user list: a field-less form named `action`, CSRF token id `<action>:<user id>`. Success and
+ * refusal answer a Turbo Stream on the page alerts; the DataTable reloads after any stream.
  */
 final readonly class AdminUserAction
 {
@@ -42,7 +41,7 @@ final readonly class AdminUserAction
 
         return $this->responder->handle(
             $request,
-            new ActionForm($form, TurboFrame::AdminUsers->id(), 'identity/admin/user_action_refused.html.twig'),
+            new ActionForm($form, ActionForm::PAGE_ALERTS, 'shared/frame/refusal_stream.html.twig'),
             $command,
             $this->redirect->withSuccessKey('identity.admin.users.done.'.$action),
             new RouteReference(RouteCollection::ADMIN_USERS->prefixed()),

@@ -37,8 +37,9 @@ services:
 
     # The security token's user (also during the second factor), else cli / anonymous.
     Shared\Application\Security\CurrentActor: '@Identity\Infrastructure\Security\AuthenticatedCurrentActor'
-    # Instance permissions (super admin, account.login); team and project scopes are denied until Organization.
-    Shared\Application\Authorization\PermissionChecker: '@Identity\Infrastructure\Security\InstancePermissionChecker'
+    # Instance permissions from Identity, team and project permissions from Organization's memberships.
+    Shared\Application\Authorization\InstancePermissions: '@Identity\Infrastructure\Security\InstancePermissionChecker'
+    Shared\Application\Authorization\PermissionChecker: '@Organization\Infrastructure\Security\OrganizationPermissionChecker'
 
     Shared\:
         resource: '../src/Shared/'

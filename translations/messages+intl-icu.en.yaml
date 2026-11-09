@@ -1,5 +1,7 @@
 nav:
     overview: Overview
+    team: Team
+    teams: Teams
     administration: Administration
     account_security: Account security
     logout: Log out
@@ -14,6 +16,7 @@ action:
     retry: Try again
     back: Back
     continue: Continue
+    save: Save
 frame:
     loading: Loading
     retry: Retry
@@ -41,6 +44,20 @@ rule:
     super_admin_revocation_forbidden: "The instance must keep an active super admin, and you cannot revoke yourself."
     self_management_forbidden: You cannot deactivate your own account.
     password_reset_link_invalid: This link is expired or was already used.
+    account_already_active: An account already uses this email address. Sign in to accept the invitation.
+    quota: The quota of the team is reached. Contact the administrator of the instance.
+    last_team_admin_required: The team must keep at least one team admin.
+    project_not_empty: Only an empty project can be deleted (remove its environments first).
+    environment_not_empty: This environment still holds data and cannot be deleted.
+    duplicate_environment_name: An environment of this project already has this name.
+    invitation_email_mismatch: This invitation was sent to another email address.
+    invitation_already_pending: An invitation is already pending for this email.
+    invitation_not_pending: This invitation was accepted, revoked or has expired.
+    already_member: This account is already a member.
+    not_a_member: This account is not a member.
+    role_not_assignable: You can only grant a role lower than or equal to your own.
+    permission_not_grantable: This permission cannot be granted to this role.
+    invalid_name: Names need 1 to 120 characters.
 identity:
     back_to_login: Back to sign in
     field:
@@ -123,6 +140,19 @@ identity:
             regenerated: The previous backup codes no longer work.
             once: These codes are shown only once. Each works a single time. Keep them somewhere safe.
             signed_out: For your security, every session was signed out. Sign in again with your new second factor.
+    invitation:
+        title: Invitation
+        description: "You are invited to {team}{project, select, other { · {project}}} as {role}."
+        accept: Accept the invitation
+        accepted: Invitation accepted.
+        other_account: You are signed in with another account. Sign out, then open the link again.
+        choose_password: Choose a password to create your account.
+        create_account: Create my account
+        account_created: Account created. Sign in to accept the invitation.
+        or: or
+        sign_in: I already have an account
+        invalid_title: Invitation unavailable
+        invalid: This invitation was accepted, revoked or has expired. Ask the team administrator for a new one.
     admin:
         users:
             done:
@@ -150,3 +180,97 @@ admin:
         reactivate: Reactivate
         grant_super_admin: Make super admin
         revoke_super_admin: Revoke super admin
+role:
+    team_admin: Team admin
+    team_member: Team member
+    team_viewer: Team viewer
+    team_guest: Team guest
+    project_admin: Project admin
+    project_member: Project member
+    project_viewer: Project viewer
+quota:
+    max_projects: Projects
+    max_environments_per_project: Environments per project
+    max_agents: Agents
+    max_members: Members
+    max_notification_only_accounts: Notification-only accounts
+    max_notification_channels: Notification channels
+    max_reusable_enrollment_tokens: Reusable enrollment tokens
+    snapshot_retention_days: Snapshot retention (days)
+    min_scan_interval_minutes: Minimum scan interval (minutes)
+datatable:
+    processing: Loading…
+    search: "Search:"
+    lengthMenu: "_MENU_ per page"
+    info: "_START_–_END_ of _TOTAL_"
+    infoEmpty: No entries
+    infoFiltered: "(filtered from _MAX_)"
+    loadingRecords: Loading…
+    zeroRecords: No matching entries
+    emptyTable: Nothing here yet
+organization:
+    field:
+        name: Name
+        team_name: Team name
+        first_admin_email: First team admin (email)
+        role: Role
+        projects: Projects
+        members: Members
+        environments: Environments
+        environment_name: Environment
+        production: Production
+        expires: Expires
+    team:
+        renamed: Team renamed.
+        rename: Rename
+        settings: Settings
+        no_admin_yet: No team admin yet. The team is managed by the super admin until the invitation is accepted.
+        super_admin_view: Viewed as super admin
+    teams:
+        title: Teams
+        description: Teams of the instance with their usage. The first team admin is invited when the team is created.
+        create: Create the team
+        created: Team created, its first admin is invited.
+    members:
+        title: Members
+        remove: Remove
+        removed: Member removed.
+        role_changed: Role changed.
+        no_project: no project
+    invitations:
+        title: Pending invitations
+        send: Invite
+        sent: Invitation sent.
+        resend: Resend
+        resent: Invitation sent again.
+        revoke: Revoke
+        revoked: Invitation revoked.
+        expired: expired
+    projects:
+        title: Projects
+        create: Create a project
+        created: Project created.
+        renamed: Project renamed.
+        rename: Rename
+        delete: Delete the project
+        deleted: Project deleted.
+        settings: Settings
+    environments:
+        title: Environments
+        create: Add
+        created: Environment added.
+        updated: Environment updated.
+        deleted: Environment deleted.
+        delete: Delete
+        mark_production: Mark production
+        unmark_production: Unmark production
+        usage: "{count} of {limit} environments"
+    quotas:
+        edit: Quotas
+        team: Team quotas
+        defaults: Default quotas
+        help: Leave a field empty for no limit. Lowering a quota under the current usage deletes nothing but blocks new creations.
+        saved: Quotas saved.
+        unlimited: unlimited
+        reached: Quota reached.
+        warning: More than 80 % used.

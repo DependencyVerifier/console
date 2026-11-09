@@ -22,3 +22,10 @@ identity:
         super_admin_revoked: "Your account is no longer a super admin of the instance."
         second_factor_throttled: "Your password was entered correctly, but the second factor failed many times: the second factor is blocked for 24 hours. Change your password, it stops the attack."
         trusted_device_registered: "A new device was trusted for 30 days: the second factor is skipped on it."
+organization:
+    invitation:
+        subject: "You are invited to DependencyVerifier"
+        intro: "You are invited to join a team on DependencyVerifier."
+        action: "Open the invitation"
+        validity: "This link works for {days} days."
+        ignore: "If you did not expect it, ignore this email."

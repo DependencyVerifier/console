@@ -1,0 +1,19 @@
+{% extends 'shared/layout/app.html.twig' %}
+{% form_theme form 'shared/form/theme.html.twig' %}
+
+{% block title %}{{ subtitle_key|trans }} · DependencyVerifier{% endblock %}
+
+{% block main %}
+    <div class="flex max-w-2xl flex-col gap-6">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ subtitle_key|trans }}</h1>
+            {% if title %}<p class="mt-1 text-sm text-muted-foreground">{{ title }}</p>{% endif %}
+            <p class="mt-1 text-sm text-muted-foreground">{{ 'organization.quotas.help'|trans }}</p>
+        </div>
+        {{ form_start(form, {attr: {class: 'grid gap-4 sm:grid-cols-2', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
+            {{ form_errors(form) }}
+            {% for child in form %}{% if child.vars.name != '_token' %}{{ form_row(child) }}{% endif %}{% endfor %}
+            <div class="sm:col-span-2"><twig:Button type="submit">{{ 'action.save'|trans }}</twig:Button></div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

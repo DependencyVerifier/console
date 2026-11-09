@@ -12,6 +12,9 @@ use Symfony\Component\Form\FormInterface;
  */
 final readonly class ActionForm
 {
+    /** Forms posted from a list (DataTable rows): no frame of their own, refusals go to the page alerts as a stream. */
+    public const string PAGE_ALERTS = 'action-alerts';
+
     /**
      * @param FormInterface<covariant mixed> $form
      * @param array<string, mixed>           $templateContext

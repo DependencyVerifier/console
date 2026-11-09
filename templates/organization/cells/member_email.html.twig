@@ -1,0 +1,2 @@
+<span class="font-medium">{{ row.email }}</span>
+{%- if not row.active %} <twig:Badge variant="secondary" class="ms-1">{{ 'admin.users.disabled'|trans }}</twig:Badge>{% endif -%}

@@ -1,0 +1,11 @@
+{%- import 'organization/_actions.html.twig' as ui -%}
+{%- set params = {teamId: app.request.attributes.get('teamId'), projectId: app.request.attributes.get('projectId'), environmentId: row.id} -%}
+<div class="flex justify-end gap-1">
+    <form method="post" action="{{ path('organization_environment_update', params) }}" class="inline-flex items-center gap-1">
+        <input type="hidden" name="environment[_token]" value="{{ csrf_token('environment_update:' ~ row.id) }}">
+        <input type="hidden" name="environment[name]" value="{{ row.name }}">
+        {%- if not row.production %}<input type="hidden" name="environment[production]" value="1">{% endif -%}
+        <twig:Button type="submit" size="xs" variant="ghost">{{ (row.production ? 'organization.environments.unmark_production' : 'organization.environments.mark_production')|trans }}</twig:Button>
+    </form>
+    {{ ui.button(path('organization_environment_delete', params), 'environment_delete:' ~ row.id, 'organization.environments.delete', 'destructive') }}
+</div>

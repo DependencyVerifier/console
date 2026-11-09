@@ -1,0 +1,10 @@
+# Server-side tables (omines/datatables-bundle), rendered by assets/controllers/datatable_controller.ts (no inline
+# script: the bundle's JS initialiser is not used). Data come through Shared\UI\DataTable\QueryBusAdapter: the query
+# handler stays the only judge of scope and permission.
+datatables:
+    language_from_cdn: false
+    method: POST
+    persist_state: none
+    translation_domain: messages
+    options:
+        pageLength: 25

@@ -6,16 +6,17 @@ namespace Identity\Infrastructure\Security;
 
 use Identity\Domain\Model\UserId;
 use Identity\Domain\Repository\UserRepository;
+use Shared\Application\Authorization\InstancePermissions;
 use Shared\Application\Authorization\PermissionChecker;
 use Shared\Domain\Authorization\Permission;
 use Shared\Domain\Authorization\PermissionScope;
 
 /**
  * Instance permissions, read from the account (never from the session): the super admin holds every permission,
- * the others only their instance permissions. Team and project scopes are denied until Organization provides its
- * resolver (fail-closed).
+ * the others only their instance permissions. As a PermissionChecker on its own it denies team and project scopes
+ * (fail-closed); Organization's checker composes it.
  */
-final readonly class InstancePermissionChecker implements PermissionChecker
+final readonly class InstancePermissionChecker implements PermissionChecker, InstancePermissions
 {
     public function __construct(private AuthenticatedCurrentActor $currentActor, private UserRepository $users)
     {

@@ -31,6 +31,28 @@ abstract class IdentityWebTestCase extends WebTestCase
     }
 
     /**
+     * @param list<scalar> $params
+     */
+    protected function fetchString(string $sql, array $params = []): string
+    {
+        $value = $this->connection()->fetchOne($sql, $params);
+        self::assertIsString($value, $sql);
+
+        return $value;
+    }
+
+    /**
+     * @param list<scalar> $params
+     */
+    protected function fetchInt(string $sql, array $params = []): int
+    {
+        $value = $this->connection()->fetchOne($sql, $params);
+        self::assertIsInt($value, $sql);
+
+        return $value;
+    }
+
+    /**
      * Password step; the email code provider sends a code right away when TOTP is off.
      */
     protected function submitPassword(string $email, string $password = Accounts::PASSWORD): void

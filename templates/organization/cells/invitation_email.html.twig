@@ -1,0 +1,2 @@
+<span class="font-medium">{{ row.email }}</span>
+{%- if row.expired %} <twig:Badge variant="secondary" class="ms-1">{{ 'organization.invitations.expired'|trans }}</twig:Badge>{% endif -%}

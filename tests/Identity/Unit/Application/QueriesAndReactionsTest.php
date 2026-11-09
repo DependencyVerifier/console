@@ -12,6 +12,7 @@ use Identity\Application\Port\SecurityAlert;
 use Identity\Application\Query\SecondFactor\GetCodeVerificationOutcome;
 use Identity\Application\Query\SecondFactor\Handler\GetCodeVerificationOutcomeHandler;
 use Identity\Application\Query\User\GetUserProfile;
+use Identity\Application\Query\User\Handler\FindAccountsHandler;
 use Identity\Application\Query\User\Handler\GetUserProfileHandler;
 use Identity\Application\Query\User\Handler\ListUsersHandler;
 use Identity\Application\Query\User\ListUsers;
@@ -41,6 +42,10 @@ use Shared\Application\Authorization\PermissionDenied;
 use Shared\Application\Authorization\ResourceNotFound;
 use Shared\Application\Contract\Identity\AccountDeactivated;
 use Shared\Application\Contract\Identity\AccountReactivated;
+use Shared\Application\Contract\Identity\AccountView;
+use Shared\Application\Contract\Identity\FindAccounts;
+use Shared\Application\Query\Page;
+use Shared\Application\Query\PageRequest;
 use Shared\Domain\Authorization\Permission;
 use Symfony\Component\Uid\Uuid;
 use Tests\Identity\Support\FixedActor;
@@ -122,21 +127,36 @@ final class QueriesAndReactionsTest extends TestCase
     public function it_should_list_users_for_administrators_only(): void
     {
         $summary = new UserSummary(Users::ID, 'jane@example.com', false, true, true, false, new \DateTimeImmutable());
-        $directory = new readonly class([$summary]) implements UserDirectory {
+        $directory = new class([$summary]) implements UserDirectory {
+            public ?PageRequest $asked = null;
+
             /**
              * @param list<UserSummary> $users
              */
-            public function __construct(private array $users)
+            public function __construct(private readonly array $users)
             {
             }
 
-            public function all(): array
+            public function page(PageRequest $page): Page
             {
-                return $this->users;
+                $this->asked = $page;
+
+                return new Page($this->users, 1, 1);
+            }
+
+            public function byIds(array $userIds): array
+            {
+                return [new AccountView(Users::ID, 'jane@example.com', true)];
             }
         };
+        $request = new PageRequest(10, 5, 'email', true, 'jane');
 
-        self::assertSame([$summary], new ListUsersHandler($directory, new Grants([Permission::InstanceUsersManage]))(new ListUsers()));
+        $page = new ListUsersHandler($directory, new Grants([Permission::InstanceUsersManage]))(new ListUsers($request));
+        self::assertSame([$summary], $page->items);
+        self::assertSame($request, $directory->asked);
+
+        $accounts = new FindAccountsHandler($directory)(new FindAccounts([Users::ID]));
+        self::assertEquals([Users::ID => new AccountView(Users::ID, 'jane@example.com', true)], $accounts);
 
         $this->expectException(PermissionDenied::class);
         new ListUsersHandler($directory, new Grants([Permission::InstanceAuditView]))(new ListUsers());

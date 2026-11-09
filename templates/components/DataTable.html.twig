@@ -1,0 +1,25 @@
+{#- Server-side table (omines/datatables-bundle + datatables.net), driven by datatable_controller.ts. The rows come
+    from the page URL (POST, `_dt` = table name) through the query bus. Reloaded after any Turbo Stream action. -#}
+{%- props
+    ## Omines\DataTablesBundle\DataTable The table built by the controller.
+    table
+-%}
+{%- set config = datatable_config(table) -%}
+<div data-controller="datatable"
+     data-datatable-name-value="{{ config.name }}"
+     data-datatable-url-value="{{ app.request.pathInfo }}"
+     data-datatable-columns-value="{{ config.columns|json_encode }}"
+     data-datatable-language-value="{{ config.language|json_encode }}"
+     data-datatable-page-length-value="{{ config.pageLength }}"
+     {{ attributes.defaults({class: 'w-full'}) }}>
+    <table data-datatable-target="table" class="w-full caption-bottom text-sm">
+        <thead>
+            <tr>
+                {%- for column in config.columns -%}
+                    <th scope="col" class="{{ column.className }}">{{ column.label }}</th>
+                {%- endfor -%}
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>

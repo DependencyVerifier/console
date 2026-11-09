@@ -1,0 +1,2 @@
+{%- import 'organization/_actions.html.twig' as ui -%}
+{{ ui.role(path('organization_project_member_role', {teamId: app.request.attributes.get('teamId'), projectId: app.request.attributes.get('projectId'), userId: row.userId}), 'project_member_role:' ~ row.userId, ['project_admin', 'project_member', 'project_viewer'], row.role) }}

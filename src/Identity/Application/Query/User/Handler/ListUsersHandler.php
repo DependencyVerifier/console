@@ -10,6 +10,7 @@ use Identity\Application\Query\User\UserSummary;
 use Shared\Application\Authorization\PermissionChecker;
 use Shared\Application\Authorization\PermissionDenied;
 use Shared\Application\Bus\QueryHandler;
+use Shared\Application\Query\Page;
 use Shared\Domain\Authorization\Permission;
 
 final readonly class ListUsersHandler implements QueryHandler
@@ -19,14 +20,14 @@ final readonly class ListUsersHandler implements QueryHandler
     }
 
     /**
-     * @return list<UserSummary>
+     * @return Page<UserSummary>
      */
-    public function __invoke(ListUsers $query): array
+    public function __invoke(ListUsers $query): Page
     {
         if (!$this->permissions->isGranted(Permission::InstanceUsersManage)) {
             throw PermissionDenied::for(Permission::InstanceUsersManage->value);
         }
 
-        return $this->directory->all();
+        return $this->directory->page($query->page);
     }
 }

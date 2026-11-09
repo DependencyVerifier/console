@@ -75,10 +75,15 @@ final readonly class ActionResponder
 
     private function render(ActionForm $form, int $status): Response
     {
-        return FrameEndpoint::uncached(new Response($this->twig->render($form->template, [
+        $response = FrameEndpoint::uncached(new Response($this->twig->render($form->template, [
             ...$form->templateContext,
             'form' => $form->form->createView(),
             'frame_id' => $form->frameId,
         ]), $status));
+        if (ActionForm::PAGE_ALERTS === $form->frameId) {
+            $response->headers->set('Content-Type', StreamOrRedirect::STREAM_FORMAT);
+        }
+
+        return $response;
     }
 }

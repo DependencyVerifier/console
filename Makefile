@@ -193,7 +193,7 @@ endif
 
 .PHONY: infection
 infection: db-test-prepare ## Run mutation tests on Domain/Application layers (100% MSI required)
-	@$(DC) exec -e APP_ENV=test -e XDEBUG_MODE=coverage -e TEST_OWNER_DATABASE_URL="$$DATABASE_MIGRATIONS_URL" php vendor/bin/infection --with-uncovered --min-msi=100 --min-covered-msi=100 --threads=max
+	@$(DC) exec -e APP_ENV=test -e XDEBUG_MODE=coverage -e TEST_OWNER_DATABASE_URL="$$DATABASE_MIGRATIONS_URL" php php -d memory_limit=1G vendor/bin/infection --with-uncovered --min-msi=100 --min-covered-msi=100 --threads=max
 
 .PHONY: phpcs
 phpcs: ## Check PHP code style (dry-run)

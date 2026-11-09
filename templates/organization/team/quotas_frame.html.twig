@@ -1,0 +1,17 @@
+{#- Quota gauges (<meter>: no inline style); the three quotas enforced in this step carry a usage. -#}
+<div class="grid gap-3 sm:grid-cols-3">
+    {%- for quota in team.quotas|filter(q => q.enforced) -%}
+        <div class="flex flex-col gap-1 rounded-lg border p-3">
+            <span class="text-sm text-muted-foreground">{{ ('quota.' ~ quota.name)|trans }}</span>
+            <span class="text-sm font-medium">{{ quota.usage }} / {{ quota.limit ?? ('organization.quotas.unlimited'|trans) }}</span>
+            {%- if quota.limit is not null -%}
+                <meter class="w-full" min="0" max="{{ quota.limit }}" low="{{ (quota.limit * 0.8)|round(0, 'floor') }}" high="{{ (quota.limit * 0.8)|round(0, 'floor') }}" optimum="0" value="{{ quota.usage }}">{{ quota.usage }}</meter>
+            {%- endif -%}
+            {%- if quota.reached -%}
+                <span class="text-xs text-destructive">{{ 'organization.quotas.reached'|trans }}</span>
+            {%- elseif quota.warning -%}
+                <span class="text-xs text-muted-foreground">{{ 'organization.quotas.warning'|trans }}</span>
+            {%- endif -%}
+        </div>
+    {%- endfor -%}
+</div>

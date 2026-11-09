@@ -1,0 +1,5 @@
+{%- if row.role == 'team_guest' and row.projects == 0 -%}
+    <twig:Badge variant="secondary">{{ 'organization.members.no_project'|trans }}</twig:Badge>
+{%- else -%}
+    {{ row.projects }}
+{%- endif -%}

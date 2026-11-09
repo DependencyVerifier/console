@@ -1,0 +1,2 @@
+{%- import 'organization/_actions.html.twig' as ui -%}
+{{ ui.button(path('organization_project_member_remove', {teamId: app.request.attributes.get('teamId'), projectId: app.request.attributes.get('projectId'), userId: row.userId}), 'project_member_remove:' ~ row.userId, 'organization.members.remove', 'destructive') }}

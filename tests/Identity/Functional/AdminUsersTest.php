@@ -7,14 +7,17 @@ namespace Tests\Identity\Functional;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\Accounts;
 use Tests\Support\AuditLog;
+use Tests\Support\DataTables;
 use Tests\Support\IdentityWebTestCase;
+
+use function Symfony\Component\String\u;
 
 final class AdminUsersTest extends IdentityWebTestCase
 {
     private const string STREAM = 'text/vnd.turbo-stream.html';
 
     #[Test]
-    public function it_should_render_the_page_at_once_and_the_list_in_a_lazy_frame(): void
+    public function it_should_render_the_page_at_once_and_draw_the_list_server_side(): void
     {
         Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);
         Accounts::create(self::getContainer(), 'jane@example.com');
@@ -22,36 +25,46 @@ final class AdminUsersTest extends IdentityWebTestCase
 
         $this->client->request('GET', '/admin/users');
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('turbo-frame#admin-users[src="/admin/users/frames/list"][loading="lazy"]');
+        self::assertSelectorExists('[data-controller="datatable"][data-datatable-name-value="users"] table');
         self::assertSelectorNotExists('[style]');
 
-        $this->client->request('GET', '/admin/users/frames/list');
-        self::assertResponseStatusCodeSame(303, 'A frame is never a back door.');
-        self::assertResponseRedirects('/admin/users');
+        $draw = DataTables::draw($this->client, '/admin/users', 'users');
+        self::assertSame(2, $draw['recordsTotal']);
+        self::assertStringContainsString('jane@example.com', $draw['data'][0]['email']);
 
-        $this->client->request('GET', '/admin/users/frames/list', server: ['HTTP_TURBO_FRAME' => 'admin-users']);
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('turbo-frame#admin-users', 'jane@example.com');
-        self::assertStringContainsString('no-store', (string) $this->client->getResponse()->headers->get('Cache-Control'));
-        self::assertContains('Turbo-Frame', $this->client->getResponse()->getVary());
+        $search = DataTables::draw($this->client, '/admin/users', 'users', 'JANE');
+        self::assertSame(1, $search['recordsFiltered']);
+        self::assertSame(2, $search['recordsTotal']);
     }
 
     #[Test]
-    public function it_should_deactivate_an_account_and_refresh_the_list_with_a_stream(): void
+    public function it_should_escape_cells(): void
+    {
+        Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);
+        $this->logIn('root@example.com');
+
+        $draw = DataTables::draw($this->client, '/admin/users', 'users');
+
+        self::assertStringNotContainsString('<script', $draw['data'][0]['email']);
+        self::assertStringContainsString('<form method="post"', $draw['data'][0]['actions']);
+    }
+
+    #[Test]
+    public function it_should_deactivate_an_account_with_a_stream_answer(): void
     {
         Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);
         $jane = Accounts::create(self::getContainer(), 'jane@example.com');
         $this->logIn('root@example.com');
 
-        $crawler = $this->client->request('GET', '/admin/users/frames/list', server: ['HTTP_TURBO_FRAME' => 'admin-users']);
-        $form = $crawler->filter(\sprintf('form[action="/admin/users/%s/deactivate"]', $jane->id()->toString()))->form();
-        $this->client->submit($form, [], ['HTTP_ACCEPT' => self::STREAM]);
+        $this->client->request('GET', '/admin/users');
+        $row = array_first(array_filter(DataTables::draw($this->client, '/admin/users', 'users')['data'], static fn (array $r): bool => u($r['email'])->containsAny('jane@')));
+        self::assertIsArray($row);
+        $form = DataTables::cell($row['actions'])->filter(\sprintf('form[action="/admin/users/%s/deactivate"]', $jane->id()->toString()))->form();
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
 
         self::assertResponseIsSuccessful();
         self::assertStringStartsWith(self::STREAM, (string) $this->client->getResponse()->headers->get('Content-Type'));
-        $content = (string) $this->client->getResponse()->getContent();
-        self::assertStringContainsString('<turbo-stream action="replace" target="admin-users">', $content);
-        self::assertStringContainsString('Account deactivated.', $content);
+        self::assertStringContainsString('Account deactivated.', (string) $this->client->getResponse()->getContent());
         $entries = AuditLog::entries($this->connection(), 'identity.deactivate_user');
         self::assertCount(1, $entries);
         self::assertSame('success', $entries[0]['outcome']);
@@ -59,20 +72,20 @@ final class AdminUsersTest extends IdentityWebTestCase
     }
 
     #[Test]
-    public function it_should_render_a_refusal_inside_the_frame_and_audit_it_once(): void
+    public function it_should_answer_a_refusal_as_a_stream_and_audit_it_once(): void
     {
         $root = Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);
         $this->logIn('root@example.com');
 
-        $crawler = $this->client->request('GET', '/admin/users/frames/list', server: ['HTTP_TURBO_FRAME' => 'admin-users']);
-        $form = $crawler->filter(\sprintf('form[action="/admin/users/%s/deactivate"]', $root->id()->toString()))->form();
-        $this->client->submit($form, [], ['HTTP_ACCEPT' => self::STREAM]);
+        $row = DataTables::draw($this->client, '/admin/users', 'users')['data'][0];
+        $form = DataTables::cell($row['actions'])->filter(\sprintf('form[action="/admin/users/%s/deactivate"]', $root->id()->toString()))->form();
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
 
         self::assertResponseStatusCodeSame(422);
-        self::assertSelectorExists('turbo-frame#admin-users [role="alert"]');
+        self::assertStringStartsWith(self::STREAM, (string) $this->client->getResponse()->headers->get('Content-Type'));
+        self::assertStringContainsString('<turbo-stream action="update" target="action-alerts">', (string) $this->client->getResponse()->getContent());
         $entries = AuditLog::entries($this->connection(), 'identity.deactivate_user');
         self::assertCount(1, $entries);
-        self::assertSame('denied', $entries[0]['outcome']);
         self::assertSame('rule:self_management_forbidden', $entries[0]['reason']);
     }
 
@@ -84,7 +97,7 @@ final class AdminUsersTest extends IdentityWebTestCase
 
         $this->client->request('GET', '/admin/users');
         self::assertResponseStatusCodeSame(403);
-        $this->client->request('GET', '/admin/users/frames/list', server: ['HTTP_TURBO_FRAME' => 'admin-users']);
+        $this->client->request('POST', '/admin/users', ['_dt' => 'users', 'draw' => 1, 'start' => 0, 'length' => 10]);
         self::assertResponseStatusCodeSame(403);
         self::assertCount(2, AuditLog::entries($this->connection(), 'security.access_denied'));
     }

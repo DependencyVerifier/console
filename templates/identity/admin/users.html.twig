@@ -19,5 +19,5 @@
         <h1 class="text-2xl font-semibold tracking-tight">{{ 'admin.users.title'|trans }}</h1>
         <p class="mt-1 text-sm text-muted-foreground">{{ 'admin.users.description'|trans }}</p>
     </div>
-    {{ include('shared/frame/lazy.html.twig', {id: 'admin-users', src: path('identity_admin_users_frame'), rows: 6}) }}
+    <twig:DataTable :table="table" />
 {% endblock %}

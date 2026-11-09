@@ -15,6 +15,9 @@ enum RouteCollection: string implements RouteCollectionInterface
     case PASSWORD_RESET_LANDING = 'password_reset_landing';
     case PASSWORD_RESET_NEW = 'password_reset_new';
     case REAUTHENTICATE = 'reauthenticate';
+    case INVITATION_LANDING = 'invitation_landing';
+    case INVITATION_PENDING = 'invitation_pending';
+    case INVITATION_ACCEPT = 'invitation_accept';
     case ACCOUNT_SECURITY = 'account_security';
     case ACCOUNT_PASSWORD = 'account_password';
     case ACCOUNT_TOTP_START = 'account_totp_start';
@@ -22,7 +25,6 @@ enum RouteCollection: string implements RouteCollectionInterface
     case ACCOUNT_TOTP_DISABLE = 'account_totp_disable';
     case ACCOUNT_BACKUP_CODES = 'account_backup_codes';
     case ADMIN_USERS = 'admin_users';
-    case ADMIN_USERS_FRAME = 'admin_users_frame';
     case ADMIN_USER_RESET_SECOND_FACTOR = 'admin_user_reset_second_factor';
     case ADMIN_USER_DEACTIVATE = 'admin_user_deactivate';
     case ADMIN_USER_REACTIVATE = 'admin_user_reactivate';

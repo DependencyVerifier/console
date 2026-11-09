@@ -1,0 +1,32 @@
+{% extends 'shared/layout/app.html.twig' %}
+{% form_theme form 'shared/form/theme.html.twig' %}
+
+{% block title %}{{ 'organization.teams.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item>{{ 'admin.title'|trans }}</twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Separator />
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ 'organization.teams.title'|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    {{ include('shared/_flashes.html.twig') }}
+    <div id="action-alerts"></div>
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ 'organization.teams.title'|trans }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ 'organization.teams.description'|trans }}</p>
+        </div>
+        <twig:Button as="a" variant="outline" href="{{ path('organization_admin_default_quotas') }}">{{ 'organization.quotas.defaults'|trans }}</twig:Button>
+    </div>
+    {{ form_start(form, {action: path('organization_admin_teams'), attr: {class: 'flex flex-wrap items-end gap-2', novalidate: 'novalidate'}}) }}
+        <div class="w-56">{{ form_row(form.name) }}</div>
+        <div class="w-64">{{ form_row(form.firstAdminEmail) }}</div>
+        <twig:Button type="submit">{{ 'organization.teams.create'|trans }}</twig:Button>
+    {{ form_end(form) }}
+    <twig:DataTable :table="table" />
+{% endblock %}

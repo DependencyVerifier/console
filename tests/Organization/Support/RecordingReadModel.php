@@ -1,0 +1,139 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Organization\Support;
+
+use Organization\Application\Query\OrganizationReadModel;
+use Organization\Application\Query\View\EnvironmentRow;
+use Organization\Application\Query\View\InvitationRow;
+use Organization\Application\Query\View\MemberRow;
+use Organization\Application\Query\View\ProjectRow;
+use Organization\Application\Query\View\TeamSummary;
+use Shared\Application\Contract\Organization\PendingInvitation;
+use Shared\Application\Query\Page;
+use Shared\Application\Query\PageRequest;
+
+/**
+ * A read model that answers fixed pages and records the ids each handler let through.
+ */
+final class RecordingReadModel implements OrganizationReadModel
+{
+    /** @var list<array{string, mixed}> */
+    public array $calls = [];
+
+    /** @var list<object> rows answered by every listing, filtered by the expected row class */
+    public array $items = [];
+
+    public int $filtered = 0;
+
+    public int $total = 0;
+
+    public ?PendingInvitation $pending = null;
+
+    public function __construct(public int $projects = 0, public int $members = 0, public int $invitations = 0)
+    {
+    }
+
+    /**
+     * @param list<object> $items
+     */
+    public function answer(array $items, int $filtered, int $total): void
+    {
+        [$this->items, $this->filtered, $this->total] = [$items, $filtered, $total];
+    }
+
+    public function teams(?array $teamIds, PageRequest $page): Page
+    {
+        $this->calls[] = ['teams', $teamIds];
+
+        return $this->page(TeamSummary::class);
+    }
+
+    public function team(string $teamId): ?TeamSummary
+    {
+        return null;
+    }
+
+    public function activeMembers(string $teamId): int
+    {
+        $this->calls[] = ['activeMembers', $teamId];
+
+        return $this->members;
+    }
+
+    public function pendingInvitations(string $teamId, \DateTimeImmutable $now): int
+    {
+        $this->calls[] = ['pendingInvitations', [$teamId, $now->format(\DATE_ATOM)]];
+
+        return $this->invitations;
+    }
+
+    public function projectCount(string $teamId): int
+    {
+        $this->calls[] = ['projectCount', $teamId];
+
+        return $this->projects;
+    }
+
+    public function teamMembers(string $teamId, PageRequest $page): Page
+    {
+        $this->calls[] = ['teamMembers', $teamId];
+
+        return $this->page(MemberRow::class);
+    }
+
+    public function projectMembers(string $projectId, PageRequest $page): Page
+    {
+        $this->calls[] = ['projectMembers', $projectId];
+
+        return $this->page(MemberRow::class);
+    }
+
+    public function invitations(string $teamId, PageRequest $page, \DateTimeImmutable $now): Page
+    {
+        $this->calls[] = ['invitations', [$teamId, $now->format(\DATE_ATOM)]];
+
+        return $this->page(InvitationRow::class);
+    }
+
+    public function projects(string $teamId, ?array $projectIds, PageRequest $page): Page
+    {
+        $this->calls[] = ['projects', [$teamId, $projectIds]];
+
+        return $this->page(ProjectRow::class);
+    }
+
+    public function environments(string $projectId, PageRequest $page): Page
+    {
+        $this->calls[] = ['environments', $projectId];
+
+        return $this->page(EnvironmentRow::class);
+    }
+
+    public function pendingInvitation(?string $tokenHash, ?string $invitationId, \DateTimeImmutable $now): ?PendingInvitation
+    {
+        $this->calls[] = ['pendingInvitation', [$tokenHash, $invitationId, $now->format(\DATE_ATOM)]];
+
+        return $this->pending;
+    }
+
+    /**
+     * @template T of object
+     *
+     * @param class-string<T> $class
+     *
+     * @return Page<T>
+     */
+    private function page(string $class): Page
+    {
+        $items = [];
+        foreach ($this->items as $item) {
+            if ($item instanceof $class) {
+                $items[] = $item;
+            }
+        }
+
+        return new Page($items, $this->filtered, $this->total);
+    }
+}

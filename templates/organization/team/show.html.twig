@@ -1,0 +1,78 @@
+{% extends 'shared/layout/app.html.twig' %}
+{% form_theme invite_form 'shared/form/theme.html.twig' %}
+{% form_theme project_form 'shared/form/theme.html.twig' %}
+{% form_theme rename_form 'shared/form/theme.html.twig' %}
+
+{% block title %}{{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ team.name }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    {{ include('shared/_flashes.html.twig') }}
+    <div id="action-alerts"></div>
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">{{ team.name }}</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ team.role ? ('role.' ~ team.role)|trans : 'organization.team.super_admin_view'|trans }}</p>
+    </div>
+
+    {% if not team.adminEstablished %}
+        <twig:Alert>
+            <twig:ux:icon name="lucide:info" />
+            <twig:Alert:Description>{{ 'organization.team.no_admin_yet'|trans }}</twig:Alert:Description>
+        </twig:Alert>
+    {% endif %}
+
+    {% if team.can('team.edit') or team.can('team.members.manage') %}
+        {{ include('shared/frame/lazy.html.twig', {id: 'team-quotas', src: path('organization_team_quotas_frame', {teamId: team.id}), rows: 3}) }}
+    {% endif %}
+
+    <section class="flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold">{{ 'organization.projects.title'|trans }}</h2>
+        </div>
+        {% if team.can('project.create') %}
+            {{ form_start(project_form, {action: path('organization_project_create', {teamId: team.id}), attr: {class: 'flex items-end gap-2', novalidate: 'novalidate'}}) }}
+                <div class="w-64">{{ form_row(project_form.name) }}</div>
+                <twig:Button type="submit">{{ 'organization.projects.create'|trans }}</twig:Button>
+            {{ form_end(project_form) }}
+        {% endif %}
+        <twig:DataTable :table="tables.projects" />
+    </section>
+
+    {% if tables.members is defined %}
+        <section class="flex flex-col gap-3">
+            <h2 class="text-lg font-semibold">{{ 'organization.members.title'|trans }}</h2>
+            {% if team.can('team.members.manage') %}
+                {{ form_start(invite_form, {action: path('organization_team_invite', {teamId: team.id}), attr: {class: 'flex flex-wrap items-end gap-2', novalidate: 'novalidate'}}) }}
+                    <div class="w-64">{{ form_row(invite_form.email) }}</div>
+                    <div class="w-48">{{ form_row(invite_form.role) }}</div>
+                    <twig:Button type="submit">{{ 'organization.invitations.send'|trans }}</twig:Button>
+                {{ form_end(invite_form) }}
+            {% endif %}
+            <twig:DataTable :table="tables.members" />
+        </section>
+    {% endif %}
+
+    {% if tables.invitations is defined %}
+        <section class="flex flex-col gap-3">
+            <h2 class="text-lg font-semibold">{{ 'organization.invitations.title'|trans }}</h2>
+            <twig:DataTable :table="tables.invitations" />
+        </section>
+    {% endif %}
+
+    {% if team.can('team.edit') %}
+        <section class="flex flex-col gap-3">
+            <h2 class="text-lg font-semibold">{{ 'organization.team.settings'|trans }}</h2>
+            {{ form_start(rename_form, {action: path('organization_team_rename', {teamId: team.id}), attr: {class: 'flex items-end gap-2', novalidate: 'novalidate'}}) }}
+                <div class="w-64">{{ form_row(rename_form.name) }}</div>
+                <twig:Button type="submit" variant="outline">{{ 'organization.team.rename'|trans }}</twig:Button>
+            {{ form_end(rename_form) }}
+        </section>
+    {% endif %}
+{% endblock %}

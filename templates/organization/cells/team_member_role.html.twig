@@ -1,0 +1,4 @@
+{%- import 'organization/_actions.html.twig' as ui -%}
+{%- set teamId = app.request.attributes.get('teamId') -%}
+{{ ui.role(path('organization_team_member_role', {teamId: teamId, userId: row.userId}), 'team_member_role:' ~ row.userId, ['team_admin', 'team_member', 'team_viewer', 'team_guest'], row.role) }}
+{%- for extra in row.extras %} <twig:Badge variant="outline" class="ms-1 font-mono">{{ extra }}</twig:Badge>{% endfor -%}

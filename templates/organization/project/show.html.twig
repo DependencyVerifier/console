@@ -1,0 +1,69 @@
+{% extends 'shared/layout/app.html.twig' %}
+{% form_theme environment_form 'shared/form/theme.html.twig' %}
+{% form_theme invite_form 'shared/form/theme.html.twig' %}
+{% form_theme rename_form 'shared/form/theme.html.twig' %}
+
+{% block title %}{{ project.name }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_team', {teamId: project.teamId}) }}">{{ project.teamName }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Separator />
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ project.name }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    {{ include('shared/_flashes.html.twig') }}
+    <div id="action-alerts"></div>
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">{{ project.name }}</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ 'organization.environments.usage'|trans({count: project.environments, limit: project.environmentQuota ?? '∞'}) }}</p>
+    </div>
+
+    <section class="flex flex-col gap-3">
+        <h2 class="text-lg font-semibold">{{ 'organization.environments.title'|trans }}</h2>
+        {% if project.can('project.environments.manage') %}
+            {{ form_start(environment_form, {action: path('organization_environment_create', {teamId: project.teamId, projectId: project.id}), attr: {class: 'flex flex-wrap items-end gap-3', novalidate: 'novalidate'}}) }}
+                <div class="w-56">{{ form_row(environment_form.name) }}</div>
+                <label class="flex h-8 items-center gap-2 text-sm">{{ form_widget(environment_form.production) }} {{ 'organization.field.production'|trans }}</label>
+                {% do environment_form.production.setRendered %}
+                <twig:Button type="submit">{{ 'organization.environments.create'|trans }}</twig:Button>
+            {{ form_end(environment_form) }}
+        {% endif %}
+        <twig:DataTable :table="tables.environments" />
+    </section>
+
+    <section class="flex flex-col gap-3">
+        <h2 class="text-lg font-semibold">{{ 'organization.members.title'|trans }}</h2>
+        {% if project.can('project.members.manage') %}
+            {{ form_start(invite_form, {action: path('organization_project_invite', {teamId: project.teamId, projectId: project.id}), attr: {class: 'flex flex-wrap items-end gap-2', novalidate: 'novalidate'}}) }}
+                <div class="w-64">{{ form_row(invite_form.email) }}</div>
+                <div class="w-48">{{ form_row(invite_form.role) }}</div>
+                <twig:Button type="submit">{{ 'organization.invitations.send'|trans }}</twig:Button>
+            {{ form_end(invite_form) }}
+        {% endif %}
+        <twig:DataTable :table="tables.members" />
+    </section>
+
+    {% if project.can('project.edit') or project.can('project.delete') %}
+        <section class="flex flex-col gap-3">
+            <h2 class="text-lg font-semibold">{{ 'organization.projects.settings'|trans }}</h2>
+            <div class="flex flex-wrap items-end gap-4">
+                {% if project.can('project.edit') %}
+                    {{ form_start(rename_form, {action: path('organization_project_rename', {teamId: project.teamId, projectId: project.id}), attr: {class: 'flex items-end gap-2', novalidate: 'novalidate'}}) }}
+                        <div class="w-64">{{ form_row(rename_form.name) }}</div>
+                        <twig:Button type="submit" variant="outline">{{ 'organization.projects.rename'|trans }}</twig:Button>
+                    {{ form_end(rename_form) }}
+                {% endif %}
+                {% if project.can('project.delete') %}
+                    {{ form_start(delete_form, {action: path('organization_project_delete', {teamId: project.teamId, projectId: project.id}), attr: {'data-turbo': 'false'}}) }}
+                        <twig:Button type="submit" variant="destructive">{{ 'organization.projects.delete'|trans }}</twig:Button>
+                    {{ form_end(delete_form) }}
+                {% endif %}
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}

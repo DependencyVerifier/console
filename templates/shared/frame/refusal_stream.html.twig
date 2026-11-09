@@ -1,0 +1,9 @@
+{#- Refusal of an action posted from a list (no form frame to re-render): the error goes to the page alerts. -#}
+<turbo-stream action="update" target="action-alerts"><template>
+    <twig:Alert variant="destructive">
+        <twig:ux:icon name="lucide:circle-alert" />
+        <twig:Alert:Description>
+            {%- for error in form.vars.errors -%}{{ error.cause is null ? error.message|trans : error.message }} {% endfor -%}
+        </twig:Alert:Description>
+    </twig:Alert>
+</template></turbo-stream>

@@ -1,0 +1,20 @@
+{#- Field-less action form (`action[_token]`, CSRF token id `<action>:<subject id>`), answered by a Turbo Stream. -#}
+{%- macro button(url, token_id, label, variant) -%}
+    <form method="post" action="{{ url }}" class="inline">
+        <input type="hidden" name="action[_token]" value="{{ csrf_token(token_id) }}">
+        <twig:Button type="submit" size="xs" variant="{{ variant|default('outline') }}">{{ label|trans }}</twig:Button>
+    </form>
+{%- endmacro -%}
+
+{#- Role change: a select and a submit button (`role[role]`, `role[_token]`). -#}
+{%- macro role(url, token_id, roles, current) -%}
+    <form method="post" action="{{ url }}" class="inline-flex items-center gap-1">
+        <input type="hidden" name="role[_token]" value="{{ csrf_token(token_id) }}">
+        <select name="role[role]" class="h-7 rounded-md border border-input bg-transparent px-1.5 text-xs" aria-label="{{ 'organization.field.role'|trans }}">
+            {%- for role in roles -%}
+                <option value="{{ role }}"{% if role == current %} selected{% endif %}>{{ ('role.' ~ role)|trans }}</option>
+            {%- endfor -%}
+        </select>
+        <twig:Button type="submit" size="xs" variant="ghost">{{ 'action.save'|trans }}</twig:Button>
+    </form>
+{%- endmacro -%}

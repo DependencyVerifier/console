@@ -457,12 +457,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/jquery@npm:^3":
+  version: 3.5.34
+  resolution: "@types/jquery@npm:3.5.34"
+  dependencies:
+    "@types/sizzle": "npm:*"
+  checksum: 10c0/c85eec82531912cc497c34daad3509cf54875a0457c64d82b4fe17a4a27a313150c0882b7dd345b7e98c9116e0bae64c3942b7a76f6edcd664efa701cd1f2d81
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:^26.6.6":
   version: 26.6.6
   resolution: "@types/node@npm:26.6.6"
   dependencies:
     undici-types: "npm:~8.9.0"
   checksum: 10c0/5cb63f644f6e85a257a9cd2403cbcbe196760e2a35fd3ec9fb8b5cff663e14cc832b198cc17b53f870a2e30900ed45a1fb3f53e6589aba26b8e8c484aa672053
+  languageName: node
+  linkType: hard
+
+"@types/sizzle@npm:*":
+  version: 2.3.10
+  resolution: "@types/sizzle@npm:2.3.10"
+  checksum: 10c0/d43ec1cd0b5e1f66b1abeaf359608853629cd3d6b8dc8b3b40b85a5ee2ce149a4485ccd7eee5c58b5a2814d384f5a951f1dab5d49041ad83457270cb2bc66fe7
   languageName: node
   linkType: hard
 
@@ -620,6 +636,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"datatables.net-dt@npm:^3.1.5":
+  version: 3.1.5
+  resolution: "datatables.net-dt@npm:3.1.5"
+  dependencies:
+    datatables.net: "npm:3.1.5"
+  checksum: 10c0/33a0381387f0918ff14fbba659555e399c41f241ffa7138a857fe9db32ebd95b69fff2d0075aec23985be1a3525d6d638a8f5c802019f4764688d0d27a9904b6
+  languageName: node
+  linkType: hard
+
+"datatables.net@npm:3.1.5":
+  version: 3.1.5
+  resolution: "datatables.net@npm:3.1.5"
+  checksum: 10c0/0e94fab9da78a05f755c5d2983cc63632a6ef91ff4fa4c4d2b35bda91f8a8cc68185d7595308fc4429a50ebbeed4b969a41d25a51f612f1c6fa952b7adddd98b
+  languageName: node
+  linkType: hard
+
 "depverify-console@workspace:.":
   version: 0.0.0-use.local
   resolution: "depverify-console@workspace:."
@@ -632,7 +664,10 @@ __metadata:
     "@symfony/ux-live-component": "file:vendor/symfony/ux-live-component/assets"
     "@symfony/ux-turbo": "file:vendor/symfony/ux-turbo/assets"
     "@tailwindcss/vite": "npm:^4.3.5"
+    "@types/jquery": "npm:^3"
     "@types/node": "npm:^26.6.6"
+    datatables.net-dt: "npm:^3.1.5"
+    jquery: "npm:^3"
     tailwindcss: "npm:^4.3.5"
     tw-animate-css: "npm:^1.4.0"
     typescript: "npm:^7.0.2"
@@ -722,6 +757,13 @@ __metadata:
   bin:
     jiti: lib/jiti-cli.mjs
   checksum: 10c0/1b1e2310a490dce1aeea3da5f5dfe18273516c20ce48be2e98eb8ea452d5f3dcc8fd0cfd6d28b4052a24c5dbab6e3089b2d7e79f0bce7915b10d750929563c42
+  languageName: node
+  linkType: hard
+
+"jquery@npm:^3":
+  version: 3.7.1
+  resolution: "jquery@npm:3.7.1"
+  checksum: 10c0/808cfbfb758438560224bf26e17fcd5afc7419170230c810dd11f5c1792e2263e2970cca8d659eb84fcd9acc301edb6d310096e450277d54be4f57071b0c82d9
   languageName: node
   linkType: hard
 

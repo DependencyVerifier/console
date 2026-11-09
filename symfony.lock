@@ -50,6 +50,9 @@
             ".php-cs-fixer.dist.php"
         ]
     },
+    "omines/datatables-bundle": {
+        "version": "0.10.8"
+    },
     "phpstan/phpstan": {
         "version": "2.3.5"
     },

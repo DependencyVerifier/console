@@ -1,0 +1,2 @@
+<span class="font-medium">{{ row.email }}</span>
+{%- if row.superAdmin %} <twig:Badge variant="secondary" class="ms-1">{{ 'admin.users.super_admin'|trans }}</twig:Badge>{% endif -%}

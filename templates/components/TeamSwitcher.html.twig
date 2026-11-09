@@ -1,8 +1,10 @@
 {%- props
-    ## array<array{name:string,logo:string,role:string}> The teams listed in the menu, the first one being the active team.
-    teams
+    ## array<array{id:string,name:string,logo:string,role:string,url:string}> The teams listed in the menu.
+    teams,
+    ## string|null Id of the current team (the first team otherwise).
+    current = null
 -%}
-{%- set activeTeam = teams|first -%}
+{%- set activeTeam = (teams|filter(t => t.id == current)|first) ?: teams|first -%}
 {%- if activeTeam -%}
     <twig:Sidebar:Menu>
         <twig:Sidebar:MenuItem>
@@ -25,17 +27,17 @@
                 </twig:DropdownMenu:Trigger>
                 <twig:DropdownMenu:Content class="w-max">
                     <twig:DropdownMenu:Label class="text-xs text-muted-foreground">
-                        Teams
+                        {{ 'nav.teams'|trans }}
                     </twig:DropdownMenu:Label>
                     {%- for team in teams %}
-                        {%- set shortcut = '⌘' ~ loop.index %}
-                        <twig:DropdownMenu:Item class="gap-2 p-2">
-                            <div class="flex size-6 items-center justify-center rounded-md border">
-                                <twig:ux:icon name="{{ team.logo }}" />
-                            </div>
-                            {{ team.name }}
-                            <twig:DropdownMenu:Shortcut>{{ shortcut }}</twig:DropdownMenu:Shortcut>
-                        </twig:DropdownMenu:Item>
+                        <a href="{{ team.url }}" class="contents">
+                            <twig:DropdownMenu:Item class="gap-2 p-2">
+                                <div class="flex size-6 items-center justify-center rounded-md border">
+                                    <twig:ux:icon name="{{ team.logo }}" />
+                                </div>
+                                {{ team.name }}
+                            </twig:DropdownMenu:Item>
+                        </a>
                     {%- endfor %}
                 </twig:DropdownMenu:Content>
             </twig:DropdownMenu>

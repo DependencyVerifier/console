@@ -10,6 +10,7 @@
 @import '@fontsource/ibm-plex-mono/500.css';
 /* Romain MILLAN tag (git submodule). In the base layer so Tailwind utilities still win. */
 @import '../romain-millan-tag/tag.css' layer(base);
+@import './datatables.css' layer(components);
 
 @source '../../templates';
 
