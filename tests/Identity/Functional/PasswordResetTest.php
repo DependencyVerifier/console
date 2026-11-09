@@ -34,9 +34,9 @@ final class PasswordResetTest extends IdentityWebTestCase
         $link = $this->lastLink();
 
         $this->client->request('GET', $link);
-        self::assertResponseStatusCodeSame(303);
-        self::assertResponseRedirects('/password/reset/new');
-        $crawler = $this->client->followRedirect();
+        self::assertResponseIsSuccessful('No HTTP redirect: it would keep the cross-site context and drop the Strict cookie.');
+        self::assertSelectorExists('meta[http-equiv="refresh"][content="0;url=/password/reset/new"]');
+        $crawler = $this->client->clickLink('Continue');
         self::assertStringNotContainsString(u($link)->afterLast('/')->toString(), (string) $this->client->getRequest()->getUri());
         self::assertStringContainsString('no-store', (string) $this->client->getResponse()->headers->get('Cache-Control'));
 
@@ -60,7 +60,7 @@ final class PasswordResetTest extends IdentityWebTestCase
         Accounts::create(self::getContainer(), 'jane@example.com');
         $this->ask('jane@example.com');
         $this->client->request('GET', $this->lastLink());
-        $crawler = $this->client->followRedirect();
+        $crawler = $this->client->clickLink('Continue');
 
         $this->client->submit($crawler->filter('form')->form([
             'new_password[password][first]' => 'jane@example.com!!',

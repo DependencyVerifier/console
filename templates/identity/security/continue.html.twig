@@ -1,0 +1,16 @@
+{#- Same-site hop after an emailed link (see PasswordResetLandingController): no HTTP redirect, so the browser
+    sends the SameSite=Strict session cookie on the next navigation. -#}
+{% extends 'shared/layout/auth.html.twig' %}
+
+{% block title %}{{ title_key|trans }} · DependencyVerifier{% endblock %}
+
+{% block head_meta %}
+    <meta http-equiv="refresh" content="0;url={{ path(next_route) }}">
+{% endblock %}
+
+{% block main %}
+    <div class="flex flex-col gap-4">
+        <h1 class="text-2xl font-semibold tracking-tight">{{ title_key|trans }}</h1>
+        <twig:Button as="a" href="{{ path(next_route) }}" class="w-fit">{{ 'action.continue'|trans }}</twig:Button>
+    </div>
+{% endblock %}

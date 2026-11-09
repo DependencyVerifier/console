@@ -15,9 +15,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Landing page of the emailed link: the token is exchanged for the request id in the session, then the browser is
- * sent to a URL without the token (it leaks neither through the Referer nor the history). Public: with
- * SameSite=Strict the first click from an email arrives without a session.
+ * Landing page of the emailed link: the token is exchanged for the request id in the session, then the browser goes on
+ * to a URL without the token. Public: with SameSite=Strict the first click from an email arrives without a session.
+ *
+ * Never an HTTP redirect here: a redirect keeps the cross-site context of the click from the mail client, so the
+ * browser would not send the Strict session cookie it has just received and the next page would find no request.
+ * This page (same site) moves on itself (meta refresh, plus a button), and that navigation carries the cookie.
  */
 #[Route(path: '/password/reset/{token}', name: RouteCollection::PASSWORD_RESET_LANDING->value, requirements: ['token' => '[A-Za-z0-9_-]{43}'], methods: ['GET'])]
 final class PasswordResetLandingController extends AbstractController
@@ -40,7 +43,12 @@ final class PasswordResetLandingController extends AbstractController
         }
 
         $request->getSession()->set(SessionKeys::PASSWORD_RESET_REQUEST, $resetRequest->id()->toRfc4122());
+        $response = $this->render('identity/security/continue.html.twig', [
+            'next_route' => RouteCollection::PASSWORD_RESET_NEW->prefixed(),
+            'title_key' => 'identity.password_reset.title',
+        ]);
+        $response->headers->set('Cache-Control', 'no-store');
 
-        return $this->redirectToRoute(RouteCollection::PASSWORD_RESET_NEW->prefixed(), status: Response::HTTP_SEE_OTHER);
+        return $response;
     }
 }

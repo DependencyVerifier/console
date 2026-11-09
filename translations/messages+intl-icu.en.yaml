@@ -13,6 +13,7 @@ action:
     done: Done.
     retry: Try again
     back: Back
+    continue: Continue
 frame:
     loading: Loading
     retry: Retry
