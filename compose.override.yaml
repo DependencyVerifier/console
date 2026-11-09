@@ -39,6 +39,11 @@ services:
     environment:
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
     command: ["sh", "-c", "corepack enable && yarn install && yarn dev --host 0.0.0.0"]
+    # package.json links the Symfony UX packages from vendor/ (file:vendor/symfony/ux-*/assets): wait until
+    # the php container is healthy, i.e. its entrypoint has installed the Composer vendors.
+    depends_on:
+      php:
+        condition: service_healthy
     ports:
       - "5173:5173"
 
