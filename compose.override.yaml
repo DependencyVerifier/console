@@ -44,6 +44,14 @@ services:
     depends_on:
       php:
         condition: service_healthy
+    # Healthy once Vite answers, i.e. after `yarn install`: `docker compose up --wait` (CI, make up) then
+    # guarantees node_modules exists before typecheck or build run.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:5173/build/@vite/client"]
+      start_period: 180s
+      interval: 5s
+      timeout: 5s
+      retries: 6
     ports:
       - "5173:5173"
 
