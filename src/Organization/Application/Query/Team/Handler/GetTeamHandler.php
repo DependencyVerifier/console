@@ -44,9 +44,12 @@ final readonly class GetTeamHandler implements QueryHandler
             throw ResourceNotFound::of('team');
         }
 
+        $projects = $this->read->projectCount($query->teamId);
+        $members = $this->read->activeMembers($query->teamId);
+        $invitations = $this->read->pendingInvitations($query->teamId, $this->clock->now());
         $usage = [
-            QuotaName::MaxProjects->value => $this->read->projectCount($query->teamId),
-            QuotaName::MaxMembers->value => $this->read->activeMembers($query->teamId) + $this->read->pendingInvitations($query->teamId, $this->clock->now()),
+            QuotaName::MaxProjects->value => $projects,
+            QuotaName::MaxMembers->value => $members + $invitations,
         ];
         $quotas = [];
         foreach (QuotaName::cases() as $name) {
@@ -58,6 +61,6 @@ final readonly class GetTeamHandler implements QueryHandler
             $can[$gesture->value] = $permissions->allows($gesture, $query->teamId);
         }
 
-        return new TeamView($query->teamId, $team->name(), $team->slug(), $permissions->teamRole($query->teamId)?->value, $team->isAdminEstablished(), $quotas, $can);
+        return new TeamView($query->teamId, $team->name(), $team->slug(), $permissions->teamRole($query->teamId)?->value, $team->isAdminEstablished(), $quotas, $can, $members, $projects, $invitations, $team->createdAt());
     }
 }

@@ -27,7 +27,7 @@ final readonly class ResendInvitationController
             'invitation_resend:'.$invitationId,
             static fn () => new ResendInvitation($invitationId),
             'organization.invitations.resent',
-            new RouteReference(RouteCollection::TEAM->prefixed(), ['teamId' => $teamId]),
+            new RouteReference(RouteCollection::TEAM_MEMBERS->prefixed(), ['teamId' => $teamId]),
         );
     }
 }

@@ -29,7 +29,7 @@ final readonly class RenameTeamController
             'team_rename:'.$teamId,
             static fn ($form) => new RenameTeam($teamId, FormData::string($form, 'name')),
             'organization.team.renamed',
-            new RouteReference(RouteCollection::TEAM->prefixed(), ['teamId' => $teamId]), NameType::class, ['label_key' => 'organization.field.team_name'],
+            new RouteReference(RouteCollection::TEAM_SETTINGS->prefixed(), ['teamId' => $teamId]), NameType::class, ['label_key' => 'organization.field.team_name'],
         );
     }
 }

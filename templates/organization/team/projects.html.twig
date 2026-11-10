@@ -1,0 +1,11 @@
+{% extends 'organization/team/_layout.html.twig' %}
+{% import 'organization/team/_layout.html.twig' as team_ui %}
+
+{% block primary_action %}
+    {%- if team.can('project.create') %}{{ team_ui.new_project(team, 'default') }}{% endif %}
+{% endblock %}
+
+{#- Always the table, even empty (its own "Nothing here yet"): a creation from the dialog reloads the DataTables only. -#}
+{% block tab %}
+    <twig:DataTable :table="tables.projects" />
+{% endblock %}

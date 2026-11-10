@@ -27,7 +27,7 @@ final readonly class DeleteProjectController
             'project_delete:'.$projectId,
             static fn () => new DeleteProject($projectId),
             'organization.projects.deleted',
-            new RouteReference(RouteCollection::TEAM->prefixed(), ['teamId' => $teamId]),
+            new RouteReference(RouteCollection::TEAM_PROJECTS->prefixed(), ['teamId' => $teamId]),
         );
     }
 }

@@ -27,7 +27,7 @@ final readonly class RevokeInvitationController
             'invitation_revoke:'.$invitationId,
             static fn () => new RevokeInvitation($invitationId),
             'organization.invitations.revoked',
-            new RouteReference(RouteCollection::TEAM->prefixed(), ['teamId' => $teamId]),
+            new RouteReference(RouteCollection::TEAM_MEMBERS->prefixed(), ['teamId' => $teamId]),
         );
     }
 }

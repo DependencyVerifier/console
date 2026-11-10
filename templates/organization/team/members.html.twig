@@ -1,0 +1,20 @@
+{% extends 'organization/team/_layout.html.twig' %}
+{% import 'organization/team/_layout.html.twig' as team_ui %}
+
+{% block primary_action %}
+    {%- if team.can('team.members.manage') %}{{ team_ui.invite_member(team, 'default') }}{% endif %}
+{% endblock %}
+
+{% block tab %}
+    <section class="flex flex-col gap-3" aria-labelledby="team-members-title">
+        <h2 id="team-members-title" class="text-base font-semibold">{{ 'organization.members.title'|trans }}</h2>
+        <twig:DataTable :table="tables.members" />
+    </section>
+
+    {%- if tables.invitations is defined %}
+        <section class="flex flex-col gap-3" aria-labelledby="team-invitations-title">
+            <h2 id="team-invitations-title" class="text-base font-semibold">{{ 'organization.invitations.title'|trans }}</h2>
+            <twig:DataTable :table="tables.invitations" />
+        </section>
+    {%- endif %}
+{% endblock %}

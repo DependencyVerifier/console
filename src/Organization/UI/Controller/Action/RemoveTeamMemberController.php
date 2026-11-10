@@ -27,7 +27,7 @@ final readonly class RemoveTeamMemberController
             'team_member_remove:'.$userId,
             static fn () => new RemoveTeamMember($teamId, $userId),
             'organization.members.removed',
-            new RouteReference(RouteCollection::TEAM->prefixed(), ['teamId' => $teamId]),
+            new RouteReference(RouteCollection::TEAM_MEMBERS->prefixed(), ['teamId' => $teamId]),
         );
     }
 }

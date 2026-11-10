@@ -267,6 +267,27 @@ organization:
         settings: Settings
         no_admin_yet: No team admin yet. The team is managed by the super admin until the invitation is accepted.
         super_admin_view: Viewed as super admin
+        tab:
+            overview: Overview
+            projects: Projects
+            members: Members
+            settings: Settings
+        tabs_label: Team sections
+        facts:
+            members: Members
+            projects: Projects
+            invitations: Pending invitations
+            created: Created
+            slug: Slug
+            id: Team ID
+        quotas_title: Usage and quotas
+        quotas_later: Applies when its feature arrives
+        shortcuts: Shortcuts
+        go_members: Manage members
+        go_settings: Team settings
+        name_title: Name
+        name_help: Shown in the sidebar and the lists. The slug and the ID never change.
+        identity_title: Identifiers
     teams:
         title: Teams
         description: Teams of the instance with their usage. The first team admin is chosen when the team is created.
@@ -291,6 +312,9 @@ organization:
     invitations:
         title: Pending invitations
         send: Invite
+        new: Invite member
+        new_title: Invite a member
+        new_description: "They receive a link valid 7 days to join the team, and choose a password if they have no account yet."
         sent: Invitation sent.
         resend: Resend
         resent: Invitation sent again.
@@ -300,6 +324,8 @@ organization:
     projects:
         title: Projects
         create: Create a project
+        new: New project
+        new_title: New project
         created: Project created.
         renamed: Project renamed.
         rename: Rename
@@ -325,3 +351,7 @@ organization:
         unlimited: unlimited
         reached: Quota reached.
         warning: More than 80 % used.
+        of: "{usage} of {limit}"
+        banner_warning: "{quota}: {usage} of {limit} used. New creations stop at the limit."
+        banner_reached: "{quota}: the limit of {limit} is reached. Contact the instance administrator to raise it."
+

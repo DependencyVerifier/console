@@ -29,7 +29,7 @@ final readonly class ChangeTeamRoleController
             'team_member_role:'.$userId,
             static fn ($form) => new ChangeTeamRole($teamId, $userId, FormData::string($form, 'role')),
             'organization.members.role_changed',
-            new RouteReference(RouteCollection::TEAM->prefixed(), ['teamId' => $teamId]), RoleType::class, [],
+            new RouteReference(RouteCollection::TEAM_MEMBERS->prefixed(), ['teamId' => $teamId]), RoleType::class, [],
         );
     }
 }

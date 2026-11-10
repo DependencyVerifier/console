@@ -1,0 +1,71 @@
+{#- Shared frame of the four team tabs: breadcrumb, object header (one primary action at most, given by the tab),
+    the tab bar, then the tab. Variables: team (TeamView), tab, tabs (the tabs the actor may open). -#}
+{% extends 'shared/layout/app.html.twig' %}
+
+{% set tab_routes = {overview: 'organization_team', projects: 'organization_team_projects', members: 'organization_team_members', settings: 'organization_team_settings'} %}
+
+{% block title %}{{ ('organization.team.tab.' ~ tab)|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            {%- if tab == 'overview' %}
+                <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ team.name }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+            {%- else %}
+                <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_team', {teamId: team.id}) }}">{{ team.name }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
+                <twig:Breadcrumb:Separator />
+                <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ ('organization.team.tab.' ~ tab)|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+            {%- endif %}
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    {{ include('shared/_flashes.html.twig') }}
+    <div id="action-alerts"></div>
+
+    <div class="flex flex-col gap-5">
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-3">
+            <span class="grid size-10 shrink-0 place-items-center rounded-lg border bg-muted text-muted-foreground" aria-hidden="true">
+                <twig:ux:icon name="lucide:users" class="size-5" />
+            </span>
+            <div class="min-w-0">
+                <h1 class="truncate text-2xl font-semibold tracking-tight">{{ team.name }}</h1>
+                <p class="text-sm text-muted-foreground">{{ team.role ? ('role.' ~ team.role)|trans : 'organization.team.super_admin_view'|trans }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">{% block primary_action %}{% endblock %}</div>
+    </header>
+
+    <twig:TabNav
+        :items="tabs|map(key => {key: key, label: ('organization.team.tab.' ~ key)|trans, url: path(tab_routes[key], {teamId: team.id})})"
+        :active="tab"
+        :label="'organization.team.tabs_label'|trans"
+    />
+    </div>
+
+    {% block tab %}{% endblock %}
+{% endblock %}
+
+{#- The "New project" and "Invite member" dialogs, shared by the overview shortcuts and the tabs' primary action. -#}
+{% macro new_project(team, variant) %}
+    <twig:FormDialog
+        id="create-project"
+        :title="'organization.projects.new_title'|trans"
+        :trigger="'organization.projects.new'|trans"
+        :src="path('organization_project_create', {teamId: team.id})"
+        :variant="variant"
+    />
+{% endmacro %}
+
+{% macro invite_member(team, variant) %}
+    <twig:FormDialog
+        id="invite-member"
+        :title="'organization.invitations.new_title'|trans"
+        :description="'organization.invitations.new_description'|trans"
+        :trigger="'organization.invitations.new'|trans"
+        :src="path('organization_team_invite', {teamId: team.id})"
+        :variant="variant"
+    />
+{% endmacro %}

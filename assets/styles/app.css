@@ -12,6 +12,7 @@
 @import '../romain-millan-tag/tag.css' layer(base);
 @import './datatables.css' layer(components);
 @import './tom-select.css' layer(components);
+@import './meter.css' layer(components);
 
 @source '../../templates';
 

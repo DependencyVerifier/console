@@ -1,0 +1,53 @@
+{% extends 'organization/team/_layout.html.twig' %}
+{% import 'organization/team/_layout.html.twig' as team_ui %}
+
+{% block tab %}
+    {%- if not team.adminEstablished %}
+        <twig:Alert>
+            <twig:ux:icon name="lucide:info" />
+            <twig:Alert:Description>{{ 'organization.team.no_admin_yet'|trans }}</twig:Alert:Description>
+        </twig:Alert>
+    {%- endif %}
+
+    <twig:MetaGrid :items="[
+        {label: 'organization.team.facts.members'|trans, value: team.memberCount},
+        {label: 'organization.team.facts.projects'|trans, value: team.projectCount},
+        {label: 'organization.team.facts.invitations'|trans, value: team.pendingInvitationCount},
+        {label: 'organization.team.facts.created'|trans, value: team.createdAt|date('Y-m-d')},
+        {label: 'organization.team.facts.slug'|trans, value: team.slug, mono: true},
+        {label: 'organization.team.facts.id'|trans, value: team.id, mono: true},
+    ]" />
+
+    {%- set show_quotas = team.can('team.edit') or team.can('team.members.manage') -%}
+    {%- set shortcuts = team.can('project.create') or team.can('team.members.manage') or 'settings' in tabs -%}
+    <div class="grid items-start gap-6 {{ shortcuts ? 'lg:grid-cols-[minmax(0,1fr)_16rem]' : '' }}">
+        {%- if show_quotas %}
+            <section class="flex flex-col gap-3" aria-labelledby="team-quotas-title">
+                <h2 id="team-quotas-title" class="text-base font-semibold">{{ 'organization.team.quotas_title'|trans }}</h2>
+                {{ include('shared/frame/lazy.html.twig', {id: 'team-quotas', src: path('organization_team_quotas_frame', {teamId: team.id}), rows: 3}) }}
+            </section>
+        {%- else %}
+            <div></div>
+        {%- endif %}
+
+        {%- if shortcuts %}
+            <aside class="flex flex-col gap-3" aria-labelledby="team-shortcuts-title">
+                <h2 id="team-shortcuts-title" class="text-base font-semibold">{{ 'organization.team.shortcuts'|trans }}</h2>
+                <div class="flex flex-col gap-2 *:w-full [&_button]:w-full [&_button]:justify-start">
+                    {%- if team.can('project.create') %}{{ team_ui.new_project(team, 'outline') }}{% endif %}
+                    {%- if team.can('team.members.manage') %}{{ team_ui.invite_member(team, 'outline') }}{% endif %}
+                    {%- if 'members' in tabs %}
+                        <twig:Button as="a" variant="ghost" href="{{ path('organization_team_members', {teamId: team.id}) }}" class="justify-start">
+                            <twig:ux:icon name="lucide:users" /> {{ 'organization.team.go_members'|trans }}
+                        </twig:Button>
+                    {%- endif %}
+                    {%- if 'settings' in tabs %}
+                        <twig:Button as="a" variant="ghost" href="{{ path('organization_team_settings', {teamId: team.id}) }}" class="justify-start">
+                            <twig:ux:icon name="lucide:settings" /> {{ 'organization.team.go_settings'|trans }}
+                        </twig:Button>
+                    {%- endif %}
+                </div>
+            </aside>
+        {%- endif %}
+    </div>
+{% endblock %}

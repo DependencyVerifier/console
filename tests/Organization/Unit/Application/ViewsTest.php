@@ -17,7 +17,7 @@ final class ViewsTest extends TestCase
     #[Test]
     public function it_should_deny_any_gesture_it_does_not_list(): void
     {
-        $team = new TeamView('t', 'Platform', 'platform', 'team_admin', true, [], ['team.edit' => true, 'team.audit.view' => false]);
+        $team = new TeamView('t', 'Platform', 'platform', 'team_admin', true, [], ['team.edit' => true, 'team.audit.view' => false], 1, 0, 0, new \DateTimeImmutable());
         $project = new ProjectView('p', 't', 'Platform', 'Shop', 0, 3, ['project.edit' => true, 'project.delete' => false]);
 
         foreach ([$team, $project] as $view) {

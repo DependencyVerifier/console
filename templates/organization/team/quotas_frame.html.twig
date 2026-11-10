@@ -1,17 +1,47 @@
-{#- Quota gauges (<meter>: no inline style); the three quotas enforced in this step carry a usage. -#}
-<div class="grid gap-3 sm:grid-cols-3">
-    {%- for quota in team.quotas|filter(q => q.enforced) -%}
-        <div class="flex flex-col gap-1 rounded-lg border p-3">
-            <span class="text-sm text-muted-foreground">{{ ('quota.' ~ quota.name)|trans }}</span>
-            <span class="text-sm font-medium">{{ quota.usage }} / {{ quota.limit ?? ('organization.quotas.unlimited'|trans) }}</span>
-            {%- if quota.limit is not null -%}
-                <meter class="w-full" min="0" max="{{ quota.limit }}" low="{{ (quota.limit * 0.8)|round(0, 'floor') }}" high="{{ (quota.limit * 0.8)|round(0, 'floor') }}" optimum="0" value="{{ quota.usage }}">{{ quota.usage }}</meter>
-            {%- endif -%}
-            {%- if quota.reached -%}
-                <span class="text-xs text-destructive">{{ 'organization.quotas.reached'|trans }}</span>
-            {%- elseif quota.warning -%}
-                <span class="text-xs text-muted-foreground">{{ 'organization.quotas.warning'|trans }}</span>
-            {%- endif -%}
-        </div>
-    {%- endfor -%}
+{#- Usage and quotas of a team (decision 31: a lazy frame, refreshed after any action changing a usage).
+    Banners first: warning from 80 %, destructive at 100 %. Then one row per enforced quota (label, "3 of 5" in tabular
+    figures, a styled native <meter>: no inline style under the CSP), then the stored quotas whose feature is not
+    there yet, limits only. -#}
+{%- set enforced = team.quotas|filter(q => q.enforced) -%}
+{%- set later = team.quotas|filter(q => not q.enforced) -%}
+<div class="flex flex-col gap-3">
+    {%- for quota in enforced|filter(q => q.limit is not null and (q.reached or q.warning)) %}
+        <twig:Alert variant="{{ quota.reached ? 'destructive' : 'default' }}" data-quota-banner="{{ quota.name }}">
+            <twig:ux:icon name="{{ quota.reached ? 'lucide:circle-alert' : 'lucide:triangle-alert' }}" />
+            <twig:Alert:Description>
+                {{- (quota.reached ? 'organization.quotas.banner_reached' : 'organization.quotas.banner_warning')|trans({quota: ('quota.' ~ quota.name)|trans, usage: quota.usage, limit: quota.limit}) -}}
+            </twig:Alert:Description>
+        </twig:Alert>
+    {%- endfor %}
+
+    <dl class="divide-y rounded-lg border">
+        {%- for quota in enforced %}
+            {%- set state = quota.limit is null ? 'none' : (quota.reached ? 'reached' : (quota.warning ? 'warning' : 'ok')) -%}
+            <div class="grid gap-2 px-4 py-3">
+                <div class="flex items-baseline justify-between gap-3">
+                    <dt class="text-sm">{{ ('quota.' ~ quota.name)|trans }}</dt>
+                    <dd class="text-sm font-medium tabular-nums {{ state == 'reached' ? 'text-destructive' : '' }}">
+                        {{- quota.limit is null ? quota.usage ~ ' · ' ~ ('organization.quotas.unlimited'|trans) : 'organization.quotas.of'|trans({usage: quota.usage, limit: quota.limit}) -}}
+                    </dd>
+                </div>
+                {%- if quota.limit is not null %}
+                    <meter class="quota-meter" data-state="{{ state }}" min="0" max="{{ max(quota.limit, 1) }}" value="{{ min(quota.usage, max(quota.limit, 1)) }}" aria-label="{{ ('quota.' ~ quota.name)|trans }}">{{ quota.usage }} / {{ quota.limit }}</meter>
+                {%- endif %}
+            </div>
+        {%- endfor %}
+    </dl>
+
+    {%- if later|length > 0 %}
+        <details class="group rounded-lg border px-4 py-3 text-sm">
+            <summary class="cursor-pointer text-muted-foreground marker:text-muted-foreground">{{ 'organization.team.quotas_later'|trans }}</summary>
+            <dl class="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                {%- for quota in later %}
+                    <div class="flex items-baseline justify-between gap-3">
+                        <dt class="text-muted-foreground">{{ ('quota.' ~ quota.name)|trans }}</dt>
+                        <dd class="tabular-nums">{{ quota.limit ?? ('organization.quotas.unlimited'|trans) }}</dd>
+                    </div>
+                {%- endfor %}
+            </dl>
+        </details>
+    {%- endif %}
 </div>

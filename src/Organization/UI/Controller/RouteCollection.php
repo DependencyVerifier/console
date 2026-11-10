@@ -9,6 +9,9 @@ use Shared\UI\Routing\RouteCollectionInterface;
 enum RouteCollection: string implements RouteCollectionInterface
 {
     case TEAM = 'team';
+    case TEAM_PROJECTS = 'team_projects';
+    case TEAM_MEMBERS = 'team_members';
+    case TEAM_SETTINGS = 'team_settings';
     case TEAM_QUOTAS_FRAME = 'team_quotas_frame';
     case TEAM_RENAME = 'team_rename';
     case TEAM_INVITE = 'team_invite';

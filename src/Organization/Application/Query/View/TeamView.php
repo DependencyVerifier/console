@@ -21,6 +21,10 @@ final readonly class TeamView
         public bool $adminEstablished,
         public array $quotas,
         public array $can,
+        public int $memberCount,
+        public int $projectCount,
+        public int $pendingInvitationCount,
+        public \DateTimeImmutable $createdAt,
     ) {
     }
 

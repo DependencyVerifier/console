@@ -59,6 +59,8 @@ final class QueriesTest extends TestCase
         $view = new GetTeamHandler($world->permissions, $world->teams, $read, $world->clock)(new GetTeam(Teams::TEAM));
 
         self::assertSame([Teams::TEAM, 'Platform', 'platform', 'team_member', true], [$view->id, $view->name, $view->slug, $view->role, $view->adminEstablished]);
+        self::assertSame([3, 2, 1], [$view->memberCount, $view->projectCount, $view->pendingInvitationCount]);
+        self::assertEquals(Teams::now(), $view->createdAt);
         $defaults = TeamQuotas::defaults();
         self::assertEquals(array_map(static fn (QuotaName $name): QuotaUsage => new QuotaUsage(
             $name->value,

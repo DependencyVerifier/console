@@ -51,9 +51,10 @@ final class OrganizationFlowTest extends IdentityWebTestCase
 
         // Jane is TEAM_ADMIN: she creates a project, an environment, and hits the environment quota.
         self::assertResponseIsSuccessful();
-        $crawler = $this->client->getCrawler();
-        $project = $crawler->filter(\sprintf('form[action="/teams/%s/projects"]', $teamId))->form(['project[name]' => 'Shop']);
-        $this->client->request('POST', $project->getUri(), $project->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
+        self::assertSelectorExists(\sprintf('turbo-frame#create-project-form[src="/teams/%s/projects/new"]', $teamId), 'The "New project" shortcut of the overview.');
+        $frame = ['HTTP_TURBO_FRAME' => 'create-project-form'];
+        $project = $this->client->request('GET', \sprintf('/teams/%s/projects/new', $teamId), server: $frame)->filter('turbo-frame#create-project-form form')->form(['project[name]' => 'Shop']);
+        $this->client->request('POST', $project->getUri(), $project->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
         self::assertResponseIsSuccessful();
         $projectId = $this->fetchString('SELECT id FROM organization_project');
         $members = $this->fetchInt('SELECT COUNT(*) FROM organization_project_membership');

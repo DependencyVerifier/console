@@ -43,11 +43,11 @@ final class OrganizationAccessTest extends IdentityWebTestCase
         self::assertResponseStatusCodeSame(404);
         self::assertStringContainsString('<turbo-frame id="team-quotas"', (string) $this->client->getResponse()->getContent());
 
-        $this->client->request('POST', '/teams/'.$b, ['_dt' => 'team_members', 'draw' => 1, 'start' => 0, 'length' => 25]);
+        $this->client->request('POST', '/teams/'.$b.'/members', ['_dt' => 'team_members', 'draw' => 1, 'start' => 0, 'length' => 25]);
         self::assertResponseStatusCodeSame(404, 'No draw on another team.');
 
         // A token for "remove Bob" is legitimately obtained on Alpha; replayed on Beta, the handler judges the real team.
-        $row = array_values(array_filter(DataTables::draw($this->client, '/teams/'.$a, 'team_members')['data'], static fn (array $r): bool => u($r['email'])->containsAny('bob@example.com')));
+        $row = array_values(array_filter(DataTables::draw($this->client, '/teams/'.$a.'/members', 'team_members')['data'], static fn (array $r): bool => u($r['email'])->containsAny('bob@example.com')));
         $form = DataTables::cell($row[0]['actions'])->filter('form')->form();
         $this->client->request('POST', \sprintf('/teams/%s/members/%s/remove', $b, $bobId), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
         self::assertResponseStatusCodeSame(404);
@@ -70,8 +70,10 @@ final class OrganizationAccessTest extends IdentityWebTestCase
 
         $this->client->request('GET', '/teams/'.$teamId);
         self::assertResponseIsSuccessful();
-        self::assertSelectorNotExists('[data-datatable-name-value="team_members"]', 'A guest sees no member list.');
-        $draw = DataTables::draw($this->client, '/teams/'.$teamId, 'projects');
+        self::assertSelectorNotExists(\sprintf('nav a[href="/teams/%s/members"]', $teamId), 'A guest has no Members tab.');
+        $this->client->request('GET', \sprintf('/teams/%s/members', $teamId));
+        self::assertResponseStatusCodeSame(403, 'Nor its URL.');
+        $draw = DataTables::draw($this->client, '/teams/'.$teamId.'/projects', 'projects');
         self::assertSame(1, $draw['recordsTotal']);
         self::assertStringContainsString('Shop', $draw['data'][0]['name']);
 
@@ -89,7 +91,7 @@ final class OrganizationAccessTest extends IdentityWebTestCase
         $teamId = $team->id()->toString();
         $this->logIn('alice@example.com');
 
-        $row = DataTables::draw($this->client, '/teams/'.$teamId, 'team_members')['data'][0];
+        $row = DataTables::draw($this->client, '/teams/'.$teamId.'/members', 'team_members')['data'][0];
         $form = DataTables::cell($row['role'])->filter('form')->form(['role[role]' => 'team_member']);
         $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
 
@@ -183,11 +185,21 @@ final class OrganizationAccessTest extends IdentityWebTestCase
         self::assertResponseStatusCodeSame(410);
     }
 
+    /**
+     * A team invitation goes through the "Invite member" dialog of the team page, a project one through the form of
+     * the project page.
+     */
     private function invite(string $page, string $email, string $role): string
     {
-        $crawler = $this->client->request('GET', $page);
-        $form = $crawler->filter('form[action$="/invite"]')->form(['invite[email]' => $email, 'invite[role]' => $role]);
-        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
+        if (u($page)->containsAny('/projects/')) {
+            $form = $this->client->request('GET', $page)->filter('form[action$="/invite"]')->form(['invite[email]' => $email, 'invite[role]' => $role]);
+            $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
+        } else {
+            $frame = ['HTTP_TURBO_FRAME' => 'invite-member-form'];
+            $form = $this->client->request('GET', $page.'/members/invite', server: $frame)->filter('turbo-frame#invite-member-form form')->form(['invite[email]' => $email, 'invite[role]' => $role]);
+            $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
+        }
+
         self::assertResponseIsSuccessful();
 
         $messages = self::getMailerMessages();
