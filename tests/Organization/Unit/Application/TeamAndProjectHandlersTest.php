@@ -26,10 +26,14 @@ use Organization\Application\Command\Team\Handler\RenameTeamHandler;
 use Organization\Application\Command\Team\Handler\UpdateTeamHandler;
 use Organization\Application\Command\Team\RenameTeam;
 use Organization\Application\Command\Team\UpdateTeam;
+use Organization\Application\EventHandler\SendTeamAdminAppointment;
+use Organization\Application\Port\TeamAdminAppointmentSender;
 use Organization\Domain\Authorization\TeamGrant;
-use Organization\Domain\Event\InvitationIssued;
+use Organization\Domain\Event\TeamAdminAppointed;
+use Organization\Domain\Event\TeamCreated;
 use Organization\Domain\Model\EnvironmentId;
 use Organization\Domain\Model\EnvironmentNotEmpty;
+use Organization\Domain\Model\GrantChange;
 use Organization\Domain\Model\Invitation;
 use Organization\Domain\Model\InvitationId;
 use Organization\Domain\Model\InvitationTarget;
@@ -44,11 +48,13 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Authorization\PermissionDenied;
 use Shared\Application\Authorization\ResourceNotFound;
+use Shared\Application\Contract\Identity\AccountView;
+use Shared\Application\Contract\Identity\FindAccounts;
 use Shared\Domain\Authorization\Permission;
 use Symfony\Component\Uid\Uuid;
-use Tests\Identity\Support\FixedTokens;
-use Tests\Identity\Support\PrefixTokenHasher;
+use Tests\Organization\Support\FixedAccounts;
 use Tests\Organization\Support\FixedPermissions;
+use Tests\Organization\Support\FixedQueries;
 use Tests\Organization\Support\FixedSlugs;
 use Tests\Organization\Support\RecordingContentProbe;
 use Tests\Organization\Support\Teams;
@@ -58,6 +64,8 @@ final class TeamAndProjectHandlersTest extends TestCase
 {
     private const string ENV = '019a6b2c-4f00-7a11-8b22-3c44d55e6f01';
     private const string INVITATION = '019a6b2c-5f00-7a11-8b22-3c44d55e6f01';
+    private const string NEW_USER = '019a6b2c-1f00-7a11-8b22-3c44d55e6f09';
+    private const string SETUP = '019a6b2c-6f00-7a11-8b22-3c44d55e6f01';
 
     /**
      * @return array<string, ?int>
@@ -73,43 +81,96 @@ final class TeamAndProjectHandlersTest extends TestCase
     }
 
     #[Test]
-    public function it_should_create_a_team_with_the_defaults_and_invite_its_first_admin(): void
+    public function it_should_create_a_team_with_the_defaults_and_its_first_admin_at_once(): void
     {
         $world = new World()->asSuperAdmin();
         $world->settings->settings->changeDefaultQuotas(QuotaInput::teamQuotas(self::quotas(7)));
         $world->teams->add(Teams::team(Teams::OTHER_TEAM));
+        $accounts = new FixedAccounts(['jane@example.com' => Teams::MEMBER]);
 
-        $this->createTeam($world)(new CreateTeam(Teams::TEAM, 'Platform', 'Jane@Example.com', self::INVITATION));
+        $this->createTeam($world, $accounts)(new CreateTeam(Teams::TEAM, 'Platform', 'jane@example.com', self::NEW_USER, self::SETUP));
 
+        self::assertSame([['jane@example.com', self::NEW_USER, self::SETUP]], $accounts->asked);
         $team = $world->teams->find(TeamId::fromString(Teams::TEAM));
         self::assertNotNull($team);
         self::assertSame('platform-2', $team->slug(), 'Unique slug.');
         self::assertSame(7, $team->quotas()->get(QuotaName::MaxProjects)->limit());
-        $invitation = $world->invitations->find(InvitationId::fromString(self::INVITATION));
-        self::assertNotNull($invitation);
-        self::assertSame(TeamRole::Admin, $invitation->target()->teamRole());
-        self::assertTrue($invitation->invitedBy()->equals(Uuid::fromString(Teams::ADMIN)));
-        self::assertEquals([new InvitationIssued(self::INVITATION, 'jane@example.com', 'url-token')], $invitation->releaseEvents());
+        self::assertTrue($team->isAdminEstablished());
+        self::assertSame(TeamRole::Admin, $team->membershipOf(Uuid::fromString(Teams::MEMBER))->role());
+        self::assertSame([], $world->invitations->invitations, 'No invitation to accept.');
+        self::assertCount(1, $world->grants->grants);
+        self::assertSame(GrantChange::RoleAssigned, $world->grants->grants[0]->change());
+        self::assertSame('team_admin', $world->grants->grants[0]->value());
+        self::assertTrue($world->grants->grants[0]->userId()->equals(Uuid::fromString(Teams::MEMBER)));
+        self::assertEquals([new TeamCreated(Teams::TEAM), new TeamAdminAppointed(Teams::TEAM, Teams::MEMBER, 'Platform')], $team->releaseEvents());
     }
 
     #[Test]
-    public function it_should_refuse_a_team_without_member_quota_or_permission(): void
+    public function it_should_admit_an_invited_account_under_the_id_given_by_the_command(): void
+    {
+        $world = new World()->asSuperAdmin();
+        $world->settings->settings->changeDefaultQuotas(QuotaInput::teamQuotas([...self::quotas(5), QuotaName::MaxMembers->value => 1]));
+
+        $this->createTeam($world, new FixedAccounts())(new CreateTeam(Teams::TEAM, 'Platform', 'new@example.com', self::NEW_USER, self::SETUP));
+
+        $team = $world->teams->find(TeamId::fromString(Teams::TEAM));
+        self::assertNotNull($team, 'Room for exactly the first admin.');
+        self::assertSame(TeamRole::Admin, $team->membershipOf(Uuid::fromString(self::NEW_USER))->role());
+    }
+
+    #[Test]
+    public function it_should_refuse_a_team_without_member_quota_a_refused_account_or_permission(): void
     {
         $world = new World()->asSuperAdmin();
         $world->settings->settings->changeDefaultQuotas(QuotaInput::teamQuotas([...self::quotas(5), QuotaName::MaxMembers->value => 0]));
+        $accounts = new FixedAccounts();
         try {
-            $this->createTeam($world)(new CreateTeam(Teams::TEAM, 'Platform', 'jane@example.com', self::INVITATION));
+            $this->createTeam($world, $accounts)(new CreateTeam(Teams::TEAM, 'Platform', 'jane@example.com', self::NEW_USER, self::SETUP));
             self::fail('No member allowed.');
         } catch (QuotaExceeded) {
-            self::assertSame([], $world->teams->teams);
         }
+        self::assertSame([], $accounts->asked, 'Checked before any account is invited.');
+        self::assertSame([], $world->teams->teams);
 
-        $world->settings->settings->changeDefaultQuotas(QuotaInput::teamQuotas([...self::quotas(5), QuotaName::MaxMembers->value => 1]));
-        $this->createTeam($world)(new CreateTeam(Teams::TEAM, 'Platform', 'jane@example.com', self::INVITATION));
-        self::assertNotNull($world->teams->find(TeamId::fromString(Teams::TEAM)), 'Room for exactly the invited first admin.');
+        $world->settings->settings->changeDefaultQuotas(QuotaInput::teamQuotas(self::quotas(5)));
+        $refusal = new \DomainException('refused by Identity');
+        try {
+            $this->createTeam($world, new FixedAccounts(refusal: $refusal))(new CreateTeam(Teams::TEAM, 'Platform', 'off@example.com', self::NEW_USER, self::SETUP));
+            self::fail('Refused account.');
+        } catch (\DomainException $caught) {
+            self::assertSame($refusal, $caught);
+        }
+        self::assertSame([], $world->teams->teams);
+        self::assertSame([], $world->grants->grants);
 
-        $this->expectException(PermissionDenied::class);
-        $this->createTeam(new World()->as(Teams::ADMIN, TeamRole::Admin))(new CreateTeam(Teams::TEAM, 'Platform', 'jane@example.com', self::INVITATION));
+        $accounts = new FixedAccounts();
+        try {
+            $this->createTeam(new World()->as(Teams::ADMIN, TeamRole::Admin), $accounts)(new CreateTeam(Teams::TEAM, 'Platform', 'jane@example.com', self::NEW_USER, self::SETUP));
+            self::fail('Super admin only.');
+        } catch (PermissionDenied) {
+        }
+        self::assertSame([], $accounts->asked);
+    }
+
+    #[Test]
+    public function it_should_tell_the_first_admin_by_email(): void
+    {
+        $sender = new class implements TeamAdminAppointmentSender {
+            /** @var list<array{string, string, string}> */
+            public array $sent = [];
+
+            public function send(string $email, string $teamId, string $teamName): void
+            {
+                $this->sent[] = [$email, $teamId, $teamName];
+            }
+        };
+        $queries = new FixedQueries([FindAccounts::class => static fn (object $query): array => $query instanceof FindAccounts && [Teams::MEMBER] === $query->userIds ? [Teams::MEMBER => new AccountView(Teams::MEMBER, 'jane@example.com', true)] : []]);
+        $handler = new SendTeamAdminAppointment($queries, $sender);
+
+        $handler(new TeamAdminAppointed(Teams::TEAM, Teams::MEMBER, 'Platform'));
+        $handler(new TeamAdminAppointed(Teams::TEAM, Teams::GUEST, 'Platform'));
+
+        self::assertSame([['jane@example.com', Teams::TEAM, 'Platform']], $sender->sent, 'Nobody to tell for an unknown account.');
     }
 
     #[Test]
@@ -303,9 +364,9 @@ final class TeamAndProjectHandlersTest extends TestCase
         }
     }
 
-    private function createTeam(World $world): CreateTeamHandler
+    private function createTeam(World $world, FixedAccounts $accounts): CreateTeamHandler
     {
-        return new CreateTeamHandler($world->access(), $world->teams, $world->settings, $world->invitations, new FixedSlugs(), new FixedTokens(), new PrefixTokenHasher(), $world->clock);
+        return new CreateTeamHandler($world->access(), $world->teams, $world->settings, $world->grants, $accounts, new FixedSlugs(), $world->clock);
     }
 
     private function probe(bool $project = false, bool $environment = false): RecordingContentProbe

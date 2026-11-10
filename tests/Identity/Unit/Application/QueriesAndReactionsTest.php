@@ -152,6 +152,11 @@ final class QueriesAndReactionsTest extends TestCase
             {
                 return [new AccountView(Users::ID, 'jane@example.com', true)];
             }
+
+            public function search(string $term, int $limit): array
+            {
+                return [];
+            }
         };
         $request = new PageRequest(10, 5, 'email', true, 'jane');
 

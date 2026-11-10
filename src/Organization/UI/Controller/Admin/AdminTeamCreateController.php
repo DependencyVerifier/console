@@ -18,7 +18,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * The "Create a team" dialog of /admin/teams: the form and its submission (the first team admin is invited).
+ * The "Create a team" dialog of /admin/teams: the form and its submission (the first team admin is admitted at once,
+ * its account invited when the email is unknown).
  */
 #[Route(path: '/admin/teams/new', name: RouteCollection::ADMIN_TEAM_CREATE->value, methods: ['GET', 'POST'])]
 final readonly class AdminTeamCreateController
@@ -38,7 +39,7 @@ final readonly class AdminTeamCreateController
             $form,
             self::DIALOG,
             'organization.teams.create',
-            static fn (): CreateTeam => new CreateTeam(Uuid::v7()->toRfc4122(), FormData::string($form, 'name'), FormData::string($form, 'firstAdminEmail'), Uuid::v7()->toRfc4122()),
+            static fn (): CreateTeam => new CreateTeam(Uuid::v7()->toRfc4122(), FormData::string($form, 'name'), FormData::string($form, 'firstAdminEmail'), Uuid::v7()->toRfc4122(), Uuid::v7()->toRfc4122()),
             $this->redirect->withSuccessKey('organization.teams.created'),
             new RouteReference(RouteCollection::ADMIN_TEAMS->prefixed()),
         );

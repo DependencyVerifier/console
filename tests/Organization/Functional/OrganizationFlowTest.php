@@ -18,7 +18,7 @@ final class OrganizationFlowTest extends IdentityWebTestCase
     private const string STREAM = 'text/vnd.turbo-stream.html';
 
     #[Test]
-    public function it_should_create_a_team_invite_its_first_admin_and_let_them_manage_it(): void
+    public function it_should_create_a_team_with_a_new_first_admin_and_let_them_manage_it(): void
     {
         Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);
         $this->logIn('root@example.com');
@@ -27,41 +27,31 @@ final class OrganizationFlowTest extends IdentityWebTestCase
         self::assertResponseIsSuccessful();
         $this->createTeam('Platform', 'jane@example.com');
         self::assertResponseIsSuccessful();
-        $link = $this->invitationLink();
+        $link = $this->setupLink();
         $teamId = $this->fetchString('SELECT id FROM organization_team');
         self::assertCount(1, AuditLog::entries($this->connection(), 'organization.create_team'));
 
         $draw = DataTables::draw($this->client, '/admin/teams', 'teams');
         self::assertSame(1, $draw['recordsTotal']);
         self::assertStringContainsString('Platform', $draw['data'][0]['name']);
-        self::assertSame(['0', '0'], [u($draw['data'][0]['members'])->trim()->toString(), u($draw['data'][0]['projects'])->trim()->toString()], 'The counters are shown, zero included.');
+        self::assertSame(['1', '0'], [u($draw['data'][0]['members'])->trim()->toString(), u($draw['data'][0]['projects'])->trim()->toString()], 'The first admin is a member at once; zero is shown too.');
 
-        // The invitee, in a fresh browser.
+        // The new account, in a fresh browser: it chooses its password, signs in, and already manages the team.
         $this->client->getCookieJar()->clear();
         $this->client->request('GET', $link);
         self::assertResponseIsSuccessful('A same-site hop, never a redirect.');
         $crawler = $this->client->clickLink('Continue');
-        self::assertSelectorTextContains('main', 'jane@example.com');
-        $this->client->submit($crawler->filter('form')->first()->form([
-            'activate[password][first]' => Accounts::PASSWORD,
-            'activate[password][second]' => Accounts::PASSWORD,
+        $this->client->submit($crawler->filter('form')->form([
+            'new_password[password][first]' => Accounts::PASSWORD,
+            'new_password[password][second]' => Accounts::PASSWORD,
         ]));
         self::assertResponseRedirects('/login');
-
-        $this->submitPassword('jane@example.com');
-        $code = $this->lastEmailCode();
-        $this->client->followRedirect();
-        self::assertResponseRedirects('/2fa', message: 'scheb keeps the invitation page as target path.');
-        $this->submitSecondFactor($code);
-        self::assertResponseRedirects('/invitations/pending', message: 'Back to the invitation after the login.');
-        $crawler = $this->client->followRedirect();
-        $this->client->submit($crawler->filter('form[action="/invitations/accept"]')->form());
-        self::assertResponseRedirects('/teams/'.$teamId);
-        self::assertSame('accepted', $this->connection()->fetchOne('SELECT status FROM organization_invitation'));
+        $this->logIn('jane@example.com');
+        $this->client->request('GET', '/teams/'.$teamId);
 
         // Jane is TEAM_ADMIN: she creates a project, an environment, and hits the environment quota.
-        $crawler = $this->client->followRedirect();
         self::assertResponseIsSuccessful();
+        $crawler = $this->client->getCrawler();
         $project = $crawler->filter(\sprintf('form[action="/teams/%s/projects"]', $teamId))->form(['project[name]' => 'Shop']);
         $this->client->request('POST', $project->getUri(), $project->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
         self::assertResponseIsSuccessful();
@@ -115,14 +105,11 @@ final class OrganizationFlowTest extends IdentityWebTestCase
         $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
     }
 
-    private function invitationLink(): string
+    private function setupLink(): string
     {
-        $messages = self::getMailerMessages();
-        $email = end($messages);
-        self::assertInstanceOf(Email::class, $email);
-        $body = $email->getTextBody();
-        self::assertIsString($body);
-        $match = u($body)->match('#(https://localhost/invitations/[A-Za-z0-9_-]{43})#');
+        $setup = array_values(array_filter(self::getMailerMessages(), static fn (object $m): bool => $m instanceof Email && 'Your DependencyVerifier account' === $m->getSubject()));
+        self::assertCount(1, $setup);
+        $match = u((string) $setup[0]->getTextBody())->match('#(https://localhost/password/reset/[A-Za-z0-9_-]{43})#');
         self::assertIsString($match[1] ?? null);
 
         return $match[1];

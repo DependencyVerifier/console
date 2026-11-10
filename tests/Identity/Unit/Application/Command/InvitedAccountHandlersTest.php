@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Identity\Unit\Application\Command;
 
+use Identity\Application\Account\AccountInvitation;
 use Identity\Application\Command\Account\ActivateInvitedAccount;
 use Identity\Application\Command\Account\Handler\ActivateInvitedAccountHandler;
 use Identity\Application\Command\Administration\Handler\InviteUserHandler;
@@ -157,7 +158,7 @@ final class InvitedAccountHandlersTest extends TestCase
 
     private function invite(InMemoryUsers $users, InMemoryResetRequests $requests, RecordingLock $lock, Grants $grants): InviteUserHandler
     {
-        return new InviteUserHandler(new AccountAccess(FixedActor::user(Users::OTHER_ID), $grants, $users), $users, $requests, $lock, new FixedTokens(), new PrefixTokenHasher(), new MockClock('2026-11-09 08:00:00'));
+        return new InviteUserHandler(new AccountAccess(FixedActor::user(Users::OTHER_ID), $grants, $users), $users, $lock, new AccountInvitation($users, $requests, new FixedTokens(), new PrefixTokenHasher(), new MockClock('2026-11-09 08:00:00')));
     }
 
     private function activate(InMemoryUsers $users): ActivateInvitedAccountHandler

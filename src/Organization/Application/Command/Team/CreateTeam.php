@@ -10,7 +10,8 @@ use Shared\Application\Audit\AuditContext;
 use Shared\Application\Audit\Target;
 
 /**
- * Creates a team (default quotas copied) and invites its first TEAM_ADMIN; the team is tolerated without admin until the invitation is accepted.
+ * Creates a team (default quotas copied) with its first TEAM_ADMIN, admitted at once: an existing account, or an
+ * account invited by Identity for an unknown email (`firstAdminUserId` and `setupRequestId` are used only then).
  */
 final readonly class CreateTeam implements AuditableCommand
 {
@@ -18,7 +19,8 @@ final readonly class CreateTeam implements AuditableCommand
         public string $teamId,
         public string $name,
         public string $firstAdminEmail,
-        public string $invitationId,
+        public string $firstAdminUserId,
+        public string $setupRequestId,
     ) {
     }
 

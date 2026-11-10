@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Organization\Domain\Authorization\RolePermissions;
+use Organization\Domain\Event\TeamAdminAppointed;
 use Organization\Domain\Event\TeamCreated;
 use Shared\Domain\Authorization\Permission;
 use Shared\Domain\Authorization\PermissionScope;
@@ -140,6 +141,17 @@ class Team implements RecordsEvents
         if (TeamRole::Admin === $role) {
             $this->adminEstablished = true;
         }
+
+        return $membership;
+    }
+
+    /**
+     * The first TEAM_ADMIN, chosen by the super admin who creates the team: admitted at once, then told by email.
+     */
+    public function appointFirstAdmin(Uuid $userId, \DateTimeImmutable $now): TeamMembership
+    {
+        $membership = $this->admit($userId, TeamRole::Admin, $now);
+        $this->recordThat(new TeamAdminAppointed($this->id->toRfc4122(), $userId->toRfc4122(), $this->name));
 
         return $membership;
     }

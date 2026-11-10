@@ -42,3 +42,8 @@ organization:
         action: "Open the invitation"
         validity: "This link works for {days} days."
         ignore: "If you did not expect it, ignore this email."
+    team_admin_appointed:
+        subject: "You manage the team {team} on DependencyVerifier"
+        intro: "You are now the admin of the team {team} on DependencyVerifier."
+        action: "Open the team"
+        setup: "If your account is new, choose your password first from the other email you received."

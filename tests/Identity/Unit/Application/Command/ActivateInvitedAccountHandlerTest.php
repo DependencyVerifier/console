@@ -8,6 +8,7 @@ use Identity\Application\Command\Account\ActivateInvitedAccount;
 use Identity\Application\Command\Account\Handler\ActivateInvitedAccountHandler;
 use Identity\Domain\Model\AccountAlreadyActive;
 use Identity\Domain\Model\EmailAddress;
+use Identity\Domain\Model\PasswordRejected;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Contract\Organization\FindPendingInvitation;
@@ -53,6 +54,21 @@ final class ActivateInvitedAccountHandlerTest extends TestCase
         }
 
         self::assertCount(1, $users->users);
+    }
+
+    #[Test]
+    public function it_should_refuse_a_password_outside_the_policy_before_anything_else(): void
+    {
+        [$users, $lock] = [new InMemoryUsers(), new RecordingLock()];
+
+        try {
+            $this->handler($users, $lock)(new ActivateInvitedAccount(Users::ID, self::INVITATION, 'too short'));
+            self::fail('Weak password.');
+        } catch (PasswordRejected) {
+        }
+
+        self::assertSame([], $users->users);
+        self::assertSame([], $lock->keys);
     }
 
     private function handler(InMemoryUsers $users, RecordingLock $lock): ActivateInvitedAccountHandler

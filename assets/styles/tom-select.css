@@ -1,0 +1,64 @@
+/* Tom Select (Symfony UX Autocomplete) tuned to the shadcn kit: the base stylesheet only, then the look of <twig:Input>
+   and of the kit's popovers, with the tokens of the current theme (light and dark). */
+@import 'tom-select/dist/css/tom-select.css';
+
+.ts-wrapper.single .ts-control,
+.ts-wrapper .ts-control {
+    min-height: 2rem;
+    border: 1px solid var(--input);
+    border-radius: var(--radius-lg, 0.5rem);
+    background: transparent;
+    padding: 0.25rem 0.625rem;
+    box-shadow: none;
+    color: var(--foreground);
+    font-size: var(--text-sm);
+    line-height: 1.5rem;
+}
+
+.ts-wrapper.focus .ts-control {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring), transparent 50%);
+}
+
+.ts-control > input {
+    color: inherit;
+    font-size: inherit;
+}
+
+.ts-control > input::placeholder {
+    color: var(--muted-foreground);
+}
+
+.ts-dropdown {
+    margin-top: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 0.5rem);
+    background: var(--popover);
+    color: var(--popover-foreground);
+    font-size: var(--text-sm);
+    box-shadow: 0 4px 12px color-mix(in oklch, var(--foreground), transparent 90%);
+    overflow: hidden;
+}
+
+.ts-dropdown .option,
+.ts-dropdown .create,
+.ts-dropdown .no-results,
+.ts-dropdown .loading-more-results,
+.ts-dropdown .no-more-results {
+    padding: 0.375rem 0.625rem;
+}
+
+.ts-dropdown .active {
+    background: var(--accent);
+    color: var(--accent-foreground);
+}
+
+.ts-dropdown .no-results,
+.ts-dropdown .no-more-results {
+    color: var(--muted-foreground);
+}
+
+.ts-wrapper.invalid .ts-control,
+.ts-wrapper:has(+ [aria-invalid='true']) .ts-control {
+    border-color: var(--destructive);
+}

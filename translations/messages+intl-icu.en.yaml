@@ -43,6 +43,7 @@ rule:
     password_policy: "The password needs 12 to 4096 characters and must not contain your email address."
     email_already_registered: An account already uses this email address.
     invalid_second_factor_transition: This change is not possible with the current second factor.
+    account_not_assignable: "This account cannot be given a role: it is deactivated, deleted or notification-only."
     super_admin_email_locked: "The email of a super admin cannot be changed. Revoke the super admin role first."
     super_admin_revocation_forbidden: "The instance must keep an active super admin, and you cannot revoke yourself."
     self_management_forbidden: You cannot deactivate your own account.
@@ -249,7 +250,10 @@ organization:
     field:
         name: Name
         team_name: Team name
-        first_admin_email: First team admin (email)
+        first_admin_email: First team admin
+        first_admin_email_help: An existing account becomes team admin at once. An unknown email gets a new account.
+        first_admin_create: "Invite %placeholder%"
+        first_admin_no_results: No account starts like this. Type the full email to invite it.
         role: Role
         projects: Projects
         members: Members
@@ -265,11 +269,11 @@ organization:
         super_admin_view: Viewed as super admin
     teams:
         title: Teams
-        description: Teams of the instance with their usage. The first team admin is invited when the team is created.
+        description: Teams of the instance with their usage. The first team admin is chosen when the team is created.
         create: Create the team
-        created: Team created, its first admin is invited.
+        created: Team created, its first admin is told by email.
         new: Create a team
-        new_description: The first team admin receives an invitation by email.
+        new_description: "Pick an account, or type a new email: the account is then created and receives a link to choose its password."
         edit: Edit
         edit_title: "Edit {name}"
         updated: Team updated.

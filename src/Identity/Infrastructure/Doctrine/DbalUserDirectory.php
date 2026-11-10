@@ -8,6 +8,7 @@ use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Identity\Application\Query\User\UserDirectory;
 use Identity\Application\Query\User\UserSummary;
+use Shared\Application\Contract\Identity\AccountMatch;
 use Shared\Application\Contract\Identity\AccountView;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
@@ -74,5 +75,21 @@ final readonly class DbalUserDirectory implements UserDirectory
         );
 
         return array_map(static fn (array $row): AccountView => new AccountView($row['id'], $row['email'], 'active' === $row['status']), $rows);
+    }
+
+    public function search(string $term, int $limit): array
+    {
+        $prefix = u($term)->lower()->replace('\\', '\\\\')->replace('%', '\\%')->replace('_', '\\_')->toString().'%';
+
+        /** @var list<array{id: string, email: string, display_name: ?string}> $rows */
+        $rows = $this->connection->fetchAllAssociative(
+            \sprintf(
+                "SELECT id, email, display_name FROM identity_user WHERE status = 'active' AND instance_permissions::jsonb @> '[\"account.login\"]'::jsonb AND (email LIKE :prefix OR LOWER(display_name) LIKE :prefix) ORDER BY email LIMIT %d",
+                $limit,
+            ),
+            ['prefix' => $prefix],
+        );
+
+        return array_map(static fn (array $row): AccountMatch => new AccountMatch($row['id'], $row['email'], $row['display_name'] ?? ''), $rows);
     }
 }

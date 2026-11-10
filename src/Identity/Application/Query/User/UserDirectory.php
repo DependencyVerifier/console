@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Identity\Application\Query\User;
 
+use Shared\Application\Contract\Identity\AccountMatch;
 use Shared\Application\Contract\Identity\AccountView;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
@@ -24,4 +25,12 @@ interface UserDirectory
      * @return list<AccountView>
      */
     public function byIds(array $userIds): array;
+
+    /**
+     * Accounts that may be given a role (active, allowed to sign in), whose email or display name starts with the
+     * term (case-insensitive), by email.
+     *
+     * @return list<AccountMatch>
+     */
+    public function search(string $term, int $limit): array;
 }
