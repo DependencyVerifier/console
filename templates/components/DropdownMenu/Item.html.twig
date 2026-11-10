@@ -31,7 +31,9 @@
     data-close-on-select="{{ closeOnSelect ? 'true' : 'false' }}"
     data-disabled="{{ disabled ? 'true' : 'false' }}"
     aria-disabled="{{ disabled ? 'true' : 'false' }}"
-    {% if as == 'button' %}type="button"{% endif %}
+    {#- `type="submit"` makes the item the submit button of a form around the menu (logout): never a button inside a
+        button, the browser would close the first one and the click would submit nothing. -#}
+    {% if as == 'button' %}type="{{ attributes.render('type')|default('button') }}"{% endif %}
     {%- if as == 'button' and disabled %} disabled{% endif %}
     {{ attributes.defaults({
         class: style.apply({variant: variant, inset: inset ? 'true' : 'false'})|tailwind_classes,

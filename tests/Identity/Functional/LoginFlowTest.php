@@ -88,6 +88,24 @@ final class LoginFlowTest extends IdentityWebTestCase
     }
 
     #[Test]
+    public function it_should_log_out_from_the_user_menu_item_itself(): void
+    {
+        Accounts::create(self::getContainer(), 'jane@example.com');
+        $this->logIn('jane@example.com');
+        $crawler = $this->client->request('GET', '/');
+
+        // The menu item is the submit button: a button inside a button (or a link) submits nothing in a browser.
+        $item = $crawler->filter('form[action="/logout"] button[type="submit"][role="menuitem"]');
+        self::assertCount(1, $item);
+        self::assertCount(0, $crawler->filter('[data-slot="sidebar"] button button, [data-slot="sidebar"] a button, [data-slot="sidebar"] button a'));
+
+        $this->client->submit($item->form());
+        self::assertResponseRedirects('/login');
+        $this->client->request('GET', '/');
+        self::assertResponseRedirects('/login', message: 'Signed out.');
+    }
+
+    #[Test]
     public function it_should_accept_a_backup_code_once(): void
     {
         $user = Accounts::create(self::getContainer(), 'jane@example.com');
