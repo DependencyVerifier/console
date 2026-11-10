@@ -51,7 +51,7 @@ final class ProjectController extends AbstractController
         return $this->render('organization/project/show.html.twig', [
             'project' => $project,
             'tables' => $tables,
-            'nav_active' => 'team',
+            'nav_active' => 'team_projects',
             'current_team' => $teamId,
             'environment_form' => $this->forms->createNamed('environment', EnvironmentType::class, null, ['csrf_token_id' => 'environment_create:'.$projectId])->createView(),
             'invite_form' => $this->forms->createNamed('invite', InviteType::class, null, ['csrf_token_id' => 'project_invite:'.$projectId, 'project' => true])->createView(),

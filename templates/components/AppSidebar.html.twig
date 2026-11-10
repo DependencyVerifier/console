@@ -7,15 +7,25 @@
 {%- set user = app.user -%}
 {%- set myTeams = user ? sidebar_teams() : [] -%}
 {%- set currentTeam = team ?? (myTeams|first ? (myTeams|first).id : null) -%}
+{#- The sections of the selected team (UI hints: each page checks again). Members: not for a TEAM_GUEST; Settings: for
+    a TEAM_ADMIN or a super admin (team.edit is never granted on top of another role). Without a team, the home page. -#}
+{%- set roleKey = (myTeams|filter(t => t.id == currentTeam)|first).role_key ?? '' -%}
+{%- set superAdmin = is_granted('ROLE_SUPER_ADMIN') -%}
+{%- set teamNav = currentTeam ? [
+    {key: 'team_overview', title: 'nav.overview'|trans, url: path('organization_team', {teamId: currentTeam}), icon: 'lucide:layout-dashboard'},
+    {key: 'team_projects', title: 'nav.projects'|trans, url: path('organization_team_projects', {teamId: currentTeam}), icon: 'lucide:layers'},
+]|merge(roleKey != 'team_guest' ? [
+    {key: 'team_members', title: 'nav.members'|trans, url: path('organization_team_members', {teamId: currentTeam}), icon: 'lucide:users'},
+] : [])|merge(roleKey == 'team_admin' or superAdmin ? [
+    {key: 'team_settings', title: 'nav.settings'|trans, url: path('organization_team_settings', {teamId: currentTeam}), icon: 'lucide:settings'},
+] : []) : [
+    {key: 'overview', title: 'nav.overview'|trans, url: path('shared_home'), icon: 'lucide:layout-dashboard'},
+] -%}
 {%- set data = {
     user: {name: user ? user.label : '', email: user ? user.userIdentifier : ''},
     teams: myTeams,
-    navMain: [
-        {key: 'overview', title: 'nav.overview'|trans, url: path('shared_home'), icon: 'lucide:layout-dashboard'},
-    ]|merge(currentTeam ? [
-        {key: 'team', title: 'nav.team'|trans, url: path('organization_team', {teamId: currentTeam}), icon: 'lucide:users'},
-    ] : []),
-    navSecondary: is_granted('ROLE_SUPER_ADMIN') ? [
+    navMain: teamNav,
+    navSecondary: superAdmin ? [
         {key: 'admin_users', title: 'nav.users'|trans, url: path('identity_admin_users'), icon: 'lucide:shield-check'},
         {key: 'admin_teams', title: 'nav.teams'|trans, url: path('organization_admin_teams'), icon: 'lucide:building-2'},
     ] : [],

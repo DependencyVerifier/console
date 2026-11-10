@@ -50,7 +50,7 @@ export default class extends Controller<HTMLElement> {
         if ('last' === focus) {
             this.#focusLastItem();
         } else if (focus) {
-            this.#focusFirstItem();
+            this.#focusCurrentOrFirstItem();
         }
     }
 
@@ -198,6 +198,12 @@ export default class extends Controller<HTMLElement> {
 
     #focusFirstItem(): void {
         this.#enabledItems()[0]?.focus();
+    }
+
+    /** On opening, the current entry (`aria-current="page"`, e.g. the browsed team) rather than the first one. */
+    #focusCurrentOrFirstItem(): void {
+        const items = this.#enabledItems();
+        (items.find((item) => 'page' === item.getAttribute('aria-current')) ?? items[0])?.focus();
     }
 
     #focusLastItem(): void {

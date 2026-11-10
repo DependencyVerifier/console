@@ -72,7 +72,7 @@ final readonly class TeamPage
             'tab' => $tab,
             'tabs' => self::tabsOf($team),
             'tables' => $tables,
-            'nav_active' => 'team',
+            'nav_active' => 'team_'.$tab,
             'current_team' => $team->id,
         ]));
     }

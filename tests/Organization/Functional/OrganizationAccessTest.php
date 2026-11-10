@@ -70,7 +70,7 @@ final class OrganizationAccessTest extends IdentityWebTestCase
 
         $this->client->request('GET', '/teams/'.$teamId);
         self::assertResponseIsSuccessful();
-        self::assertSelectorNotExists(\sprintf('nav a[href="/teams/%s/members"]', $teamId), 'A guest has no Members tab.');
+        self::assertSelectorNotExists(\sprintf('a[href="/teams/%s/members"]', $teamId), 'A guest has no Members section.');
         $this->client->request('GET', \sprintf('/teams/%s/members', $teamId));
         self::assertResponseStatusCodeSame(403, 'Nor its URL.');
         $draw = DataTables::draw($this->client, '/teams/'.$teamId.'/projects', 'projects');

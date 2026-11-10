@@ -29,15 +29,23 @@
                     <twig:DropdownMenu:Label class="text-xs text-muted-foreground">
                         {{ 'nav.teams'|trans }}
                     </twig:DropdownMenu:Label>
+                    {#- The team being browsed is marked (check, accent, aria-current), like the active sidebar entry. -#}
                     {%- for team in teams %}
-                        <a href="{{ team.url }}" class="contents">
-                            <twig:DropdownMenu:Item class="gap-2 p-2">
-                                <div class="flex size-6 items-center justify-center rounded-md border">
-                                    <twig:ux:icon name="{{ team.logo }}" />
-                                </div>
-                                {{ team.name }}
-                            </twig:DropdownMenu:Item>
-                        </a>
+                        {%- set selected = team.id == activeTeam.id -%}
+                        <twig:DropdownMenu:Item
+                            as="a"
+                            href="{{ team.url }}"
+                            class="gap-2 p-2 {{ selected ? 'bg-accent font-medium text-accent-foreground' : '' }}"
+                            aria-current="{{ selected ? 'page' : 'false' }}"
+                        >
+                            <div class="flex size-6 items-center justify-center rounded-md border">
+                                <twig:ux:icon name="{{ team.logo }}" />
+                            </div>
+                            <span class="flex-1">{{ team.name }}</span>
+                            {%- if selected %}
+                                <twig:ux:icon name="lucide:check" class="ms-4" aria-hidden="true" />
+                            {%- endif %}
+                        </twig:DropdownMenu:Item>
                     {%- endfor %}
                 </twig:DropdownMenu:Content>
             </twig:DropdownMenu>

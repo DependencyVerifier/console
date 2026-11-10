@@ -1,8 +1,7 @@
-{#- Shared frame of the four team tabs: breadcrumb, object header (one primary action at most, given by the tab),
-    the tab bar, then the tab. Variables: team (TeamView), tab, tabs (the tabs the actor may open). -#}
+{#- Shared frame of the four team sections (reached from the sidebar): breadcrumb, object header (one primary action
+    at most, given by the section), then the section. Variables: team (TeamView), tab, tabs (the sections the actor may
+    open). -#}
 {% extends 'shared/layout/app.html.twig' %}
-
-{% set tab_routes = {overview: 'organization_team', projects: 'organization_team_projects', members: 'organization_team_members', settings: 'organization_team_settings'} %}
 
 {% block title %}{{ ('organization.team.tab.' ~ tab)|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
 
@@ -24,7 +23,6 @@
     {{ include('shared/_flashes.html.twig') }}
     <div id="action-alerts"></div>
 
-    <div class="flex flex-col gap-5">
     <header class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex min-w-0 items-center gap-3">
             <span class="grid size-10 shrink-0 place-items-center rounded-lg border bg-muted text-muted-foreground" aria-hidden="true">
@@ -38,12 +36,6 @@
         <div class="flex items-center gap-2">{% block primary_action %}{% endblock %}</div>
     </header>
 
-    <twig:TabNav
-        :items="tabs|map(key => {key: key, label: ('organization.team.tab.' ~ key)|trans, url: path(tab_routes[key], {teamId: team.id})})"
-        :active="tab"
-        :label="'organization.team.tabs_label'|trans"
-    />
-    </div>
 
     {% block tab %}{% endblock %}
 {% endblock %}

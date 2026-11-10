@@ -23,7 +23,7 @@ final readonly class SidebarTeamsExtension
     }
 
     /**
-     * @return list<array{id: string, name: string, logo: string, role: string, url: string}>
+     * @return list<array{id: string, name: string, logo: string, role: string, role_key: string, url: string}>
      */
     #[AsTwigFunction('sidebar_teams')]
     public function teams(): array
@@ -35,6 +35,7 @@ final readonly class SidebarTeamsExtension
             'name' => $team->name,
             'logo' => 'lucide:users',
             'role' => null === $team->role ? '' : $this->translator->trans('role.'.$team->role),
+            'role_key' => $team->role ?? '',
             'url' => $this->urls->generate(RouteCollection::TEAM->prefixed(), ['teamId' => $team->id]),
         ], $page->items);
     }

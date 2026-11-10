@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Organization\Functional;
 
+use Identity\Domain\Model\User;
 use Organization\Application\Command\QuotaInput;
 use Organization\Domain\Model\QuotaName;
 use Organization\Domain\Model\Team;
@@ -16,8 +17,8 @@ use Tests\Support\DataTables;
 use Tests\Support\IdentityWebTestCase;
 
 /**
- * The team page in four tabs, each its own URL: Overview, Projects, Members (not for a guest), Settings (`team.edit`).
- * The creation forms open in dialogs.
+ * The team page in four sections, each its own URL, picked in the sidebar: Overview, Projects, Members (not for a
+ * guest), Settings (`team.edit`). The creation forms open in dialogs.
  */
 final class TeamTabsTest extends IdentityWebTestCase
 {
@@ -33,15 +34,15 @@ final class TeamTabsTest extends IdentityWebTestCase
         foreach (['' => 'Overview', '/projects' => 'Projects', '/members' => 'Members', '/settings' => 'Settings'] as $suffix => $label) {
             $this->client->request('GET', '/teams/'.$id.$suffix);
             self::assertResponseIsSuccessful($label);
-            self::assertSelectorTextSame('nav[aria-label="Team sections"] a[aria-current="page"]', $label);
-            self::assertSame('/teams/'.$id.$suffix, $this->client->getCrawler()->filter('nav[aria-label="Team sections"] a[aria-current="page"]')->attr('href'));
+            self::assertSelectorTextSame('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]', $label, 'The section is picked in the sidebar.');
+            self::assertSame('/teams/'.$id.$suffix, $this->client->getCrawler()->filter('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]')->attr('href'));
         }
-        self::assertCount(4, $this->client->getCrawler()->filter('nav[aria-label="Team sections"] a'));
+        self::assertSame(['Overview', 'Projects', 'Members', 'Settings'], $this->sections());
 
         $this->client->getCookieJar()->clear();
         $this->logIn('bob@example.com');
         $this->client->request('GET', '/teams/'.$id);
-        self::assertSame(['Overview', 'Projects', 'Members'], $this->client->getCrawler()->filter('nav[aria-label="Team sections"] a')->each(static fn ($a): string => $a->text()), 'A TEAM_MEMBER has no Settings tab.');
+        self::assertSame(['Overview', 'Projects', 'Members'], $this->sections(), 'A TEAM_MEMBER has no Settings section.');
         $this->client->request('GET', '/teams/'.$id.'/settings');
         self::assertResponseStatusCodeSame(403);
         self::assertCount(1, AuditLog::entries($this->connection(), 'security.access_denied'), 'The refusal is audited once.');
@@ -152,6 +153,33 @@ final class TeamTabsTest extends IdentityWebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame('Omega', $this->fetchString('SELECT name FROM organization_team'));
+    }
+
+    #[Test]
+    public function it_should_mark_the_browsed_team_in_the_team_switcher(): void
+    {
+        $team = $this->team();
+        $alice = Accounts::manager(self::getContainer())->getRepository(User::class)->findOneBy(['email.value' => 'alice@example.com']);
+        self::assertInstanceOf(User::class, $alice);
+        $other = Seed::team(self::getContainer(), 'Payments', [[$alice, TeamRole::Admin]]);
+        $this->logIn('alice@example.com');
+
+        foreach ([$team, $other] as $browsed) {
+            $crawler = $this->client->request('GET', '/teams/'.$browsed->id()->toString());
+            $current = $crawler->filter('#dropdown-menu-team-switcher-content [role="menuitem"][aria-current="page"]');
+            self::assertCount(1, $current);
+            self::assertSame('/teams/'.$browsed->id()->toString(), $current->attr('href'));
+        }
+    }
+
+    /**
+     * The team sections of the sidebar (its first menu).
+     *
+     * @return list<string>
+     */
+    private function sections(): array
+    {
+        return $this->client->getCrawler()->filter('[data-slot="sidebar"] [data-slot="sidebar-group"]')->first()->filter('a')->each(static fn ($a): string => $a->text());
     }
 
     /**
