@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Organization\Unit\Application;
 
+use Organization\Application\Command\Member\ChangeExtraPermissions;
 use Organization\Application\Command\Member\ChangeProjectRole;
 use Organization\Application\Command\Member\ChangeTeamRole;
 use Organization\Application\Command\Member\GrantExtraPermission;
+use Organization\Application\Command\Member\Handler\ChangeExtraPermissionsHandler;
 use Organization\Application\Command\Member\Handler\ChangeProjectRoleHandler;
 use Organization\Application\Command\Member\Handler\ChangeTeamRoleHandler;
 use Organization\Application\Command\Member\Handler\ExtraPermissionChange;
@@ -26,7 +28,11 @@ use Organization\Application\Command\Member\SuspendMembershipsOfUser;
 use Organization\Application\EventHandler\CascadeAccountStatus;
 use Organization\Application\EventHandler\SendInvitation;
 use Organization\Application\Port\InvitationSender;
+use Organization\Application\Query\Member\GetMemberPermissions;
+use Organization\Application\Query\Member\Handler\GetMemberPermissionsHandler;
+use Organization\Application\Query\View\PermissionChoice;
 use Organization\Domain\Authorization\ProjectGrant;
+use Organization\Domain\Authorization\RolePermissions;
 use Organization\Domain\Authorization\TeamGrant;
 use Organization\Domain\Event\InvitationIssued;
 use Organization\Domain\Event\InvitationReissued;
@@ -40,6 +46,7 @@ use Organization\Domain\Model\TeamRole;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Authorization\PermissionDenied;
+use Shared\Application\Authorization\ResourceNotFound;
 use Shared\Application\Contract\Identity\AccountDeactivated;
 use Shared\Application\Contract\Identity\AccountReactivated;
 use Shared\Domain\Authorization\Permission;
@@ -163,6 +170,90 @@ final class MemberHandlersTest extends TestCase
             } catch (PermissionDenied) {
             }
         }
+    }
+
+    #[Test]
+    public function it_should_apply_a_whole_set_of_extras_in_one_change(): void
+    {
+        $world = $this->world();
+        $member = Uuid::fromString(Teams::MEMBER);
+        $this->team->grantExtra($member, Permission::TeamAuditView);
+        $handler = new ChangeExtraPermissionsHandler($world->access(), new ExtraPermissionChange($world->access(), $world->roles(), $this->grants($world)));
+
+        $handler(new ChangeExtraPermissions(Teams::TEAM, null, Teams::MEMBER, ['host.enroll', 'project.create']));
+        self::assertSame([Permission::HostEnroll, Permission::ProjectCreate], $this->team->membershipOf($member)->extraPermissions());
+        self::assertSame(
+            [[GrantChange::ExtraRevoked, 'team.audit.view'], [GrantChange::ExtraGranted, 'host.enroll'], [GrantChange::ExtraGranted, 'project.create']],
+            array_map(static fn ($g): array => [$g->change(), $g->value()], $world->grants->grants),
+            'One history entry per difference, none for an unchanged one.',
+        );
+        self::assertSame([Teams::TEAM], array_values(array_unique($world->teams->locked)));
+
+        $handler(new ChangeExtraPermissions(Teams::TEAM, null, Teams::MEMBER, ['host.enroll', 'project.create']));
+        self::assertCount(3, $world->grants->grants, 'Nothing to change.');
+
+        $handler(new ChangeExtraPermissions(Teams::TEAM, Teams::PROJECT, Teams::GUEST, ['project.scan_now']));
+        self::assertSame([Permission::ProjectScanNow], $this->project->membershipOf(Uuid::fromString(Teams::GUEST))->extraPermissions());
+
+        foreach ([
+            [Teams::TEAM, null, Teams::MEMBER, ['host.enroll', 'team.edit']],
+            [Teams::TEAM, null, Teams::MEMBER, ['not.a.permission']],
+            [Teams::OTHER_TEAM, Teams::PROJECT, Teams::GUEST, []],
+        ] as [$teamId, $projectId, $userId, $permissions]) {
+            try {
+                $handler(new ChangeExtraPermissions($teamId, $projectId, $userId, $permissions));
+                self::fail('Not grantable.');
+            } catch (PermissionNotGrantable) {
+            }
+        }
+        self::assertSame([Permission::HostEnroll, Permission::ProjectCreate], $this->team->membershipOf($member)->extraPermissions(), 'All or nothing: refused before any change.');
+    }
+
+    #[Test]
+    public function it_should_list_the_extras_a_member_may_receive_with_what_the_actor_holds(): void
+    {
+        $world = $this->world();
+        $member = Uuid::fromString(Teams::MEMBER);
+        $this->team->grantExtra($member, Permission::HostEnroll);
+        $query = new GetMemberPermissionsHandler($world->permissions, $world->teams, $world->projects);
+
+        $team = $query(new GetMemberPermissions(Teams::TEAM, null, Teams::MEMBER));
+        self::assertSame('team_member', $team->role);
+        self::assertSame(array_map(static fn (Permission $p): string => $p->value, RolePermissions::grantableToTeamRole(TeamRole::Member)), array_map(static fn (PermissionChoice $c): string => $c->permission, $team->choices));
+        self::assertSame(['host.enroll'], $team->granted());
+        self::assertTrue($team->choices[0]->actorHolds, 'A TEAM_ADMIN holds every team permission.');
+
+        $project = $query(new GetMemberPermissions(Teams::TEAM, Teams::PROJECT, Teams::GUEST));
+        self::assertEquals([new PermissionChoice('project.scan_now', false, true)], $project->choices);
+
+        $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Member, [Permission::TeamMembersManage])]);
+        $query = new GetMemberPermissionsHandler($world->permissions, $world->teams, $world->projects);
+        $choices = $query(new GetMemberPermissions(Teams::TEAM, null, Teams::MEMBER))->choices;
+        $enroll = array_first(array_filter($choices, static fn (PermissionChoice $c): bool => 'host.enroll' === $c->permission));
+        $order = array_first(array_filter($choices, static fn (PermissionChoice $c): bool => 'host.order' === $c->permission));
+        self::assertNotNull($enroll);
+        self::assertNotNull($order);
+        self::assertTrue($enroll->isGrantableByActor(), 'Granted: may be revoked by whom does not hold it.');
+        self::assertFalse($enroll->actorHolds);
+        self::assertFalse($order->isGrantableByActor());
+
+        foreach ([
+            [new GetMemberPermissions(Teams::OTHER_TEAM, null, Teams::MEMBER), ResourceNotFound::class],
+            [new GetMemberPermissions(Teams::TEAM, null, Teams::GUEST), ResourceNotFound::class],
+            [new GetMemberPermissions(Teams::OTHER_TEAM, Teams::PROJECT, Teams::GUEST), ResourceNotFound::class],
+            [new GetMemberPermissions(Teams::TEAM, Teams::PROJECT, Teams::GUEST), PermissionDenied::class],
+        ] as [$ask, $expected]) {
+            try {
+                $query($ask);
+                self::fail($expected);
+            } catch (ResourceNotFound|PermissionDenied $refusal) {
+                self::assertSame($expected, $refusal::class);
+            }
+        }
+
+        $world->permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Viewer)]);
+        $this->expectException(PermissionDenied::class);
+        new GetMemberPermissionsHandler($world->permissions, $world->teams, $world->projects)(new GetMemberPermissions(Teams::TEAM, null, Teams::MEMBER));
     }
 
     #[Test]

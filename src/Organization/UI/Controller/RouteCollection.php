@@ -27,6 +27,7 @@ enum RouteCollection: string implements RouteCollectionInterface
     case PROJECT_INVITE = 'project_invite';
     case PROJECT_MEMBER_ROLE = 'project_member_role';
     case PROJECT_MEMBER_REMOVE = 'project_member_remove';
+    case PROJECT_MEMBER_EXTRA = 'project_member_extra';
     case ENVIRONMENT_CREATE = 'environment_create';
     case ENVIRONMENT_UPDATE = 'environment_update';
     case ENVIRONMENT_DELETE = 'environment_delete';

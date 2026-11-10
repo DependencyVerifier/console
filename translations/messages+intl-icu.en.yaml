@@ -1,6 +1,9 @@
 nav:
     overview: Overview
     team: Team
+    projects: Projects
+    members: Members
+    settings: Settings
     teams: Teams
     users: Users
     administration: Administration
@@ -218,6 +221,33 @@ admin:
         roles_help: "Granting or revoking super admin asks for your password again, and the holder is told by email."
         is_super_admin: Super admin of the instance
         not_super_admin: Regular account
+permission:
+    team:
+        audit:
+            view: "View the team audit log"
+        channels:
+            manage: "Manage the notification channels"
+    host:
+        enroll: "Enroll hosts"
+        approve: "Approve agents"
+        revoke: "Revoke agents"
+        delete: "Delete hosts"
+        order: "Send orders to agents"
+    project:
+        create: "Create projects"
+        edit: "Edit projects"
+        delete: "Delete projects"
+        members:
+            manage: "Manage project members"
+        environments:
+            manage: "Manage environments"
+        apps:
+            assign: "Assign applications"
+        notifications:
+            manage: "Manage notifications"
+        scan_now: "Run a scan now"
+    finding:
+        accept_risk: "Accept a risk on a finding"
 role:
     team_admin: Team admin
     team_member: Team member
@@ -272,7 +302,6 @@ organization:
             projects: Projects
             members: Members
             settings: Settings
-        tabs_label: Team sections
         facts:
             members: Members
             projects: Projects
@@ -283,8 +312,6 @@ organization:
         quotas_title: Usage and quotas
         quotas_later: Applies when its feature arrives
         shortcuts: Shortcuts
-        go_members: Manage members
-        go_settings: Team settings
         name_title: Name
         name_help: Shown in the sidebar and the lists. The slug and the ID never change.
         identity_title: Identifiers
@@ -303,6 +330,14 @@ organization:
         delete_description: "Its projects, environments and memberships are deleted, and its pending invitations stop working. This cannot be undone."
         delete_confirm: Delete the team
         deleted: Team deleted.
+    permissions:
+        open: Permissions
+        title: "Permissions of {email}"
+        description: "On top of the team role. Only the permissions this role may receive are listed."
+        description_project: "On top of the project role, on this project only. Only the permissions this role may receive are listed."
+        field: Extra permissions
+        not_held_help: "Greyed out: you do not hold it yourself, so you cannot grant it."
+        saved: Permissions saved.
     members:
         title: Members
         remove: Remove

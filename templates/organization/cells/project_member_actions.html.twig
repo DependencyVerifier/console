@@ -1,2 +1,15 @@
 {%- import 'organization/_actions.html.twig' as ui -%}
-{{ ui.button(path('organization_project_member_remove', {teamId: app.request.attributes.get('teamId'), projectId: app.request.attributes.get('projectId'), userId: row.userId}), 'project_member_remove:' ~ row.userId, 'organization.members.remove', 'destructive') }}
+{%- set team_id = app.request.attributes.get('teamId') -%}
+{%- set project_id = app.request.attributes.get('projectId') -%}
+<div class="flex flex-wrap justify-end gap-1">
+    <twig:FormDialog
+        id="member-permissions-{{ row.userId }}"
+        :title="'organization.permissions.title'|trans({email: row.email})"
+        :description="'organization.permissions.description_project'|trans"
+        :trigger="'organization.permissions.open'|trans"
+        :src="path('organization_project_member_extra', {teamId: team_id, projectId: project_id, userId: row.userId})"
+        variant="outline"
+        size="xs"
+    />
+    {{ ui.button(path('organization_project_member_remove', {teamId: team_id, projectId: project_id, userId: row.userId}), 'project_member_remove:' ~ row.userId, 'organization.members.remove', 'destructive') }}
+</div>
