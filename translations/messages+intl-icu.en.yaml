@@ -277,6 +277,11 @@ organization:
         edit: Edit
         edit_title: "Edit {name}"
         updated: Team updated.
+        delete: Delete
+        delete_title: "Delete {name}?"
+        delete_description: "Its projects, environments and memberships are deleted, and its pending invitations stop working. This cannot be undone."
+        delete_confirm: Delete the team
+        deleted: Team deleted.
     members:
         title: Members
         remove: Remove

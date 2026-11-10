@@ -66,4 +66,14 @@ final readonly class DoctrineInvitationRepository implements InvitationRepositor
             ->setParameter('project', $projectId->value, 'uuid')
             ->getQuery()->getResult();
     }
+
+    public function openOfTeam(TeamId $teamId): array
+    {
+        /** @var list<Invitation> */
+        return $this->manager->get()->createQueryBuilder()
+            ->select('i')->from(Invitation::class, 'i')
+            ->where('i.target.teamId = :team')->andWhere("i.status = 'pending'")
+            ->setParameter('team', $teamId->value, 'uuid')
+            ->getQuery()->getResult();
+    }
 }

@@ -51,4 +51,9 @@ final readonly class DoctrineTeamRepository implements TeamRepository
 
         return array_map(static fn (array $row): TeamId => TeamId::fromString((string) $row['id']), $rows);
     }
+
+    public function remove(Team $team): void
+    {
+        $this->manager->get()->remove($team);
+    }
 }

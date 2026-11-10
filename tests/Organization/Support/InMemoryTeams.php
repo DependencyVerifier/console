@@ -56,4 +56,9 @@ final class InMemoryTeams implements TeamRepository
 
         return $ids;
     }
+
+    public function remove(Team $team): void
+    {
+        unset($this->teams[$team->id()->toString()]);
+    }
 }

@@ -27,4 +27,9 @@ interface TeamRepository
      * @return list<TeamId>
      */
     public function idsOfMember(Uuid $userId): array;
+
+    /**
+     * Its memberships go with it (ORM cascade and foreign key).
+     */
+    public function remove(Team $team): void;
 }

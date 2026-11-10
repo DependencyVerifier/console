@@ -25,4 +25,9 @@ interface ProjectRepository
      * @return list<Project>
      */
     public function ofTeamWithMember(TeamId $teamId, Uuid $userId): array;
+
+    /**
+     * @return list<Project>
+     */
+    public function ofTeam(TeamId $teamId): array;
 }

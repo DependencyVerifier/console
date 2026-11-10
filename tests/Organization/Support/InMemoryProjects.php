@@ -51,4 +51,9 @@ final class InMemoryProjects implements ProjectRepository
     {
         return array_values(array_filter($this->projects, static fn (Project $p): bool => $p->teamId()->equals($teamId) && $p->isMember($userId)));
     }
+
+    public function ofTeam(TeamId $teamId): array
+    {
+        return array_values(array_filter($this->projects, static fn (Project $p): bool => $p->teamId()->equals($teamId)));
+    }
 }

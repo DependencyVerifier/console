@@ -53,4 +53,9 @@ final class InMemoryInvitations implements InvitationRepository
     {
         return array_values(array_filter($this->invitations, static fn (Invitation $i): bool => $i->target()->isProject() && $i->target()->projectId()->equals($projectId) && !$i->isAccepted() && !$i->isRevoked()));
     }
+
+    public function openOfTeam(TeamId $teamId): array
+    {
+        return array_values(array_filter($this->invitations, static fn (Invitation $i): bool => $i->target()->teamId()->equals($teamId) && !$i->isAccepted() && !$i->isRevoked()));
+    }
 }

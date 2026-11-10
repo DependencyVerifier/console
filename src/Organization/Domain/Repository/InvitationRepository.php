@@ -32,4 +32,11 @@ interface InvitationRepository
      * @return list<Invitation>
      */
     public function openOfProject(ProjectId $projectId): array;
+
+    /**
+     * Pending invitations of a team, its projects' included.
+     *
+     * @return list<Invitation>
+     */
+    public function openOfTeam(TeamId $teamId): array;
 }

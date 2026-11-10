@@ -26,7 +26,7 @@ final class AdminTeamEditTest extends IdentityWebTestCase
         $actions = DataTables::draw($this->client, '/admin/teams', 'teams')['data'][0]['actions'];
 
         $cell = DataTables::cell($actions);
-        self::assertCount(1, $cell->filter('button[aria-haspopup="dialog"]'));
+        self::assertCount(1, $cell->filter('[data-controller~="form-dialog"] button[aria-haspopup="dialog"]'), 'One edit dialog (the other one confirms the deletion).');
         self::assertSame(\sprintf('/admin/teams/%s/edit', $teamId), $cell->filter(\sprintf('turbo-frame#edit-team-%s-form', $teamId))->attr('src'));
 
         $this->client->request('GET', \sprintf('/admin/teams/%s/quotas', $teamId));

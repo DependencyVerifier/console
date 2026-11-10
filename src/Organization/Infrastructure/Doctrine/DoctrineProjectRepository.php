@@ -55,4 +55,13 @@ final readonly class DoctrineProjectRepository implements ProjectRepository
             ->setParameter('team', $teamId->value, 'uuid')->setParameter('user', $userId, 'uuid')
             ->getQuery()->getResult();
     }
+
+    public function ofTeam(TeamId $teamId): array
+    {
+        /** @var list<Project> */
+        return $this->manager->get()->createQueryBuilder()
+            ->select('p')->from(Project::class, 'p')
+            ->where('p.teamId = :team')->setParameter('team', $teamId->value, 'uuid')
+            ->getQuery()->getResult();
+    }
 }

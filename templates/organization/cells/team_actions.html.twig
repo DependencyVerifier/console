@@ -1,8 +1,32 @@
-<twig:FormDialog
-    id="edit-team-{{ row.id }}"
-    :title="'organization.teams.edit_title'|trans({name: row.name})"
-    :trigger="'organization.teams.edit'|trans"
-    :src="path('organization_admin_team_edit', {teamId: row.id})"
-    variant="outline"
-    size="xs"
-/>
+{%- import 'organization/_actions.html.twig' as actions -%}
+<div class="flex flex-wrap justify-end gap-1">
+    <twig:FormDialog
+        id="edit-team-{{ row.id }}"
+        :title="'organization.teams.edit_title'|trans({name: row.name})"
+        :trigger="'organization.teams.edit'|trans"
+        :src="path('organization_admin_team_edit', {teamId: row.id})"
+        variant="outline"
+        size="xs"
+    />
+    {#- A plain confirmation: the dialog holds the field-less delete form, answered by a Turbo Stream (the list reloads). -#}
+    <twig:Dialog id="delete-team-{{ row.id }}">
+        <twig:Dialog:Trigger>
+            <twig:Button variant="destructive" size="xs" {{ ...dialog_trigger_attrs }}>{{ 'organization.teams.delete'|trans }}</twig:Button>
+        </twig:Dialog:Trigger>
+        <twig:Dialog:Content class="text-start sm:max-w-md">
+            <twig:Dialog:Header class="items-start pe-8 text-start">
+                <twig:Dialog:Title>{{ 'organization.teams.delete_title'|trans({name: row.name}) }}</twig:Dialog:Title>
+                <twig:Dialog:Description>{{ 'organization.teams.delete_description'|trans }}</twig:Dialog:Description>
+            </twig:Dialog:Header>
+            <twig:Dialog:Footer>
+                <twig:Dialog:Close>
+                    <twig:Button type="button" variant="outline" {{ ...dialog_close_attrs }}>{{ 'action.cancel'|trans }}</twig:Button>
+                </twig:Dialog:Close>
+                <form method="post" action="{{ path('organization_admin_team_delete', {teamId: row.id}) }}">
+                    <input type="hidden" name="action[_token]" value="{{ csrf_token('team_delete:' ~ row.id) }}">
+                    <twig:Button type="submit" variant="destructive" class="w-full sm:w-auto" data-action="dialog#close">{{ 'organization.teams.delete_confirm'|trans }}</twig:Button>
+                </form>
+            </twig:Dialog:Footer>
+        </twig:Dialog:Content>
+    </twig:Dialog>
+</div>

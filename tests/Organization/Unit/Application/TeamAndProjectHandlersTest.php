@@ -21,7 +21,9 @@ use Organization\Application\Command\Project\Handler\RenameProjectHandler;
 use Organization\Application\Command\Project\RenameProject;
 use Organization\Application\Command\QuotaInput;
 use Organization\Application\Command\Team\CreateTeam;
+use Organization\Application\Command\Team\DeleteTeam;
 use Organization\Application\Command\Team\Handler\CreateTeamHandler;
+use Organization\Application\Command\Team\Handler\DeleteTeamHandler;
 use Organization\Application\Command\Team\Handler\RenameTeamHandler;
 use Organization\Application\Command\Team\Handler\UpdateTeamHandler;
 use Organization\Application\Command\Team\RenameTeam;
@@ -171,6 +173,51 @@ final class TeamAndProjectHandlersTest extends TestCase
         $handler(new TeamAdminAppointed(Teams::TEAM, Teams::GUEST, 'Platform'));
 
         self::assertSame([['jane@example.com', Teams::TEAM, 'Platform']], $sender->sent, 'Nobody to tell for an unknown account.');
+    }
+
+    #[Test]
+    public function it_should_delete_a_team_with_its_projects_and_revoke_its_pending_invitations(): void
+    {
+        $world = new World()->asSuperAdmin();
+        $team = Teams::withAdmin();
+        $other = Teams::team(Teams::OTHER_TEAM);
+        $world->teams->add($team);
+        $world->teams->add($other);
+        $world->projects->add(Teams::project());
+        $world->projects->add(Teams::project(Teams::TEAM, '019a6b2c-3f00-7a11-8b22-3c44d55e6f02'));
+        $kept = Teams::project(Teams::OTHER_TEAM, '019a6b2c-3f00-7a11-8b22-3c44d55e6f03');
+        $world->projects->add($kept);
+        $issue = static fn (string $id, InvitationTarget $target): Invitation => Invitation::issue(InvitationId::fromString($id), 'jane@example.com', $target, Uuid::fromString(Teams::ADMIN), 't', 'h:'.$id, $world->clock->now());
+        $teamInvitation = $issue(self::INVITATION, InvitationTarget::team(TeamId::fromString(Teams::TEAM), TeamRole::Member));
+        $projectInvitation = $issue('019a6b2c-5f00-7a11-8b22-3c44d55e6f02', InvitationTarget::project(TeamId::fromString(Teams::TEAM), ProjectId::fromString(Teams::PROJECT), ProjectRole::Viewer));
+        $otherInvitation = $issue('019a6b2c-5f00-7a11-8b22-3c44d55e6f03', InvitationTarget::team(TeamId::fromString(Teams::OTHER_TEAM), TeamRole::Member));
+        array_map($world->invitations->add(...), [$teamInvitation, $projectInvitation, $otherInvitation]);
+
+        $this->deleteTeam($world)(new DeleteTeam(Teams::TEAM));
+
+        self::assertSame([Teams::OTHER_TEAM], array_keys($world->teams->teams));
+        self::assertSame([Teams::TEAM], $world->teams->locked);
+        self::assertSame([$kept], array_values($world->projects->projects), 'Every project of the team goes, never another team\'s.');
+        self::assertTrue($teamInvitation->isRevoked());
+        self::assertTrue($projectInvitation->isRevoked());
+        self::assertFalse($otherInvitation->isRevoked());
+    }
+
+    #[Test]
+    public function it_should_refuse_to_delete_a_team_without_the_permission_or_an_unknown_one(): void
+    {
+        $world = new World()->as(Teams::ADMIN, TeamRole::Admin);
+        $world->teams->add(Teams::withAdmin());
+        try {
+            $this->deleteTeam($world)(new DeleteTeam(Teams::TEAM));
+            self::fail('Super admin only.');
+        } catch (PermissionDenied) {
+        }
+        self::assertCount(1, $world->teams->teams);
+        self::assertSame([], $world->teams->locked);
+
+        $this->expectException(ResourceNotFound::class);
+        $this->deleteTeam(new World()->asSuperAdmin())(new DeleteTeam(Teams::TEAM));
     }
 
     #[Test]
@@ -362,6 +409,11 @@ final class TeamAndProjectHandlersTest extends TestCase
             } catch (ResourceNotFound) {
             }
         }
+    }
+
+    private function deleteTeam(World $world): DeleteTeamHandler
+    {
+        return new DeleteTeamHandler($world->access(), $world->teams, $world->projects, $world->invitations);
     }
 
     private function createTeam(World $world, FixedAccounts $accounts): CreateTeamHandler
