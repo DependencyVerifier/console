@@ -30,9 +30,19 @@ final readonly class IdentityEmails
      */
     public function queue(User $user, string $template, string $subjectKey, array $context = []): void
     {
+        $this->queueTo($user->email()->value(), $template, $subjectKey, $context);
+    }
+
+    /**
+     * To another address than the account's (the new address of an email change, or the previous one).
+     *
+     * @param array<string, mixed> $context
+     */
+    public function queueTo(string $address, string $template, string $subjectKey, array $context = []): void
+    {
         $this->queue->queue(new TemplatedEmail()
             ->from(new Address($this->from, 'DependencyVerifier'))
-            ->to($user->email()->value())
+            ->to($address)
             ->subject($this->translator->trans($subjectKey, domain: 'email'))
             ->htmlTemplate(\sprintf('email/identity/%s.html.twig', $template))
             ->textTemplate(\sprintf('email/identity/%s.txt.twig', $template))

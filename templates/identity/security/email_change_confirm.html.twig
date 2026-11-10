@@ -1,0 +1,17 @@
+{% extends 'shared/layout/auth.html.twig' %}
+{% form_theme form 'shared/form/theme.html.twig' %}
+
+{% block title %}{{ 'identity.email_change.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block main %}
+    <div class="flex flex-col gap-6">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.email_change.title'|trans }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ 'identity.email_change.intro'|trans({email: new_email}) }}</p>
+        </div>
+        {{ form_start(form, {attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false'}}) }}
+            {{ form_errors(form) }}
+            <twig:Button type="submit" class="w-full">{{ 'identity.email_change.confirm'|trans }}</twig:Button>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

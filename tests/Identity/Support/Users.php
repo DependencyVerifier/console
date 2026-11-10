@@ -13,6 +13,7 @@ final class Users
 {
     public const string ID = '019a6b2c-1f00-7a11-8b22-3c44d55e6f01';
     public const string OTHER_ID = '019a6b2c-1f00-7a11-8b22-3c44d55e6f02';
+    public const string THIRD_ID = '019a6b2c-1f00-7a11-8b22-3c44d55e6f03';
 
     public static function member(string $id = self::ID, string $email = 'jane@example.com'): User
     {

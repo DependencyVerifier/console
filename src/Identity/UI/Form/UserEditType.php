@@ -6,17 +6,23 @@ namespace Identity\UI\Form;
 
 use Identity\Domain\Model\User;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * @extends AbstractType<array{displayName: ?string}>
+ * @extends AbstractType<array{email: string, displayName: ?string}>
  */
 final class UserEditType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $builder->add('email', EmailType::class, [
+            'label' => 'identity.field.email',
+            'help' => 'admin.users.email_help',
+            'constraints' => [new Assert\NotBlank(), new Assert\Email(), new Assert\Length(max: 254)],
+        ]);
         $builder->add('displayName', TextType::class, [
             'label' => 'identity.field.display_name',
             'help' => 'admin.users.display_name_help',

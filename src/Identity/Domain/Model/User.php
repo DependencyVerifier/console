@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Identity\Domain\Event\BackupCodesRegenerated;
+use Identity\Domain\Event\EmailChanged;
 use Identity\Domain\Event\EmailLoginCodeIssued;
 use Identity\Domain\Event\PasswordChanged;
 use Identity\Domain\Event\SecondFactorReset;
@@ -211,6 +212,22 @@ class User implements RecordsEvents
     public function remainingBackupCodes(): int
     {
         return $this->backupCodes->filter(static fn (BackupCode $code): bool => !$code->isUsed())->count();
+    }
+
+    /**
+     * Applied once the holder of the new address confirmed it (EmailChangeRequest). Every session is revoked: the
+     * identifier changed. The previous address is told.
+     */
+    public function changeEmail(EmailAddress $email): void
+    {
+        if ($this->email->equals($email)) {
+            return;
+        }
+
+        $previous = $this->email->value();
+        $this->email = $email;
+        $this->sessionVersions = $this->sessionVersions->revokeAll();
+        $this->recordThat(new EmailChanged($this->id->toRfc4122(), $previous));
     }
 
     // ---------------------------------------------------------------- password

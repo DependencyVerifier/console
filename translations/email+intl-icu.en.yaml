@@ -10,6 +10,12 @@ identity:
         action: "Choose my password"
         validity: "This link works once, for {days} days. A second factor is asked at every sign-in."
         ignore: "If you were not expecting it, ignore this email: the account stays unusable."
+    email_change:
+        subject: "Confirm your new DependencyVerifier address"
+        intro: "An administrator asked to move your DependencyVerifier account to this address."
+        action: "Confirm this address"
+        validity: "This link works once, for {hours} hours. Until then the account keeps its current address."
+        ignore: "If you were not expecting it, ignore this email: nothing changes."
     password_reset:
         subject: "Reset your DependencyVerifier password"
         intro: "Someone asked to reset the password of this account."
@@ -28,6 +34,7 @@ identity:
         super_admin_revoked: "Your account is no longer a super admin of the instance."
         second_factor_throttled: "Your password was entered correctly, but the second factor failed many times: the second factor is blocked for 24 hours. Change your password, it stops the attack."
         trusted_device_registered: "A new device was trusted for 30 days: the second factor is skipped on it."
+        email_changed: "The email of your DependencyVerifier account was changed to another address: this one no longer signs in. Every session was signed out."
 organization:
     invitation:
         subject: "You are invited to DependencyVerifier"

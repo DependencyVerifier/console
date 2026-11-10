@@ -16,4 +16,5 @@ final class SessionKeys
     public const string REAUTH_RETURN_ROUTE = '_depverify.reauth_return_route';
     public const string PASSWORD_RESET_REQUEST = '_depverify.password_reset_request';
     public const string INVITATION = '_depverify.invitation';
+    public const string EMAIL_CHANGE_REQUEST = '_depverify.email_change_request';
 }

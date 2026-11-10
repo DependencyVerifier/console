@@ -18,9 +18,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
+use Symfony\Component\Uid\Uuid;
 
 /**
- * The "Edit" dialog of a row of /admin/users: the display name, and the instance role (super admin, through its
+ * The "Edit" dialog of a row of /admin/users: the email (applied once confirmed by link), the display name, and the instance role (super admin, through its
  * own re-authenticated buttons, shown under the form).
  */
 #[Route(path: '/admin/users/{userId}/edit', name: RouteCollection::ADMIN_USER_EDIT->value, requirements: ['userId' => Requirement::UUID], methods: ['GET', 'POST'])]
@@ -35,14 +36,14 @@ final readonly class AdminUserEditController
     public function __invoke(Request $request, string $userId): Response
     {
         $user = $this->queries->ask(new GetUserProfile($userId));
-        $form = $this->forms->createNamed('user_edit', UserEditType::class, ['displayName' => $user->displayName], ['csrf_token_id' => 'user_edit:'.$userId]);
+        $form = $this->forms->createNamed('user_edit', UserEditType::class, ['email' => $user->email, 'displayName' => $user->displayName], ['csrf_token_id' => 'user_edit:'.$userId]);
 
         return $this->dialog->handle(
             $request,
             $form,
             self::DIALOG_PREFIX.$userId,
             'action.save',
-            static fn (): UpdateUser => new UpdateUser($userId, FormData::string($form, 'displayName')),
+            static fn (): UpdateUser => new UpdateUser($userId, FormData::string($form, 'displayName'), FormData::string($form, 'email'), Uuid::v7()->toRfc4122()),
             $this->redirect->withSuccessKey('admin.users.updated'),
             new RouteReference(RouteCollection::ADMIN_USERS->prefixed()),
             'identity/admin/user_edit_form.html.twig',

@@ -107,6 +107,13 @@ identity:
         submit: Send the link
         sent_title: Check your email
         sent: If an account uses this address, a link to reset its password is on its way. It works once, for 30 minutes.
+    email_change:
+        title: Confirm the new address
+        intro: "Your account moves to {email}. Confirm it: every session is signed out, then sign in with this address."
+        confirm: Confirm this address
+        done: Address confirmed. Sign in with it.
+        invalid_title: Link expired
+        invalid: "This link was used, replaced by a newer one or has expired. Ask the administrator of the instance again."
     password_reset:
         title: Choose a new password
         submit: Save the password
@@ -197,7 +204,8 @@ admin:
         hide_deleted: Hide deleted
         edit: Edit
         edit_title: "Edit {email}"
-        updated: Account updated.
+        updated: "Account updated. A new email is applied once confirmed from the link sent to it."
+        email_help: A new address is applied only once confirmed from the link sent to it (24 hours).
         display_name_help: Shown in the lists and the sidebar. Leave empty to show the start of the email.
         roles: Instance role
         roles_help: "Granting or revoking super admin asks for your password again, and the holder is told by email."

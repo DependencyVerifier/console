@@ -10,14 +10,17 @@ use Shared\Application\Audit\AuditContext;
 use Shared\Application\Audit\Target;
 
 /**
- * The edit dialog of /admin/users: the display name (empty clears it). Super admin and email have their own
- * gestures (re-authentication, confirmation by link).
+ * The edit dialog of /admin/users: the display name (empty clears it) and the email. A new email is not applied:
+ * a confirmation link leaves for it (EmailChangeRequest), the account keeps its email until it is clicked. Super
+ * admin has its own re-authenticated gestures.
  */
 final readonly class UpdateUser implements AuditableCommand
 {
     public function __construct(
         public string $userId,
         public string $displayName,
+        public string $email,
+        public string $emailChangeId,
     ) {
     }
 

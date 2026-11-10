@@ -1,0 +1,7 @@
+{% extends 'email/layout.html.twig' %}
+{% block content %}
+    <p>{{ 'identity.email_change.intro'|trans({}, 'email') }}</p>
+    <p><a href="{{ url }}" style="display:inline-block;padding:8px 14px;background:#18181b;color:#ffffff;border-radius:6px;text-decoration:none">{{ 'identity.email_change.action'|trans({}, 'email') }}</a></p>
+    <p>{{ 'identity.email_change.validity'|trans({hours: validity_hours}, 'email') }}</p>
+    <p style="color:#71717a">{{ 'identity.email_change.ignore'|trans({}, 'email') }}</p>
+{% endblock %}
