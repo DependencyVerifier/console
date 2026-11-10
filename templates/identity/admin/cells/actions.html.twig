@@ -11,6 +11,17 @@
         variant="outline"
         size="xs"
     />
+    {%- if not row.superAdmin %}
+    <twig:FormDialog
+        id="change-email-{{ row.id }}"
+        :title="'admin.users.change_email_title'|trans({email: row.email})"
+        :description="'admin.users.change_email_description'|trans"
+        :trigger="'admin.users.change_email'|trans"
+        :src="path('identity_admin_user_email', {userId: row.id})"
+        variant="outline"
+        size="xs"
+    />
+    {%- endif %}
     {{ admin.action('identity_admin_user_reset_second_factor', 'reset_second_factor', row, 'admin.users.reset_second_factor', 'outline') }}
     {% if row.active %}
         {{ admin.action('identity_admin_user_deactivate', 'deactivate', row, 'admin.users.deactivate', 'destructive') }}

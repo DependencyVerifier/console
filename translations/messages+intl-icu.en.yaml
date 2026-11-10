@@ -43,6 +43,7 @@ rule:
     password_policy: "The password needs 12 to 4096 characters and must not contain your email address."
     email_already_registered: An account already uses this email address.
     invalid_second_factor_transition: This change is not possible with the current second factor.
+    super_admin_email_locked: "The email of a super admin cannot be changed. Revoke the super admin role first."
     super_admin_revocation_forbidden: "The instance must keep an active super admin, and you cannot revoke yourself."
     self_management_forbidden: You cannot deactivate your own account.
     password_reset_link_invalid: This link is expired or was already used.
@@ -204,7 +205,12 @@ admin:
         hide_deleted: Hide deleted
         edit: Edit
         edit_title: "Edit {email}"
-        updated: "Account updated. A new email is applied once confirmed from the link sent to it."
+        updated: Account updated.
+        change_email: Change email
+        change_email_title: "Change the email of {email}"
+        change_email_description: Asks for your password again. Not possible on a super admin.
+        change_email_submit: Send the link
+        email_requested: "Link sent. The new email is applied once confirmed from it, and every session is signed out."
         email_help: A new address is applied only once confirmed from the link sent to it (24 hours).
         display_name_help: Shown in the lists and the sidebar. Leave empty to show the start of the email.
         roles: Instance role
