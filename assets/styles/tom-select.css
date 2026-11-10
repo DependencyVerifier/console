@@ -1,23 +1,26 @@
-/* Tom Select (Symfony UX Autocomplete) tuned to the shadcn kit: the base stylesheet only, then the look of <twig:Input>
-   and of the kit's popovers, with the tokens of the current theme (light and dark). */
+/* Tom Select (Symfony UX Autocomplete) tuned to the shadcn kit. Tom Select copies the classes of the original <input>
+   (those of shared/form/theme.html.twig: border, height, radius, padding) onto `.ts-wrapper`: the wrapper is therefore
+   the one visible box, and `.ts-control` inside it stays bare. Tokens of the current theme (light and dark). */
 @import 'tom-select/dist/css/tom-select.css';
 
-.ts-wrapper.single .ts-control,
-.ts-wrapper .ts-control {
-    min-height: 2rem;
-    border: 1px solid var(--input);
-    border-radius: var(--radius-lg, 0.5rem);
-    background: transparent;
-    padding: 0.25rem 0.625rem;
-    box-shadow: none;
-    color: var(--foreground);
-    font-size: var(--text-sm);
-    line-height: 1.5rem;
+.ts-wrapper {
+    display: flex;
+    align-items: center;
 }
 
-.ts-wrapper.focus .ts-control {
-    border-color: var(--ring);
-    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring), transparent 50%);
+.ts-wrapper .ts-control,
+.ts-wrapper.single .ts-control,
+.ts-wrapper.single.input-active .ts-control {
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    color: var(--foreground);
+    font-size: inherit;
+    line-height: inherit;
+    cursor: text;
 }
 
 .ts-control > input {
@@ -29,7 +32,27 @@
     color: var(--muted-foreground);
 }
 
+/* The wrapper is a div: `focus-visible:` of the copied classes never applies, Tom Select's `focus` class does. */
+.ts-wrapper.focus {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring), transparent 50%);
+}
+
+/* Only a server-side error (aria-invalid on the original input, placed right before the wrapper); Tom Select's own
+   `invalid` class flags any empty required field, even before the first keystroke. */
+[aria-invalid='true'] + .ts-wrapper {
+    border-color: var(--destructive);
+}
+
+/* A modal <dialog> scrolls its overflow (user-agent `overflow: auto`): the suggestions would be cut at its bottom edge.
+   Moving them to <body> is no way out, a modal dialog sits in the top layer above it. A dialog holding a picker lets
+   them overflow instead; such dialogs stay short (the team creation: two fields). */
+dialog:has(.ts-wrapper) {
+    overflow: visible;
+}
+
 .ts-dropdown {
+    z-index: 60;
     margin-top: 0.25rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg, 0.5rem);
@@ -56,9 +79,4 @@
 .ts-dropdown .no-results,
 .ts-dropdown .no-more-results {
     color: var(--muted-foreground);
-}
-
-.ts-wrapper.invalid .ts-control,
-.ts-wrapper:has(+ [aria-invalid='true']) .ts-control {
-    border-color: var(--destructive);
 }
