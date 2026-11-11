@@ -20,6 +20,9 @@ enum Problem: string
     case TokenInvalid = 'token_invalid';
     case TokenExpired = 'token_expired';
     case AgentPending = 'agent_pending';
+    case ScopeViolation = 'scope_violation';
+    case MissingSnapshots = 'missing_snapshots';
+    case DigestMismatch = 'digest_mismatch';
     case NotFound = 'not_found';
     case PayloadTooLarge = 'payload_too_large';
     case QuotaExceeded = 'quota_exceeded';
@@ -31,7 +34,9 @@ enum Problem: string
             self::InvalidPayload, self::UnsupportedProtocolVersion => 400,
             self::InvalidSignature, self::InvalidDigest, self::ReplayedRequest, self::ClockSkew, self::UnknownAgent,
             self::AgentRevoked, self::TokenInvalid, self::TokenExpired => 401,
-            self::AgentPending => 403,
+            self::AgentPending, self::ScopeViolation => 403,
+            self::MissingSnapshots => 409,
+            self::DigestMismatch => 422,
             self::NotFound => 404,
             self::QuotaExceeded => 409,
             self::PayloadTooLarge => 413,
@@ -53,6 +58,9 @@ enum Problem: string
             self::TokenInvalid => 'Unknown, used up or revoked enrollment token',
             self::TokenExpired => 'Enrollment token expired',
             self::AgentPending => 'Agent waiting for approval',
+            self::ScopeViolation => 'Inventory outside the scope the agent was enrolled for',
+            self::MissingSnapshots => 'Some snapshots of the inventory were not uploaded',
+            self::DigestMismatch => 'The snapshot does not match its digest',
             self::NotFound => 'Not found',
             self::PayloadTooLarge => 'Request body too large',
             self::QuotaExceeded => 'Team agent quota reached',

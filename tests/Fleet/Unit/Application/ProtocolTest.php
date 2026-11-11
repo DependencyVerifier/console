@@ -142,14 +142,27 @@ final class ProtocolTest extends TestCase
         self::assertSame([
             'invalid_payload' => 400, 'unsupported_protocol_version' => 400, 'invalid_signature' => 401, 'invalid_digest' => 401,
             'replayed_request' => 401, 'clock_skew' => 401, 'unknown_agent' => 401, 'agent_revoked' => 401, 'token_invalid' => 401,
-            'token_expired' => 401, 'agent_pending' => 403, 'not_found' => 404, 'payload_too_large' => 413, 'quota_exceeded' => 409,
+            'token_expired' => 401, 'agent_pending' => 403, 'scope_violation' => 403, 'missing_snapshots' => 409, 'digest_mismatch' => 422, 'not_found' => 404, 'payload_too_large' => 413, 'quota_exceeded' => 409,
             'rate_limited' => 429,
         ], $statuses);
-        self::assertCount(15, array_unique(array_map(static fn (Problem $p): string => $p->title(), Problem::cases())));
+        self::assertCount(18, array_unique(array_map(static fn (Problem $p): string => $p->title(), Problem::cases())));
         self::assertSame(Problem::QuotaExceeded, Problem::ofRule('quota'));
         self::assertSame(Problem::TokenExpired, Problem::ofRule('token_expired'));
         self::assertSame(Problem::InvalidPayload, Problem::ofRule('agent_not_pending'));
+        self::assertSame(Problem::ScopeViolation, Problem::ofRule('scope_violation'));
         self::assertSame('', new ProtocolRefusal(Problem::NotFound)->detail);
+    }
+
+    #[Test]
+    public function it_should_bound_the_body_by_route(): void
+    {
+        self::assertSame(20971520, RequestVerifier::maxBytesOf('PUT', '/agent/v1/inventories/i/snapshots/sha256:x'));
+        self::assertSame(1048576, RequestVerifier::maxBytesOf('POST', '/agent/v1/inventories/i/snapshots/sha256:x'), 'An upload is a PUT.');
+        self::assertSame(1048576, RequestVerifier::maxBytesOf('PUT', '/agent/v1/inventories/i/snapshots/sha256:x/more'));
+        self::assertSame(1048576, RequestVerifier::maxBytesOf('PUT', '/x/agent/v1/inventories/i/snapshots/s'));
+        self::assertSame(1048576, RequestVerifier::maxBytesOf('POST', '/agent/v1/poll'));
+        self::assertTrue(RequestVerifier::isBodyTooLarge('ab', 1));
+        self::assertFalse(RequestVerifier::isBodyTooLarge('a', 1));
     }
 
     #[Test]

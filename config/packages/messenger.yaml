@@ -37,7 +37,28 @@ framework:
                     enabled: true
                     allow_no_handlers: true
 
-        # Everything is synchronous for now. Async queues (ingest, matching, notifications, sync) arrive with
-        # the features that need them (docs/cadrage.md §9bis), on the Doctrine transport.
+        # Async queues on the Doctrine transport (docs/cadrage.md §9bis), one per kind of work so their workers
+        # scale apart; PostgreSQL LISTEN/NOTIFY wakes the worker. Tables are created by the migrations
+        # (auto_setup=0: the runtime role has no DDL right). `ingest`: processing of the agents' inventories.
+        failure_transport: failed
         transports:
             sync: 'sync://'
+            ingest:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    queue_name: ingest
+                retry_strategy:
+                    max_retries: 3
+                    delay: 10000
+                    multiplier: 3
+            failed:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    queue_name: failed
+
+when@test:
+    framework:
+        messenger:
+            transports:
+                # Processed right away in the tests (the integration test of the transport uses the real one).
+                ingest: 'sync://'

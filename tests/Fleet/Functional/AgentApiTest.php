@@ -170,8 +170,11 @@ final class AgentApiTest extends IdentityWebTestCase
         $agent->post($this->client, '/agent/v1/poll', ['protocol_version' => 2]);
         $this->assertProblem(400, 'unsupported_protocol_version');
 
+        $this->client->request('POST', 'https://localhost/agent/v1/poll', server: ['CONTENT_TYPE' => 'application/json', 'HTTP_CONTENT_LENGTH' => '1048577'], content: '{}');
+        $this->assertProblem(413, 'payload_too_large', 'The declared length is refused before the body is read.');
+
         self::assertSame(
-            ['rule:replayed_request', 'rule:clock_skew', 'rule:invalid_digest', 'rule:unknown_agent', 'rule:unknown_agent', 'rule:invalid_signature'],
+            ['rule:replayed_request', 'rule:clock_skew', 'rule:invalid_digest', 'rule:unknown_agent', 'rule:unknown_agent', 'rule:invalid_signature', 'rule:payload_too_large'],
             array_column(AuditLog::entries($this->connection(), 'fleet.agent_request'), 'reason'),
         );
         self::assertSame(['rule:unsupported_protocol_version'], array_column(AuditLog::entries($this->connection(), 'fleet.poll'), 'reason'), 'Authenticated, refused by the poll: audited by the bus.');

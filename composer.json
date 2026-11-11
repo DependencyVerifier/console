@@ -21,6 +21,7 @@
         "scheb/2fa-trusted-device": "^8.7",
         "symfony/clock": "8.1.*",
         "symfony/console": "8.1.*",
+        "symfony/doctrine-messenger": "8.1.*",
         "symfony/dotenv": "8.1.*",
         "symfony/flex": "^2",
         "symfony/form": "8.1.*",

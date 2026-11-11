@@ -8,3 +8,8 @@ services:
       target: frankenphp_prod
     environment:
       APP_SECRET: ${APP_SECRET}
+
+  worker:
+    image: ${IMAGES_PREFIX:-}app-php-prod
+    environment:
+      APP_SECRET: ${APP_SECRET}

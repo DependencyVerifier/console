@@ -21,7 +21,7 @@ OWNER_CONSOLE=$(DCE) -e DATABASE_MIGRATIONS_URL php sh -c 'DATABASE_URL="$$DATAB
 
 .PHONY: help
 help:
-	@grep -E '(^([a-zA-Z_-]+ ?)+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
+	@grep -hE '(^([a-zA-Z_-]+ ?)+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 
 ##
 ## —— Environment ⚙️ ————————————————
@@ -145,8 +145,16 @@ audit-partitions: ## Create the next audit partitions and drop the expired ones 
 rate-limiter-prune: ## Delete expired rate limiter states
 	@$(CONSOLE) app:rate-limiter:prune
 
+.PHONY: worker-restart
+worker-restart: ## Restart the Messenger worker (it never reloads code, so after a change to a message handler)
+	@$(DC) restart worker
+
+.PHONY: worker-logs
+worker-logs: ## Follow the Messenger worker
+	@$(DC) logs -f worker
+
 .PHONY: fleet-maintain
-fleet-maintain: ## Fleet maintenance: inactive agents, late orders, request nonces (cron, every few minutes)
+fleet-maintain: ## Fleet maintenance, inactive agents, late orders, request nonces (cron, every few minutes)
 	@$(CONSOLE) app:fleet:maintain
 
 .PHONY: fleet-fake-agent

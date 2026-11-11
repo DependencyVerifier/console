@@ -50,6 +50,22 @@ final readonly class AgentClient
     }
 
     /**
+     * PUT of a snapshot (protocol §8.3): the gzip of $document, Content-Digest over the compressed bytes.
+     *
+     * @param array{created?: int, expires?: int, nonce?: string, keyid?: string, digest?: string, body?: string, unsigned?: bool} $tamper
+     */
+    public function putSnapshot(KernelBrowser $client, string $path, string $document, string $mediaType, array $tamper = []): void
+    {
+        $signed = $this->signRaw('PUT', 'https://localhost'.$path, (string) gzencode($document), time(), $tamper);
+        $server = ['CONTENT_TYPE' => $mediaType, 'HTTP_CONTENT_ENCODING' => 'gzip'];
+        foreach ($signed->headers as $name => $value) {
+            $server['HTTP_'.u($name)->upper()->replace('-', '_')->toString()] = $value;
+        }
+
+        $client->request('PUT', $signed->targetUri, server: $server, content: $signed->body);
+    }
+
+    /**
      * A POST signed at $now (plus the `created` offset of $tamper).
      *
      * @param array<string, mixed>                                                                                                 $body
@@ -57,7 +73,16 @@ final readonly class AgentClient
      */
     public function sign(string $uri, array $body, int $now, array $tamper = []): SignedRequest
     {
-        $json = json_encode($body, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES);
+        return $this->signRaw('POST', $uri, json_encode($body, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES), $now, $tamper);
+    }
+
+    /**
+     * Any method and raw body (a gzip snapshot), signed at $now.
+     *
+     * @param array{created?: int, expires?: int, nonce?: string, keyid?: string, digest?: string, body?: string, unsigned?: bool} $tamper
+     */
+    public function signRaw(string $method, string $uri, string $json, int $now, array $tamper = []): SignedRequest
+    {
         $created = $now + ($tamper['created'] ?? 0);
         $date = gmdate('D, d M Y H:i:s \G\M\T', $created);
         $digest = $tamper['digest'] ?? RequestVerifier::digestOf($json);
@@ -65,14 +90,14 @@ final readonly class AgentClient
             '("@method" "@target-uri" "content-digest" "date");created=%d;expires=%d;keyid="%s";alg="ed25519";nonce="%s";tag="depverify-agent-v1"',
             $created, $created + ($tamper['expires'] ?? 300), $tamper['keyid'] ?? $this->key->fingerprint(), $tamper['nonce'] ?? self::nonce(),
         );
-        $base = u("\n")->join(['"@method": POST', '"@target-uri": '.$uri, '"content-digest": '.$digest, '"date": '.$date, '"@signature-params": '.$parameters])->toString();
+        $base = u("\n")->join(['"@method": '.$method, '"@target-uri": '.$uri, '"content-digest": '.$digest, '"date": '.$date, '"@signature-params": '.$parameters])->toString();
         $headers = ['Date' => $date, 'Content-Digest' => $digest];
         if (!($tamper['unsigned'] ?? false)) {
             $headers['Signature-Input'] = 'sig1='.$parameters;
             $headers['Signature'] = 'sig1=:'.base64_encode(sodium_crypto_sign_detached($base, $this->secretKey)).':';
         }
 
-        return new SignedRequest('POST', $uri, $headers, $tamper['body'] ?? $json);
+        return new SignedRequest($method, $uri, $headers, $tamper['body'] ?? $json);
     }
 
     /**

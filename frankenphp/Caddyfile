@@ -22,6 +22,20 @@
 
 	{$CADDY_SERVER_EXTRA_DIRECTIVES}
 
+	# Agent API (protocol §3, §8.3): a snapshot upload is at most 20 MB compressed, any other request 1 MiB. Refused
+	# here before PHP reads anything; the application checks the same limits and answers a problem document.
+	@agentSnapshot path_regexp ^/agent/v1/inventories/[^/]+/snapshots/
+	request_body @agentSnapshot {
+		max_size 20MiB
+	}
+	@agentRequest {
+		path /agent/v1/*
+		not path_regexp ^/agent/v1/inventories/[^/]+/snapshots/
+	}
+	request_body @agentRequest {
+		max_size 1MiB
+	}
+
 	@phpRoute {
 		not file {path}
 	}

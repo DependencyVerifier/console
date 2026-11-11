@@ -74,10 +74,16 @@ final class AgentRequestAuthenticator extends AbstractAuthenticator implements A
 
     public function authenticate(Request $request): Passport
     {
-        $signed = self::signedRequestOf($request);
         $claimed = null;
         try {
-            if (RequestVerifier::isBodyTooLarge($signed->body)) {
+            // Before reading the body: the declared length first, then the bytes received.
+            $max = RequestVerifier::maxBytesOf($request->getMethod(), $request->getPathInfo());
+            if ((int) $request->headers->get('Content-Length', '0') > $max) {
+                throw new ProtocolRefusal(Problem::PayloadTooLarge);
+            }
+
+            $signed = self::signedRequestOf($request);
+            if (RequestVerifier::isBodyTooLarge($signed->body, $max)) {
                 throw new ProtocolRefusal(Problem::PayloadTooLarge);
             }
 

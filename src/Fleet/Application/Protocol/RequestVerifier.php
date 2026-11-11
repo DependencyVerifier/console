@@ -10,6 +10,7 @@ use Fleet\Domain\Model\AgentPublicKey;
 use Psr\Clock\ClockInterface;
 
 use function Symfony\Component\String\b;
+use function Symfony\Component\String\u;
 
 /**
  * Verification of a signed agent request, in the order of protocol §4.3, stopping at the first failure:
@@ -18,6 +19,7 @@ use function Symfony\Component\String\b;
 final readonly class RequestVerifier
 {
     public const int CLOCK_WINDOW = 300;
+    public const int MAX_SNAPSHOT_BYTES = 20971520;
 
     public function __construct(private SignatureVerifier $signatures, private NonceStore $nonces, private ClockInterface $clock)
     {
@@ -67,8 +69,16 @@ final readonly class RequestVerifier
         return 'sha-256=:'.base64_encode(hash('sha256', $body, true)).':';
     }
 
-    public static function isBodyTooLarge(string $body): bool
+    /**
+     * 1 MiB of JSON, 20 MiB for a compressed snapshot upload (protocol §3, §8.3).
+     */
+    public static function maxBytesOf(string $method, string $path): int
     {
-        return b($body)->length() > AgentPayload::MAX_BYTES;
+        return 'PUT' === $method && [] !== u($path)->match('#^/agent/v1/inventories/[^/]+/snapshots/[^/]+$#') ? self::MAX_SNAPSHOT_BYTES : AgentPayload::MAX_BYTES;
+    }
+
+    public static function isBodyTooLarge(string $body, int $maxBytes = AgentPayload::MAX_BYTES): bool
+    {
+        return b($body)->length() > $maxBytes;
     }
 }
