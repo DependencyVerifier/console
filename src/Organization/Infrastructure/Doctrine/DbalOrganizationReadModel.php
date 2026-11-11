@@ -14,6 +14,7 @@ use Organization\Application\Query\View\MemberRow;
 use Organization\Application\Query\View\ProjectRow;
 use Organization\Application\Query\View\TeamSummary;
 use Shared\Application\Contract\Organization\PendingInvitation;
+use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 use Shared\Infrastructure\Doctrine\Row;
@@ -149,6 +150,23 @@ final readonly class DbalOrganizationReadModel implements OrganizationReadModel
         $rows = $this->page($base, $page, 'e.name', ['name' => 'e.name', 'production' => 'e.production'], 'name', static fn (QueryBuilder $q) => $q->select('e.id', 'e.name', 'e.production'));
 
         return new Page(array_map(static fn (array $row): EnvironmentRow => new EnvironmentRow(Row::string($row['id']), Row::string($row['name']), (bool) $row['production']), $rows['items']), $rows['filtered'], $rows['total']);
+    }
+
+    public function teamEnvironments(string $teamId, ?string $environmentId = null): array
+    {
+        $query = $this->connection->createQueryBuilder()
+            ->select('e.id', 'e.name', 'p.id AS project_id', 'p.name AS project_name')
+            ->from('organization_environment', 'e')
+            ->innerJoin('e', 'organization_project', 'p', 'p.id = e.project_id')
+            ->where('p.team_id = :team')->setParameter('team', $teamId)
+            ->orderBy('p.name')->addOrderBy('e.name');
+        if (null !== $environmentId) {
+            $query->andWhere('e.id = :environment')->setParameter('environment', $environmentId);
+        }
+
+        return array_values(array_map(static fn (array $row): TeamEnvironment => new TeamEnvironment(
+            Row::string($row['id']), Row::string($row['name']), Row::string($row['project_id']), Row::string($row['project_name']),
+        ), $query->fetchAllAssociative()));
     }
 
     public function pendingInvitation(?string $tokenHash, ?string $invitationId, \DateTimeImmutable $now): ?PendingInvitation

@@ -1,0 +1,19 @@
+{
+  "description": "Signed POST /agent/v1/poll, signature profile depverify-agent-v1 (RFC 9421, ed25519).",
+  "agent_private_key_seed_hex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+  "agent_public_key": "ed25519:11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=",
+  "keyid": "SHA256:If4x36FUomFia/hUBG/SJxt77UtqvkWqWId+9H+XIbk",
+  "request": {
+    "method": "POST",
+    "target_uri": "https://console.example.com/agent/v1/poll",
+    "headers": {
+      "Content-Type": "application/json",
+      "Date": "Mon, 09 Nov 2026 08:00:00 GMT",
+      "Content-Digest": "sha-256=:wrOHkjP1C0PqxRidBPiMp7ghXYZ6r08JLoETslNB/ac=:",
+      "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-digest\" \"date\");created=1794211200;expires=1794211500;keyid=\"SHA256:If4x36FUomFia/hUBG/SJxt77UtqvkWqWId+9H+XIbk\";alg=\"ed25519\";nonce=\"aw89HJouS3-MXR4vOktcbQ\";tag=\"depverify-agent-v1\"",
+      "Signature": "sig1=:z/RBw4TRiJJ6cs8RHU48XCZZGODztPa8/ATusvqtnMJd5zR4oocmnQP4oxfljI0JXdsP+QyM69d0Go0uNjnpDw==:"
+    },
+    "body": "{\"protocol_version\":1,\"agent_version\":\"0.1.0\",\"order_results\":[]}"
+  },
+  "signature_base": "\"@method\": POST\n\"@target-uri\": https://console.example.com/agent/v1/poll\n\"content-digest\": sha-256=:wrOHkjP1C0PqxRidBPiMp7ghXYZ6r08JLoETslNB/ac=:\n\"date\": Mon, 09 Nov 2026 08:00:00 GMT\n\"@signature-params\": (\"@method\" \"@target-uri\" \"content-digest\" \"date\");created=1794211200;expires=1794211500;keyid=\"SHA256:If4x36FUomFia/hUBG/SJxt77UtqvkWqWId+9H+XIbk\";alg=\"ed25519\";nonce=\"aw89HJouS3-MXR4vOktcbQ\";tag=\"depverify-agent-v1\""
+}

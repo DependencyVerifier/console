@@ -7,13 +7,14 @@ namespace Identity\Infrastructure\Security;
 use Scheb\TwoFactorBundle\Security\Authentication\Token\TwoFactorTokenInterface;
 use Shared\Application\Audit\Actor;
 use Shared\Application\Security\CurrentActor;
+use Shared\Infrastructure\Security\ActorAwareUser;
 use Shared\Infrastructure\Security\RuntimeCurrentActor;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * The user of the security token (also during the second factor, so code verifications are attributed to them),
- * else `cli` / `anonymous`. Super admin only once fully authenticated.
+ * The user of the security token (also during the second factor, so code verifications are attributed to them), the
+ * actor of an ActorAwareUser (an authenticated agent), else `cli` / `anonymous`. Super admin only once fully authenticated.
  */
 final readonly class AuthenticatedCurrentActor implements CurrentActor
 {
@@ -25,7 +26,11 @@ final readonly class AuthenticatedCurrentActor implements CurrentActor
     {
         $user = $this->tokens->getToken()?->getUser();
 
-        return $user instanceof SecurityUser ? Actor::user(Uuid::fromString($user->id)) : $this->runtime->actor();
+        return match (true) {
+            $user instanceof SecurityUser => Actor::user(Uuid::fromString($user->id)),
+            $user instanceof ActorAwareUser => $user->actor(),
+            default => $this->runtime->actor(),
+        };
     }
 
     public function isSuperAdmin(): bool

@@ -35,17 +35,29 @@ final readonly class Actor
         return new self(ActorType::Anonymous, null);
     }
 
+    /**
+     * An agent of the fleet, authenticated by its signature on the agent API.
+     */
+    public static function agent(Uuid $agentId): self
+    {
+        return new self(ActorType::Agent, $agentId);
+    }
+
     public function isUser(): bool
     {
         return ActorType::User === $this->type;
     }
 
     /**
-     * The user id, for a user actor only.
+     * The user id, for a user actor only (an agent's id is never a user id).
      */
     public function userId(): Uuid
     {
-        return $this->id ?? throw new \LogicException(\sprintf('A "%s" actor has no id.', $this->type->value));
+        if (ActorType::User !== $this->type || null === $this->id) {
+            throw new \LogicException(\sprintf('A "%s" actor has no user id.', $this->type->value));
+        }
+
+        return $this->id;
     }
 
     public function idForStorage(): ?string

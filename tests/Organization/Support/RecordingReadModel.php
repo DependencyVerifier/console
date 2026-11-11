@@ -11,6 +11,7 @@ use Organization\Application\Query\View\MemberRow;
 use Organization\Application\Query\View\ProjectRow;
 use Organization\Application\Query\View\TeamSummary;
 use Shared\Application\Contract\Organization\PendingInvitation;
+use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
@@ -109,6 +110,13 @@ final class RecordingReadModel implements OrganizationReadModel
         $this->calls[] = ['environments', $projectId];
 
         return $this->page(EnvironmentRow::class);
+    }
+
+    public function teamEnvironments(string $teamId, ?string $environmentId = null): array
+    {
+        $this->calls[] = ['teamEnvironments', [$teamId, $environmentId]];
+
+        return array_values(array_filter($this->items, static fn (object $item): bool => $item instanceof TeamEnvironment));
     }
 
     public function pendingInvitation(?string $tokenHash, ?string $invitationId, \DateTimeImmutable $now): ?PendingInvitation

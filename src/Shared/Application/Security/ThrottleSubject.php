@@ -41,6 +41,11 @@ final readonly class ThrottleSubject
         return self::of('invitation', $invitationId);
     }
 
+    public static function forAgent(string $agentId): self
+    {
+        return self::of('agent', $agentId);
+    }
+
     private static function of(string $kind, string $value): self
     {
         if ('' === u($value)->trim()->toString()) {

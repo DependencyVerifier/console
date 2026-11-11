@@ -36,6 +36,20 @@ final class ValueObjectsTest extends TestCase
         self::assertSame($id->toRfc4122(), $actor->idForStorage());
     }
 
+    #[Test]
+    public function it_should_store_the_id_of_an_agent_but_never_take_it_for_a_user_id(): void
+    {
+        $id = Uuid::v7();
+        $agent = Actor::agent($id);
+
+        self::assertSame(ActorType::Agent, $agent->type);
+        self::assertFalse($agent->isUser());
+        self::assertSame($id->toRfc4122(), $agent->idForStorage());
+
+        $this->expectException(\LogicException::class);
+        $agent->userId();
+    }
+
     /**
      * @return iterable<string, array{Actor, ActorType}>
      */
@@ -55,7 +69,7 @@ final class ValueObjectsTest extends TestCase
         self::assertNull($actor->idForStorage());
 
         $this->expectException(\LogicException::class);
-        $this->expectExceptionMessageIsOrContains(\sprintf('A "%s" actor has no id.', $type->value));
+        $this->expectExceptionMessageIsOrContains(\sprintf('A "%s" actor has no user id.', $type->value));
         $actor->userId();
     }
 

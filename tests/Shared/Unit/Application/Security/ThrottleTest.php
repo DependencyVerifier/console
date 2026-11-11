@@ -21,6 +21,7 @@ final class ThrottleTest extends TestCase
         self::assertSame('ip:192.0.2.1', ThrottleSubject::forIp('192.0.2.1')->key);
         self::assertSame('team:t1', ThrottleSubject::forTeam('t1')->key);
         self::assertSame('invitation:i1', ThrottleSubject::forInvitation('i1')->key);
+        self::assertSame('agent:a1', ThrottleSubject::forAgent('a1')->key);
     }
 
     /**

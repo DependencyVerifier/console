@@ -10,6 +10,7 @@ use Organization\Application\Query\View\MemberRow;
 use Organization\Application\Query\View\ProjectRow;
 use Organization\Application\Query\View\TeamSummary;
 use Shared\Application\Contract\Organization\PendingInvitation;
+use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
@@ -68,6 +69,13 @@ interface OrganizationReadModel
      * @return Page<EnvironmentRow>
      */
     public function environments(string $projectId, PageRequest $page): Page;
+
+    /**
+     * The environments of the team's projects (only $environmentId when given), by project then environment name.
+     *
+     * @return list<TeamEnvironment>
+     */
+    public function teamEnvironments(string $teamId, ?string $environmentId = null): array;
 
     public function pendingInvitation(?string $tokenHash, ?string $invitationId, \DateTimeImmutable $now): ?PendingInvitation;
 }

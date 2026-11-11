@@ -94,3 +94,5 @@ services:
                 email_code_resend: '@limiter.email_code_resend'
                 invitation_resend: '@limiter.invitation_resend'
                 invitation_resend_team: '@limiter.invitation_resend_team'
+                agent_requests: '@limiter.agent_requests'
+                agent_enrollment_ip: '@limiter.agent_enrollment_ip'

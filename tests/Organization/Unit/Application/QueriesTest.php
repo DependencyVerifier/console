@@ -47,6 +47,7 @@ use Shared\Application\Contract\Identity\FindAccounts;
 use Shared\Application\Contract\Identity\MatchAccounts;
 use Shared\Application\Contract\Organization\FindPendingInvitation;
 use Shared\Application\Contract\Organization\PendingInvitation;
+use Shared\Application\Contract\Quota\QuotaUsageProvider;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 use Symfony\Component\Uid\Uuid;
@@ -64,7 +65,18 @@ final class QueriesTest extends TestCase
     {
         $world = $this->world()->as(Teams::MEMBER, TeamRole::Member);
         $read = new RecordingReadModel(projects: 2, members: 3, invitations: 1);
-        $view = new GetTeamHandler($world->permissions, $world->teams, $read, $world->clock)(new GetTeam(Teams::TEAM));
+        $fleet = new class implements QuotaUsageProvider {
+            public function quotas(): array
+            {
+                return [QuotaName::MaxAgents->value];
+            }
+
+            public function usage(string $teamId, string $quota): int
+            {
+                return Teams::TEAM === $teamId && QuotaName::MaxAgents->value === $quota ? 7 : -1;
+            }
+        };
+        $view = new GetTeamHandler($world->permissions, $world->teams, $read, $world->clock, [$fleet])(new GetTeam(Teams::TEAM));
 
         self::assertSame([Teams::TEAM, 'Platform', 'platform', 'team_member', true], [$view->id, $view->name, $view->slug, $view->role, $view->adminEstablished]);
         self::assertSame([3, 2, 1], [$view->memberCount, $view->projectCount, $view->pendingInvitationCount]);
@@ -74,9 +86,9 @@ final class QueriesTest extends TestCase
             $name->value,
             $defaults->get($name)->toStorage(),
             match ($name) {
-                QuotaName::MaxProjects => 2, QuotaName::MaxMembers => 4, default => 0,
+                QuotaName::MaxProjects => 2, QuotaName::MaxMembers => 4, QuotaName::MaxAgents => 7, default => 0,
             },
-            \in_array($name, [QuotaName::MaxProjects, QuotaName::MaxMembers], true),
+            \in_array($name, [QuotaName::MaxProjects, QuotaName::MaxMembers, QuotaName::MaxAgents], true),
         ), QuotaName::cases()), $view->quotas);
         self::assertSame(['team.edit' => false, 'team.members.manage' => false, 'team.audit.view' => false, 'project.create' => false, 'team.quotas.manage' => false], $view->can);
         self::assertContains(['pendingInvitations', [Teams::TEAM, self::NOW]], $read->calls);

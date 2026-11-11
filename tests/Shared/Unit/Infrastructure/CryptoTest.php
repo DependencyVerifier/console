@@ -97,9 +97,16 @@ final class CryptoTest extends TestCase
     public function it_should_refuse_a_short_app_secret(): void
     {
         $ring = 'k1='.base64_encode(random_bytes(32));
-        SecretsBootCheck::validate(u('x')->repeat(32)->toString(), $ring, $ring);
+        $seed = base64_encode(random_bytes(32));
+        SecretsBootCheck::validate(u('x')->repeat(32)->toString(), $ring, $ring, $seed);
+
+        try {
+            SecretsBootCheck::validate(u('x')->repeat(32)->toString(), $ring, $ring, base64_encode(random_bytes(16)));
+            self::fail('A short agent signing seed.');
+        } catch (\InvalidArgumentException) {
+        }
 
         $this->expectException(\LogicException::class);
-        SecretsBootCheck::validate('short', $ring, $ring);
+        SecretsBootCheck::validate('short', $ring, $ring, $seed);
     }
 }

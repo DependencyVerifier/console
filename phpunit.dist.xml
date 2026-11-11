@@ -14,6 +14,8 @@
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />
+        <!-- Coverage of the whole suite (Infection initial run, COVERAGE=1) needs more than the default 128M. -->
+        <ini name="memory_limit" value="1G" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
         <server name="KERNEL_CLASS" value="Shared\Kernel" force="true" />

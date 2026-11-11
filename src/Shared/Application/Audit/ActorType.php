@@ -10,4 +10,6 @@ enum ActorType: string
     case Cli = 'cli';
     case System = 'system';
     case Anonymous = 'anonymous';
+    /** An enrolled agent, on the signed agent API (its id is the agent id, never a user id). */
+    case Agent = 'agent';
 }

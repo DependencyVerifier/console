@@ -30,6 +30,19 @@ use Tests\Support\OwnerConnection;
 final class ThrottleTest extends KernelTestCase
 {
     #[Test]
+    public function it_should_have_a_limiter_for_every_throttle_name(): void
+    {
+        self::bootKernel();
+        $throttle = self::getContainer()->get('test.attempt_throttle');
+        self::assertInstanceOf(AttemptThrottle::class, $throttle);
+        $subject = ThrottleSubject::forAgent(Uuid::v7()->toRfc4122());
+
+        foreach (ThrottleName::cases() as $name) {
+            self::assertTrue($throttle->peek($name, $subject)->accepted, $name->value);
+        }
+    }
+
+    #[Test]
     public function it_should_refuse_once_the_window_is_spent(): void
     {
         self::bootKernel();

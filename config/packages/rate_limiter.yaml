@@ -48,3 +48,12 @@ framework:
             <<: *limiter
             limit: 50
             interval: '15 minutes'
+        # Signed agent API (docs/protocol.md §8): per agent, and per IP on the enrollment (token brute force).
+        agent_requests:
+            <<: *limiter
+            limit: 60
+            interval: '1 minute'
+        agent_enrollment_ip:
+            <<: *limiter
+            limit: 20
+            interval: '1 hour'

@@ -18,4 +18,6 @@ enum ThrottleName: string
     case EmailCodeResend = 'email_code_resend';
     case InvitationResend = 'invitation_resend';
     case InvitationResendTeam = 'invitation_resend_team';
+    case AgentRequests = 'agent_requests';
+    case AgentEnrollmentIp = 'agent_enrollment_ip';
 }
