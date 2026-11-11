@@ -76,23 +76,23 @@ final class RecordingReadModel implements OrganizationReadModel
         return $this->projects;
     }
 
-    public function teamMembers(string $teamId, PageRequest $page): Page
+    public function teamMembers(string $teamId, PageRequest $page, ?array $matchingUserIds = null): Page
     {
-        $this->calls[] = ['teamMembers', $teamId];
+        $this->calls[] = null === $matchingUserIds ? ['teamMembers', $teamId] : ['teamMembers', [$teamId, $matchingUserIds]];
 
         return $this->page(MemberRow::class);
     }
 
-    public function projectMembers(string $projectId, PageRequest $page): Page
+    public function projectMembers(string $projectId, PageRequest $page, ?array $matchingUserIds = null): Page
     {
-        $this->calls[] = ['projectMembers', $projectId];
+        $this->calls[] = null === $matchingUserIds ? ['projectMembers', $projectId] : ['projectMembers', [$projectId, $matchingUserIds]];
 
         return $this->page(MemberRow::class);
     }
 
-    public function invitations(string $teamId, PageRequest $page, \DateTimeImmutable $now): Page
+    public function invitations(?string $teamId, ?string $projectId, PageRequest $page, \DateTimeImmutable $now): Page
     {
-        $this->calls[] = ['invitations', [$teamId, $now->format(\DATE_ATOM)]];
+        $this->calls[] = null === $projectId ? ['invitations', [$teamId, $now->format(\DATE_ATOM)]] : ['invitations', [$teamId, $projectId, $now->format(\DATE_ATOM)]];
 
         return $this->page(InvitationRow::class);
     }

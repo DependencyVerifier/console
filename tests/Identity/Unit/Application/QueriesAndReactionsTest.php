@@ -15,6 +15,7 @@ use Identity\Application\Query\User\GetUserProfile;
 use Identity\Application\Query\User\Handler\FindAccountsHandler;
 use Identity\Application\Query\User\Handler\GetUserProfileHandler;
 use Identity\Application\Query\User\Handler\ListUsersHandler;
+use Identity\Application\Query\User\Handler\MatchAccountsHandler;
 use Identity\Application\Query\User\ListUsers;
 use Identity\Application\Query\User\UserDirectory;
 use Identity\Application\Query\User\UserProfile;
@@ -44,6 +45,7 @@ use Shared\Application\Contract\Identity\AccountDeactivated;
 use Shared\Application\Contract\Identity\AccountReactivated;
 use Shared\Application\Contract\Identity\AccountView;
 use Shared\Application\Contract\Identity\FindAccounts;
+use Shared\Application\Contract\Identity\MatchAccounts;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 use Shared\Domain\Authorization\Permission;
@@ -153,6 +155,11 @@ final class QueriesAndReactionsTest extends TestCase
                 return [new AccountView(Users::ID, 'jane@example.com', true)];
             }
 
+            public function matchIds(string $term, int $limit): array
+            {
+                return [];
+            }
+
             public function search(string $term, int $limit): array
             {
                 return [];
@@ -220,5 +227,41 @@ final class QueriesAndReactionsTest extends TestCase
         $translator(new UserReactivated(Users::ID));
 
         self::assertEquals([new AccountDeactivated(Users::ID), new AccountReactivated(Users::ID)], $bus->published);
+    }
+
+    #[Test]
+    public function it_should_match_account_ids_for_a_trimmed_term_only(): void
+    {
+        $directory = new class implements UserDirectory {
+            /** @var list<array{string, int}> */
+            public array $asked = [];
+
+            public function page(PageRequest $page, bool $includeDeleted): Page
+            {
+                return new Page([], 0, 0);
+            }
+
+            public function byIds(array $userIds): array
+            {
+                return [];
+            }
+
+            public function matchIds(string $term, int $limit): array
+            {
+                $this->asked[] = [$term, $limit];
+
+                return [Users::ID];
+            }
+
+            public function search(string $term, int $limit): array
+            {
+                return [];
+            }
+        };
+        $handler = new MatchAccountsHandler($directory);
+
+        self::assertSame([], $handler(new MatchAccounts('  ')), 'No term, no lookup.');
+        self::assertSame([Users::ID], $handler(new MatchAccounts(' jane ')));
+        self::assertSame([['jane', 500]], $directory->asked);
     }
 }

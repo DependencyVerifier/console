@@ -7,4 +7,7 @@
 
 {% block tab %}
     <twig:DataTable :table="tables.members" :title="'organization.members.title'|trans" />
+    {%- if tables.invitations is defined %}
+        <twig:DataTable :table="tables.invitations" :title="'organization.invitations.title'|trans" />
+    {%- endif %}
 {% endblock %}

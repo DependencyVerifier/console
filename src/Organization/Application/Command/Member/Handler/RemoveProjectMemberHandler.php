@@ -14,7 +14,8 @@ use Shared\Domain\Authorization\Permission;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * A TEAM_GUEST left without project stays a member of the team (removed explicitly).
+ * A TEAM_GUEST left without project stays a member of the team (removed explicitly). A member of the team
+ * (TEAM_MEMBER or above) leaves a project only through a TEAM_ADMIN.
  */
 final readonly class RemoveProjectMemberHandler implements CommandHandler
 {
@@ -26,11 +27,11 @@ final readonly class RemoveProjectMemberHandler implements CommandHandler
     {
         $projectId = ProjectId::fromString($command->projectId);
         $project = $this->access->project($projectId);
-        $this->access->lockTeam($project->teamId());
+        $team = $this->access->lockTeam($project->teamId());
         $this->access->assert(Permission::ProjectMembersManage, $project->teamId(), $projectId);
         $userId = Uuid::fromString($command->userId);
         $role = $project->membershipOf($userId)->role();
-        $this->roles->assertProjectRole($project->teamId(), $projectId, $role);
+        $this->roles->assertProjectRemoval($project->teamId(), $projectId, $role, $team->isMember($userId) ? $team->membershipOf($userId)->role() : null);
         $project->removeMember($userId);
         $this->grants->record($project->teamId(), $projectId, $userId, GrantChange::Removed, $role->value);
     }

@@ -13,6 +13,8 @@ final readonly class InvitationRow
         public ?string $projectName,
         public bool $expired,
         public \DateTimeImmutable $expiresAt,
+        public string $teamId,
+        public string $teamName,
     ) {
     }
 }

@@ -198,7 +198,7 @@ final class MemberHandlersTest extends TestCase
         foreach ([
             [Teams::TEAM, null, Teams::MEMBER, ['host.enroll', 'team.edit']],
             [Teams::TEAM, null, Teams::MEMBER, ['not.a.permission']],
-            [Teams::OTHER_TEAM, Teams::PROJECT, Teams::GUEST, []],
+            [Teams::OTHER_TEAM, Teams::PROJECT, Teams::ADMIN, []],
         ] as [$teamId, $projectId, $userId, $permissions]) {
             try {
                 $handler(new ChangeExtraPermissions($teamId, $projectId, $userId, $permissions));

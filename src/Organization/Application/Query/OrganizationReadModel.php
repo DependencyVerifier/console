@@ -35,19 +35,27 @@ interface OrganizationReadModel
     public function projectCount(string $teamId): int;
 
     /**
+     * The search matches the role, or the accounts of $matchingUserIds (asked to Identity by email).
+     *
+     * @param list<string>|null $matchingUserIds
+     *
      * @return Page<MemberRow> rows with an empty email (filled by the handler)
      */
-    public function teamMembers(string $teamId, PageRequest $page): Page;
+    public function teamMembers(string $teamId, PageRequest $page, ?array $matchingUserIds = null): Page;
 
     /**
+     * @param list<string>|null $matchingUserIds
+     *
      * @return Page<MemberRow>
      */
-    public function projectMembers(string $projectId, PageRequest $page): Page;
+    public function projectMembers(string $projectId, PageRequest $page, ?array $matchingUserIds = null): Page;
 
     /**
+     * Pending invitations of a team (with those of its projects), of one project, or of the instance ($teamId null).
+     *
      * @return Page<InvitationRow>
      */
-    public function invitations(string $teamId, PageRequest $page, \DateTimeImmutable $now): Page;
+    public function invitations(?string $teamId, ?string $projectId, PageRequest $page, \DateTimeImmutable $now): Page;
 
     /**
      * @param list<string>|null $projectIds null: every project of the team

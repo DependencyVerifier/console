@@ -3,6 +3,8 @@ nav:
     team_group: Team
     team_members: Team members
     team_settings: Team settings
+    team_audit: Audit log
+    audit: Audit log
     project_group: "Project · {name}"
     project_overview: Overview
     project_environments: Environments
@@ -191,6 +193,7 @@ admin:
     users:
         title: Users
         actions_for: "Actions for {email}"
+        resync_memberships: Re-sync memberships
         description: "Accounts of the instance. A deleted account is only hidden: restore it to see it again (as deactivated)."
         empty: No account yet.
         status: Status
@@ -287,6 +290,8 @@ datatable:
     zeroRecords: No matching entries
     emptyTable: Nothing here yet
 organization:
+    admin:
+        memberships_resynced: "Memberships re-synced with the account status."
     field:
         name: Name
         team_name: Team name
@@ -359,6 +364,7 @@ organization:
         no_project: no project
     invitations:
         title: Pending invitations
+        target: Team / project
         actions_for: "Actions for the invitation of {email}"
         send: Invite
         new: Invite member
@@ -427,4 +433,28 @@ organization:
         of: "{usage} of {limit}"
         banner_warning: "{quota}: {usage} of {limit} used. New creations stop at the limit."
         banner_reached: "{quota}: the limit of {limit} is reached. Contact the instance administrator to raise it."
-
+audit:
+    title: Audit log
+    description: "Every action, refusal and sign-in of the instance, newest first. Append-only: nothing here can be changed."
+    team_description: "Every action and refusal on {team}, newest first. Append-only: nothing here can be changed."
+    entries: Entries
+    filter: Filter by outcome
+    older: Older entries
+    empty: No entry yet.
+    no_older: No older entry.
+    column:
+        when: When
+        actor: Who
+        action: Action
+        target: Target
+        outcome: Outcome
+    outcome:
+        all: All
+        success: Success
+        failure: Failure
+        denied: Denied
+    actor:
+        user: User
+        cli: Command line
+        system: System
+        anonymous: Anonymous

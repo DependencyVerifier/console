@@ -1,0 +1,21 @@
+{% extends 'shared/layout/app.html.twig' %}
+
+{% block title %}{{ 'audit.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item>{{ 'admin.title'|trans }}</twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Separator />
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ 'audit.title'|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">{{ 'audit.title'|trans }}</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ 'audit.description'|trans }}</p>
+    </div>
+    {{ include('audit/_log.html.twig', {base_url: path('audit_admin_audit')}) }}
+{% endblock %}

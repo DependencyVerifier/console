@@ -122,6 +122,11 @@ final class AccountProvisionerTest extends TestCase
                 return [];
             }
 
+            public function matchIds(string $term, int $limit): array
+            {
+                return [];
+            }
+
             public function search(string $term, int $limit): array
             {
                 $this->searched[] = [$term, $limit];

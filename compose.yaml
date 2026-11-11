@@ -1,4 +1,8 @@
 ---
+# A fixed project name: two checkouts both named `console` would otherwise share the Compose project `console` and
+# replace each other's containers. Volumes are prefixed with it (depverifier-console_database_data…).
+name: depverifier-console
+
 services:
   php:
     restart: unless-stopped

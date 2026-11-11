@@ -37,7 +37,7 @@ final class TeamTabsTest extends IdentityWebTestCase
             self::assertSelectorTextSame('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]', $label, 'The section is picked in the sidebar.');
             self::assertSame('/teams/'.$id.$suffix, $this->client->getCrawler()->filter('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]')->attr('href'));
         }
-        self::assertSame(['Overview', 'Projects', 'Team members', 'Team settings'], $this->sections());
+        self::assertSame(['Overview', 'Projects', 'Team members', 'Team settings', 'Audit log'], $this->sections());
 
         $this->client->getCookieJar()->clear();
         $this->logIn('bob@example.com');

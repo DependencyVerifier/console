@@ -27,6 +27,19 @@ final readonly class ListInvitationsHandler implements QueryHandler
     public function __invoke(ListInvitations $query): Page
     {
         $permissions = $this->permissions->current();
+        if (null !== $query->projectId) {
+            // A project's invitations: whoever manages its members (a project admin who is not a team admin too).
+            if (!$permissions->seesProject($query->teamId, $query->projectId)) {
+                throw ResourceNotFound::of('project');
+            }
+
+            if (!$permissions->allows(Permission::ProjectMembersManage, $query->teamId, $query->projectId)) {
+                throw PermissionDenied::for(Permission::ProjectMembersManage->value);
+            }
+
+            return $this->read->invitations($query->teamId, $query->projectId, $query->page, $this->clock->now());
+        }
+
         if (!$permissions->isTeamMember($query->teamId)) {
             throw ResourceNotFound::of('team');
         }
@@ -35,6 +48,6 @@ final readonly class ListInvitationsHandler implements QueryHandler
             throw PermissionDenied::for(Permission::TeamMembersManage->value);
         }
 
-        return $this->read->invitations($query->teamId, $query->page, $this->clock->now());
+        return $this->read->invitations($query->teamId, null, $query->page, $this->clock->now());
     }
 }

@@ -7,7 +7,9 @@ namespace Organization\Application\Query;
 use Organization\Application\Query\View\MemberRow;
 use Shared\Application\Bus\QueryBus;
 use Shared\Application\Contract\Identity\FindAccounts;
+use Shared\Application\Contract\Identity\MatchAccounts;
 use Shared\Application\Query\Page;
+use Shared\Application\Query\PageRequest;
 
 /**
  * Emails of the members, asked to Identity through its published query (no table shared between contexts).
@@ -40,5 +42,15 @@ final readonly class MemberEmails
             $row->projects,
             $row->joinedAt,
         ), $page->items), $page->filtered, $page->total);
+    }
+
+    /**
+     * The accounts whose email or display name contains the searched term, asked to Identity; null without a search.
+     *
+     * @return list<string>|null
+     */
+    public function matching(PageRequest $page): ?array
+    {
+        return '' === $page->search ? null : $this->queries->ask(new MatchAccounts($page->search));
     }
 }

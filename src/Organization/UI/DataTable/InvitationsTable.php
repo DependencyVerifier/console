@@ -27,12 +27,16 @@ final class InvitationsTable implements DataTableTypeInterface
             throw new \InvalidArgumentException('Option "teamId" is required.');
         }
 
+        // Set: the pending invitations of that project only (its Members section), else those of the whole team.
+        $projectId = $options['projectId'] ?? null;
+        $projectId = \is_string($projectId) ? $projectId : null;
+
         $dataTable
             ->setName('invitations')
             ->add('email', TwigColumn::class, [...['label' => 'identity.field.email', 'orderable' => true, 'template' => 'organization/cells/invitation_email.html.twig'], 'globalSearchable' => false])
             ->add('role', TwigColumn::class, [...['label' => 'organization.field.role', 'orderable' => false, 'template' => 'organization/cells/invitation_role.html.twig'], 'globalSearchable' => false])
             ->add('expiresAt', TwigColumn::class, [...['label' => 'organization.field.expires', 'orderable' => false, 'template' => 'organization/cells/invitation_expires.html.twig'], 'globalSearchable' => false])
             ->add('actions', TwigColumn::class, [...['label' => 'admin.users.actions', 'orderable' => false, 'className' => 'text-end', 'template' => 'organization/cells/invitation_actions.html.twig'], 'globalSearchable' => false])
-            ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListInvitations => new ListInvitations($id, $page)]);
+            ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListInvitations => new ListInvitations($id, $page, $projectId)]);
     }
 }

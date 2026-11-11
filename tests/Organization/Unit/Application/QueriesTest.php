@@ -8,6 +8,8 @@ use Organization\Application\Command\QuotaInput;
 use Organization\Application\Query\Instance\GetDefaultQuotas;
 use Organization\Application\Query\Instance\Handler\GetDefaultQuotasHandler;
 use Organization\Application\Query\Invitation\Handler\FindPendingInvitationHandler;
+use Organization\Application\Query\Invitation\Handler\ListAllInvitationsHandler;
+use Organization\Application\Query\Invitation\ListAllInvitations;
 use Organization\Application\Query\MemberEmails;
 use Organization\Application\Query\Project\GetProject;
 use Organization\Application\Query\Project\Handler\GetProjectHandler;
@@ -42,6 +44,7 @@ use Shared\Application\Authorization\PermissionDenied;
 use Shared\Application\Authorization\ResourceNotFound;
 use Shared\Application\Contract\Identity\AccountView;
 use Shared\Application\Contract\Identity\FindAccounts;
+use Shared\Application\Contract\Identity\MatchAccounts;
 use Shared\Application\Contract\Organization\FindPendingInvitation;
 use Shared\Application\Contract\Organization\PendingInvitation;
 use Shared\Application\Query\Page;
@@ -127,6 +130,24 @@ final class QueriesTest extends TestCase
     }
 
     #[Test]
+    public function it_should_search_members_by_role_or_by_the_accounts_identity_matches(): void
+    {
+        $world = $this->world()->as(Teams::ADMIN, TeamRole::Admin, ProjectRole::Admin);
+        $read = new RecordingReadModel();
+        $queries = new FixedQueries([
+            MatchAccounts::class => static fn (object $q): array => $q instanceof MatchAccounts && 'jane' === $q->term ? [Teams::MEMBER] : [],
+            FindAccounts::class => static fn (): array => [],
+        ]);
+        $search = new PageRequest(search: 'jane');
+
+        new ListTeamMembersHandler($world->permissions, $read, new MemberEmails($queries))(new ListTeamMembers(Teams::TEAM, $search));
+        new ListProjectMembersHandler(new ProjectVisibility($world->permissions, $world->projects), $read, new MemberEmails($queries))(new ListProjectMembers(Teams::PROJECT, $search));
+        self::assertSame([['teamMembers', [Teams::TEAM, [Teams::MEMBER]]], ['projectMembers', [Teams::PROJECT, [Teams::MEMBER]]]], $read->calls);
+        self::assertEquals([new MatchAccounts('jane'), new MatchAccounts('jane')], $queries->asked, 'No FindAccounts for an empty page.');
+        self::assertNull(new MemberEmails($queries)->matching(new PageRequest()), 'No search, no lookup.');
+    }
+
+    #[Test]
     public function it_should_not_ask_identity_for_an_empty_page(): void
     {
         $queries = new FixedQueries([]);
@@ -152,6 +173,39 @@ final class QueriesTest extends TestCase
         } catch (PermissionDenied) {
         }
         $this->assertNotFound(static fn () => new ListInvitationsHandler($world->permissions, $read, $world->clock)(new ListInvitations(Teams::OTHER_TEAM, new PageRequest())));
+    }
+
+    #[Test]
+    public function it_should_list_the_invitations_of_a_project_to_its_member_managers(): void
+    {
+        $world = $this->world()->as(Teams::GUEST, TeamRole::Guest, ProjectRole::Admin);
+        $read = new RecordingReadModel();
+        $handler = static fn (World $w): ListInvitationsHandler => new ListInvitationsHandler($w->permissions, $read, $w->clock);
+
+        $handler($world)(new ListInvitations(Teams::TEAM, new PageRequest(), Teams::PROJECT));
+        self::assertSame([['invitations', [Teams::TEAM, Teams::PROJECT, self::NOW]]], $read->calls, 'A project admin, not a team admin.');
+
+        $world->as(Teams::GUEST, TeamRole::Guest, ProjectRole::Viewer);
+        try {
+            $handler($world)(new ListInvitations(Teams::TEAM, new PageRequest(), Teams::PROJECT));
+            self::fail('No project member management.');
+        } catch (PermissionDenied) {
+        }
+        $world->as(Teams::GUEST, TeamRole::Guest);
+        $this->assertNotFound(static fn () => $handler($world)(new ListInvitations(Teams::TEAM, new PageRequest(), Teams::PROJECT)));
+    }
+
+    #[Test]
+    public function it_should_list_every_pending_invitation_to_the_super_admin_only(): void
+    {
+        $world = $this->world()->asSuperAdmin();
+        $read = new RecordingReadModel();
+
+        new ListAllInvitationsHandler($world->permissions, $read, $world->clock)(new ListAllInvitations());
+        self::assertSame([['invitations', [null, self::NOW]]], $read->calls);
+
+        $this->expectException(PermissionDenied::class);
+        new ListAllInvitationsHandler($world->as(Teams::ADMIN, TeamRole::Admin)->permissions, $read, $world->clock)(new ListAllInvitations());
     }
 
     #[Test]

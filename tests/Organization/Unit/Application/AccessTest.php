@@ -118,13 +118,18 @@ final class AccessTest extends TestCase
         new World()->as(Teams::ADMIN, TeamRole::Admin)->roles()->assertProjectRole($team, $project, ProjectRole::Admin, ProjectRole::Admin);
         $projectAdmin = new World()->as(Teams::GUEST, TeamRole::Guest, ProjectRole::Admin)->roles();
         $projectAdmin->assertProjectRole($team, $project, ProjectRole::Admin, ProjectRole::Member);
+        new World()->as(Teams::GUEST, null, ProjectRole::Admin)->roles()->assertProjectRole($team, $project, ProjectRole::Member);
         $projectMember = new World()->as(Teams::GUEST, TeamRole::Member, ProjectRole::Member)->roles();
         $projectMember->assertProjectRole($team, $project, ProjectRole::Viewer);
+        // A TEAM_MEMBER ranks as a PROJECT_MEMBER in the team's projects, with or without a project role of their own.
+        new World()->as(Teams::MEMBER, TeamRole::Member)->roles()->assertProjectRole($team, $project, ProjectRole::Member, ProjectRole::Viewer);
+        new World()->as(Teams::MEMBER, TeamRole::Member, ProjectRole::Admin)->roles()->assertProjectRole($team, $project, ProjectRole::Admin);
 
         foreach ([
             static fn () => $projectMember->assertProjectRole($team, $project, ProjectRole::Admin),
             static fn () => $projectMember->assertProjectRole($team, $project, ProjectRole::Viewer, ProjectRole::Admin),
-            static fn () => new World()->as(Teams::MEMBER, TeamRole::Member)->roles()->assertProjectRole($team, $project, ProjectRole::Viewer),
+            static fn () => new World()->as(Teams::MEMBER, TeamRole::Member)->roles()->assertProjectRole($team, $project, ProjectRole::Admin),
+            static fn () => new World()->as(Teams::MEMBER, TeamRole::Viewer)->roles()->assertProjectRole($team, $project, ProjectRole::Viewer),
         ] as $gesture) {
             try {
                 $gesture();
@@ -134,5 +139,33 @@ final class AccessTest extends TestCase
         }
 
         $this->addToAssertionCount(6);
+    }
+
+    #[Test]
+    public function it_should_let_only_a_team_admin_remove_a_member_of_the_team_from_a_project(): void
+    {
+        $team = TeamId::fromString(Teams::TEAM);
+        $project = ProjectId::fromString(Teams::PROJECT);
+        $projectAdmin = new World()->as(Teams::GUEST, TeamRole::Guest, ProjectRole::Admin)->roles();
+
+        $projectAdmin->assertProjectRemoval($team, $project, ProjectRole::Viewer, TeamRole::Guest);
+        $projectAdmin->assertProjectRemoval($team, $project, ProjectRole::Viewer, null);
+        $projectAdmin->assertProjectRemoval($team, $project, ProjectRole::Viewer, TeamRole::Viewer);
+        new World()->as(Teams::ADMIN, TeamRole::Admin)->roles()->assertProjectRemoval($team, $project, ProjectRole::Admin, TeamRole::Member);
+        new World()->asSuperAdmin()->roles()->assertProjectRemoval($team, $project, ProjectRole::Admin, TeamRole::Admin);
+
+        $refused = [];
+        foreach ([
+            'a TEAM_MEMBER' => static fn () => $projectAdmin->assertProjectRemoval($team, $project, ProjectRole::Viewer, TeamRole::Member),
+            'a TEAM_ADMIN' => static fn () => $projectAdmin->assertProjectRemoval($team, $project, ProjectRole::Viewer, TeamRole::Admin),
+            'a member ranked above' => static fn () => new World()->as(Teams::GUEST, TeamRole::Guest, ProjectRole::Member)->roles()->assertProjectRemoval($team, $project, ProjectRole::Admin, TeamRole::Guest),
+        ] as $case => $gesture) {
+            try {
+                $gesture();
+            } catch (RoleNotAssignable) {
+                $refused[] = $case;
+            }
+        }
+        self::assertSame(['a TEAM_MEMBER', 'a TEAM_ADMIN', 'a member ranked above'], $refused);
     }
 }

@@ -37,6 +37,6 @@ final readonly class ListTeamMembersHandler implements QueryHandler
             throw PermissionDenied::for('team.members.view');
         }
 
-        return $this->emails->fill($this->read->teamMembers($query->teamId, $query->page));
+        return $this->emails->fill($this->read->teamMembers($query->teamId, $query->page, $this->emails->matching($query->page)));
     }
 }

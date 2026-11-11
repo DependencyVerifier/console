@@ -20,6 +20,8 @@
     {key: 'team_members', title: 'nav.team_members'|trans, url: path('organization_team_members', {teamId: currentTeam}), icon: 'lucide:users'},
 ] : [])|merge(roleKey == 'team_admin' or superAdmin ? [
     {key: 'team_settings', title: 'nav.team_settings'|trans, url: path('organization_team_settings', {teamId: currentTeam}), icon: 'lucide:settings'},
+] : [])|merge(roleKey == 'team_admin' or superAdmin ? [
+    {key: 'team_audit', title: 'nav.team_audit'|trans, url: path('audit_team_audit', {teamId: currentTeam}), icon: 'lucide:scan-search'},
 ] : []) : [
     {key: 'overview', title: 'nav.overview'|trans, url: path('shared_home'), icon: 'lucide:layout-dashboard'},
 ] -%}
@@ -38,6 +40,7 @@
     navSecondary: superAdmin ? [
         {key: 'admin_users', title: 'nav.users'|trans, url: path('identity_admin_users'), icon: 'lucide:shield-check'},
         {key: 'admin_teams', title: 'nav.teams'|trans, url: path('organization_admin_teams'), icon: 'lucide:building-2'},
+        {key: 'admin_audit', title: 'nav.audit'|trans, url: path('audit_admin_audit'), icon: 'lucide:scan-search'},
     ] : [],
 } -%}
 <twig:Sidebar {{ ...attributes.defaults({collapsible: 'icon'}) }}>

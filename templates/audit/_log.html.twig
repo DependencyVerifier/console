@@ -1,0 +1,56 @@
+{#- The audit entries, newest first, in the `audit` frame: the outcome filter and the "Older entries" cursor link load
+    the next page of the same URL into this frame (advance: a reload shows the full page). Variables: entries, next,
+    outcome, outcomes, actors (user id => email), cursor, base_url. -#}
+<turbo-frame id="audit" data-turbo-action="advance">
+    <section class="dt-card rounded-xl border bg-card text-card-foreground" aria-labelledby="audit-title">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+            <h2 id="audit-title" class="text-sm font-semibold">{{ 'audit.entries'|trans }}</h2>
+            <nav class="flex flex-wrap items-center gap-1" aria-label="{{ 'audit.filter'|trans }}">
+                {%- for kind in [null]|merge(outcomes) %}
+                    <a href="{{ base_url }}{{ kind ? '?outcome=' ~ kind : '' }}"
+                       {% if kind == outcome %}aria-current="page"{% endif %}
+                       class="rounded-md px-2 py-1 text-xs font-medium {{ kind == outcome ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground' }}">
+                        {{- ('audit.outcome.' ~ (kind ?? 'all'))|trans -}}
+                    </a>
+                {%- endfor %}
+            </nav>
+        </div>
+        {%- if entries is empty %}
+            <p class="px-4 py-8 text-center text-sm text-muted-foreground">{{ (cursor ? 'audit.no_older' : 'audit.empty')|trans }}</p>
+        {%- else %}
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-xs text-muted-foreground">
+                        <th scope="col" class="px-4 py-2 text-start font-medium">{{ 'audit.column.when'|trans }}</th>
+                        <th scope="col" class="px-4 py-2 text-start font-medium">{{ 'audit.column.actor'|trans }}</th>
+                        <th scope="col" class="px-4 py-2 text-start font-medium">{{ 'audit.column.action'|trans }}</th>
+                        <th scope="col" class="px-4 py-2 text-start font-medium">{{ 'audit.column.target'|trans }}</th>
+                        <th scope="col" class="px-4 py-2 text-start font-medium">{{ 'audit.column.outcome'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {%- for entry in entries %}
+                        <tr class="border-t align-top hover:bg-muted/50">
+                            <td class="px-4 py-2 whitespace-nowrap tabular-nums"><time datetime="{{ entry.occurredAt|date('c') }}">{{ entry.occurredAt|date('Y-m-d H:i:s') }}</time></td>
+                            <td class="px-4 py-2">
+                                {%- if entry.actorId %}{{ actors[entry.actorId] ?? entry.actorId }}{% else %}<span class="text-muted-foreground">{{ ('audit.actor.' ~ entry.actorType)|trans }}</span>{% endif -%}
+                                {%- if entry.ip %}<div class="font-mono text-xs text-muted-foreground">{{ entry.ip }}</div>{% endif -%}
+                            </td>
+                            <td class="px-4 py-2 font-mono text-xs">{{ entry.action }}</td>
+                            <td class="px-4 py-2"><span class="text-muted-foreground">{{ entry.targetType }}</span>{% if entry.targetId %} <span class="font-mono text-xs" title="{{ entry.targetId }}">{{ entry.targetId|slice(0, 8) }}…</span>{% endif %}</td>
+                            <td class="px-4 py-2">
+                                <twig:Badge variant="{{ entry.outcome == 'success' ? 'secondary' : (entry.outcome == 'denied' ? 'outline' : 'destructive') }}">{{ ('audit.outcome.' ~ entry.outcome)|trans }}</twig:Badge>
+                                {%- if entry.reason %}<div class="mt-1 font-mono text-xs text-muted-foreground">{{ entry.reason }}</div>{% endif -%}
+                            </td>
+                        </tr>
+                    {%- endfor %}
+                </tbody>
+            </table>
+        {%- endif %}
+        {%- if next %}
+            <div class="flex justify-end border-t px-4 py-3">
+                <twig:Button as="a" variant="outline" size="sm" href="{{ base_url }}?{{ {cursor: next, outcome: outcome}|filter(v => v is not null)|url_encode }}">{{ 'audit.older'|trans }}</twig:Button>
+            </div>
+        {%- endif %}
+    </section>
+</turbo-frame>

@@ -14,7 +14,10 @@ use Shared\Application\Query\PageRequest;
  */
 final readonly class ListInvitations implements Query
 {
-    public function __construct(public string $teamId, public PageRequest $page)
+    /**
+     * @param string|null $projectId the invitations of one project of the team, else all those of the team
+     */
+    public function __construct(public string $teamId, public PageRequest $page, public ?string $projectId = null)
     {
     }
 }

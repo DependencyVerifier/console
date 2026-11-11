@@ -65,6 +65,11 @@ final class ValueObjectsTest extends TestCase
         self::assertFalse(TeamRole::Guest->canAssign(TeamRole::Viewer));
         self::assertTrue(TeamRole::Admin->canAssignProjectRole(ProjectRole::Admin));
         self::assertFalse(TeamRole::Member->canAssignProjectRole(ProjectRole::Viewer));
+        self::assertSame(
+            [null, ProjectRole::Member, null, null],
+            array_map(static fn (TeamRole $r): ?ProjectRole => $r->impliedProjectRole(), TeamRole::cases()),
+            'Only a TEAM_MEMBER ranks as a PROJECT_MEMBER (a TEAM_ADMIN covers everything on its own).',
+        );
     }
 
     #[Test]

@@ -38,6 +38,7 @@ enum RouteCollection: string implements RouteCollectionInterface
     case ADMIN_TEAM_CREATE = 'admin_team_create';
     case ADMIN_TEAM_EDIT = 'admin_team_edit';
     case ADMIN_TEAM_DELETE = 'admin_team_delete';
+    case ADMIN_USER_RESYNC = 'admin_user_resync';
     case ADMIN_DEFAULT_QUOTAS = 'admin_default_quotas';
 
     public function prefixed(): string

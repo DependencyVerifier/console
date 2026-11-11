@@ -1,5 +1,5 @@
 {%- import 'shared/_row_menu.html.twig' as menu -%}
-{%- set team_id = app.request.attributes.get('teamId') -%}
+{%- set team_id = row.teamId -%}
 <div class="flex justify-end">
     <twig:DropdownMenu id="invitation-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
         <twig:DropdownMenu:Trigger>

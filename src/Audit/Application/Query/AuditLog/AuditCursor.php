@@ -6,6 +6,7 @@ namespace Audit\Application\Query\AuditLog;
 
 use Symfony\Component\Uid\Uuid;
 
+use function Symfony\Component\String\b;
 use function Symfony\Component\String\u;
 
 /**
@@ -29,7 +30,8 @@ final readonly class AuditCursor
     public static function decode(string $encoded): self
     {
         $raw = base64_decode(u($encoded)->replace('-', '+')->replace('_', '/')->toString(), true);
-        $parts = false === $raw ? [] : u($raw)->split('|');
+        // Raw bytes, possibly not UTF-8 (a forged cursor): split as bytes, then the timestamp and UUID checks decide.
+        $parts = false === $raw ? [] : b($raw)->split('|');
         if (2 !== \count($parts)) {
             throw new InvalidAuditCursor();
         }

@@ -33,4 +33,11 @@ interface UserDirectory
      * @return list<AccountMatch>
      */
     public function search(string $term, int $limit): array;
+
+    /**
+     * Ids of the accounts whose email or display name contains the term (case-insensitive), at most $limit.
+     *
+     * @return list<string>
+     */
+    public function matchIds(string $term, int $limit): array;
 }

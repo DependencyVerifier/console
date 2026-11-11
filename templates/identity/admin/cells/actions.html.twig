@@ -39,6 +39,8 @@
             {{ menu.dialog('edit-user-' ~ row.id, 'admin.users.edit', 'lucide:user-round') }}
             {%- if not row.superAdmin %}{{ menu.dialog('change-email-' ~ row.id, 'admin.users.change_email') }}{% endif %}
             {{ user.user_action('identity_admin_user_reset_second_factor', 'reset_second_factor', row, 'admin.users.reset_second_factor') }}
+            {#- Replays the cascade of the account status on its team and project memberships (Organization). -#}
+            {{ user.user_action('organization_admin_user_resync', 'resync_memberships', row, 'admin.users.resync_memberships') }}
             <twig:DropdownMenu:Separator />
             {%- if row.active %}
                 {{ user.user_action('identity_admin_user_deactivate', 'deactivate', row, 'admin.users.deactivate', 'destructive') }}

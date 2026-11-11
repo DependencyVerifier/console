@@ -31,6 +31,15 @@ enum TeamRole: string
     }
 
     /**
+     * The project rank a team role gives in every project of its team, for the rank rules: a TEAM_MEMBER counts as a
+     * PROJECT_MEMBER (decided 2026-11-11). A TEAM_ADMIN covers everything (canAssignProjectRole); the others give none.
+     */
+    public function impliedProjectRole(): ?ProjectRole
+    {
+        return self::Member === $this ? ProjectRole::Member : null;
+    }
+
+    /**
      * A TEAM_ADMIN covers every project role of its team; no other team role assigns project roles.
      */
     public function canAssignProjectRole(ProjectRole $role): bool

@@ -72,11 +72,11 @@ final readonly class DbalOrganizationReadModel implements OrganizationReadModel
         return Row::int($this->connection->fetchOne('SELECT COUNT(*) FROM organization_project WHERE team_id = :team', ['team' => $teamId]));
     }
 
-    public function teamMembers(string $teamId, PageRequest $page): Page
+    public function teamMembers(string $teamId, PageRequest $page, ?array $matchingUserIds = null): Page
     {
         $base = $this->connection->createQueryBuilder()->from('organization_team_membership', 'm')
             ->where('m.team_id = :team')->setParameter('team', $teamId);
-        $rows = $this->page($base, $page, 'm.role', ['role' => 'm.role', 'joined_at' => 'm.joined_at'], 'joined_at', static fn (QueryBuilder $q) => $q->select(
+        $rows = $this->page($base, $page, self::memberSearch($matchingUserIds), ['role' => 'm.role', 'joined_at' => 'm.joined_at'], 'joined_at', static fn (QueryBuilder $q) => $q->select(
             'm.user_id', 'm.role', 'm.extra_permissions', 'm.status', 'm.joined_at',
             '(SELECT COUNT(*) FROM organization_project_membership pm JOIN organization_project p ON p.id = pm.project_id WHERE p.team_id = m.team_id AND pm.user_id = m.user_id) AS projects',
         ));
@@ -84,30 +84,42 @@ final readonly class DbalOrganizationReadModel implements OrganizationReadModel
         return new Page(array_map(self::member(...), $rows['items']), $rows['filtered'], $rows['total']);
     }
 
-    public function projectMembers(string $projectId, PageRequest $page): Page
+    public function projectMembers(string $projectId, PageRequest $page, ?array $matchingUserIds = null): Page
     {
         $base = $this->connection->createQueryBuilder()->from('organization_project_membership', 'm')
             ->where('m.project_id = :project')->setParameter('project', $projectId);
-        $rows = $this->page($base, $page, 'm.role', ['role' => 'm.role', 'joined_at' => 'm.joined_at'], 'joined_at', static fn (QueryBuilder $q) => $q->select(
+        $rows = $this->page($base, $page, self::memberSearch($matchingUserIds), ['role' => 'm.role', 'joined_at' => 'm.joined_at'], 'joined_at', static fn (QueryBuilder $q) => $q->select(
             'm.user_id', 'm.role', 'm.extra_permissions', 'm.status', 'm.joined_at', '1 AS projects',
         ));
 
         return new Page(array_map(self::member(...), $rows['items']), $rows['filtered'], $rows['total']);
     }
 
-    public function invitations(string $teamId, PageRequest $page, \DateTimeImmutable $now): Page
+    public function invitations(?string $teamId, ?string $projectId, PageRequest $page, \DateTimeImmutable $now): Page
     {
         $base = $this->connection->createQueryBuilder()->from('organization_invitation', 'i')
+            ->innerJoin('i', 'organization_team', 't', 't.id = i.team_id')
             ->leftJoin('i', 'organization_project', 'p', 'p.id = i.project_id')
-            ->where('i.team_id = :team')->andWhere("i.status = 'pending'")->setParameter('team', $teamId);
+            ->where("i.status = 'pending'");
+        if (null !== $teamId) {
+            $base->andWhere('i.team_id = :team')->setParameter('team', $teamId);
+        }
+
+        if (null !== $projectId) {
+            $base->andWhere('i.project_id = :project')->setParameter('project', $projectId);
+        }
+
         $rows = $this->page($base, $page, 'i.email', ['email' => 'i.email', 'issued_at' => 'i.issued_at'], 'issued_at', static fn (QueryBuilder $q) => $q->select(
-            'i.id', 'i.email', 'i.role', 'p.name AS project_name', 'i.issued_at',
+            'i.id', 'i.email', 'i.role', 'i.team_id', 't.name AS team_name', 'p.name AS project_name', 'i.issued_at',
         ));
 
         return new Page(array_map(static function (array $row) use ($now): InvitationRow {
             $expiresAt = new \DateTimeImmutable(Row::string($row['issued_at']))->modify('+7 days');
 
-            return new InvitationRow(Row::string($row['id']), Row::string($row['email']), Row::string($row['role']), Row::nullableString($row['project_name']), $now >= $expiresAt, $expiresAt);
+            return new InvitationRow(
+                Row::string($row['id']), Row::string($row['email']), Row::string($row['role']), Row::nullableString($row['project_name']), $now >= $expiresAt, $expiresAt,
+                Row::string($row['team_id']), Row::string($row['team_name']),
+            );
         }, $rows['items']), $rows['filtered'], $rows['total']);
     }
 
@@ -164,18 +176,19 @@ final readonly class DbalOrganizationReadModel implements OrganizationReadModel
     }
 
     /**
-     * @param array<string, string>         $sortable key => column
-     * @param \Closure(QueryBuilder): mixed $select
+     * @param string|\Closure(QueryBuilder): void $search   the searched column, or a condition using `:search`
+     * @param array<string, string>               $sortable key => column
+     * @param \Closure(QueryBuilder): mixed       $select
      *
      * @return array{items: list<array<string, mixed>>, filtered: int, total: int}
      */
-    private function page(QueryBuilder $base, PageRequest $page, string $searchColumn, array $sortable, string $defaultSort, \Closure $select): array
+    private function page(QueryBuilder $base, PageRequest $page, string|\Closure $search, array $sortable, string $defaultSort, \Closure $select): array
     {
         $total = Row::int((clone $base)->select('COUNT(*)')->fetchOne());
         $filtered = clone $base;
         if ('' !== $page->search) {
-            $filtered->andWhere(\sprintf('LOWER(%s) LIKE :search', $searchColumn))
-                ->setParameter('search', '%'.u($page->search)->lower()->replace('\\', '\\\\')->replace('%', '\\%')->replace('_', '\\_')->toString().'%');
+            $filtered->setParameter('search', '%'.u($page->search)->lower()->replace('\\', '\\\\')->replace('%', '\\%')->replace('_', '\\_')->toString().'%');
+            \is_string($search) ? $filtered->andWhere(\sprintf('LOWER(%s) LIKE :search', $search)) : $search($filtered);
         }
 
         $count = Row::int((clone $filtered)->select('COUNT(*)')->fetchOne());
@@ -188,6 +201,26 @@ final readonly class DbalOrganizationReadModel implements OrganizationReadModel
         $rows = $items->fetchAllAssociative();
 
         return ['items' => $rows, 'filtered' => $count, 'total' => $total];
+    }
+
+    /**
+     * A member is found by its role, or by its email or display name (the ids Identity matched for the term).
+     *
+     * @param list<string>|null $matchingUserIds
+     *
+     * @return \Closure(QueryBuilder): void
+     */
+    private static function memberSearch(?array $matchingUserIds): \Closure
+    {
+        return static function (QueryBuilder $query) use ($matchingUserIds): void {
+            if ([] === ($matchingUserIds ?? [])) {
+                $query->andWhere('LOWER(m.role) LIKE :search');
+
+                return;
+            }
+
+            $query->andWhere('(LOWER(m.role) LIKE :search OR m.user_id IN (:matching))')->setParameter('matching', $matchingUserIds, ArrayParameterType::STRING);
+        };
     }
 
     /**

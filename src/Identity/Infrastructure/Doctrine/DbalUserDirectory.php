@@ -92,4 +92,15 @@ final readonly class DbalUserDirectory implements UserDirectory
 
         return array_map(static fn (array $row): AccountMatch => new AccountMatch($row['id'], $row['email'], $row['display_name'] ?? ''), $rows);
     }
+
+    public function matchIds(string $term, int $limit): array
+    {
+        $like = '%'.u($term)->lower()->replace('\\', '\\\\')->replace('%', '\\%')->replace('_', '\\_')->toString().'%';
+
+        /** @var list<string> */
+        return $this->connection->fetchFirstColumn(
+            \sprintf('SELECT id FROM identity_user WHERE email LIKE :like OR LOWER(display_name) LIKE :like ORDER BY email LIMIT %d', $limit),
+            ['like' => $like],
+        );
+    }
 }

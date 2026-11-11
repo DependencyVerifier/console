@@ -24,6 +24,6 @@ final readonly class ListProjectMembersHandler implements QueryHandler
     {
         $this->visibility->assertVisible($query->projectId);
 
-        return $this->emails->fill($this->read->projectMembers($query->projectId, $query->page));
+        return $this->emails->fill($this->read->projectMembers($query->projectId, $query->page, $this->emails->matching($query->page)));
     }
 }

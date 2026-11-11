@@ -51,6 +51,7 @@ final class AuditCursorTest extends TestCase
         yield 'three parts' => [base64_encode('1794211200.000000|a|b')];
         yield 'bad timestamp' => [base64_encode('yesterday|'.Uuid::v7()->toRfc4122())];
         yield 'bad uuid' => [base64_encode('1794211200.000000|not-a-uuid')];
+        yield 'bytes that are not UTF-8' => ['not-a-cursor'];
     }
 
     #[Test]
