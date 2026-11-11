@@ -121,6 +121,7 @@ Normative contract: `docs/protocol.md` (v1) and its test vectors, copied in `tes
 - Organization collaboration: `FleetAccess` asks `GetTeamAccess` (404 out of scope, 403 for a `TEAM_GUEST`) then the `PermissionChecker` (`host.enroll`, `host.approve`, `host.revoke`, `host.delete`, `host.order`); the object's real team decides. `FleetTeamContent` implements `TeamContentEraser` (a deleted team takes its fleet, under the fleet lock) and `ProjectContentProbe` (an environment a usable token enrolls into cannot be deleted).
 - UI: team sections reuse Organization's team frame (`FleetPage` renders `fleet/team/*` with `TeamPage`'s header and sidebar group); the `FleetView` of the page is a request attribute (`_fleet`) read by the action cells. The token is shown once in its dialog (`SecretRevealingResponse` in the frame; `form_dialog_controller.ts` closes a dialog only on a Turbo Stream). Inside `<twig:StatusDot>`, never name a variable `status` (the component's prop shadows it).
 - Maintenance: `make fleet-maintain` (`app:fleet:maintain`, cron every few minutes, batches of 500): approved agents silent 7 days → `inactive`, inactive 30 days more → revoked, late orders expired, nonces older than 10 minutes purged. `fleet_agent_nonce` is raw SQL, excluded by the Doctrine `schema_filter`.
+- Dev demo: `make fleet-fake-agent` (`FakeAgentCommand`, dev env only, `Fleet\Infrastructure\Dev\FakeAgent`) enrolls, polls and answers orders like the agent (pinned console key, §7.2 checks), state in `var/fake-agent/<name>.json`. It verifies orders on the JSON **as received** (objects kept: an empty payload is `{}`, never `[]`).
 - Test doubles: `tests/Fleet/Support` (`FleetWorld` in memory, `AgentClient` signs requests as the agent does, `FleetSeed` for functional fixtures, `ProtocolVectors`).
 
 ## FrankenPHP worker mode
@@ -147,6 +148,7 @@ make ux r=dialog / make icon i=lucide:bell
 make db-diff / make db-migrate          # migrations are organized by year: migrations/<YYYY>/Version….php (namespace DoctrineMigrations)
 make db-dump DUMP=backup.sql / make db-import DUMP=backup.sql   # pg_dump / psql via .docker/database/scripts, files in var/
 make db-roles / make audit-partitions / make rate-limiter-prune / make fleet-maintain
+make fleet-fake-agent a='enroll --token=dvet_…'   # dev demo agent (then a=poll, a='run --polls=10'; name=… for another one)
 make super-admin email=you@example.com / make mailpit
 make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, user depverify_app or depverify_owner, database app)
 ```

@@ -149,6 +149,10 @@ rate-limiter-prune: ## Delete expired rate limiter states
 fleet-maintain: ## Fleet maintenance: inactive agents, late orders, request nonces (cron, every few minutes)
 	@$(CONSOLE) app:fleet:maintain
 
+.PHONY: fleet-fake-agent
+fleet-fake-agent: ## Dev demo agent: a='enroll --token=dvet_…', a=poll, a='run --polls=10' (name=… for another one)
+	@$(CONSOLE) app:fleet:fake-agent $(a) $(if $(name),--name=$(name))
+
 .PHONY: db-dump
 db-dump: ## Dump the dev database to var/DUMP, example: make db-dump DUMP=backup.sql
 	@:$(if $(DUMP),,$(error Usage: make db-dump DUMP=<file.sql>))
