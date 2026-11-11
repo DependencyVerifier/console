@@ -51,8 +51,11 @@ final class InventoryApiTest extends IdentityWebTestCase
 
         $agent->post($this->client, '/agent/v1/inventories/'.self::FIRST.'/complete', ['protocol_version' => 1]);
         self::assertResponseStatusCodeSame(202);
-        self::assertSame('completed', $this->fetchString('SELECT status FROM inventory_run WHERE id = ?', [self::FIRST]));
+        self::assertSame('processed', $this->fetchString('SELECT status FROM inventory_run WHERE id = ?', [self::FIRST]), 'Processed at once in the tests (the queue is synchronous there).');
         self::assertSame(2, $this->fetchInt('SELECT COUNT(*) FROM inventory_blob'));
+        self::assertSame('compose:shop/php', $this->fetchString('SELECT subject_key FROM inventory_app_instance'));
+        self::assertSame('pkg:composer/symfony/http-kernel@6.4.3', $this->fetchString('SELECT purl FROM inventory_package'));
+        self::assertSame('6.1.0-27-amd64', $this->fetchString("SELECT facts->>'kernel' FROM inventory_host"));
 
         $agent->post($this->client, '/agent/v1/inventories', $manifest(self::SECOND));
         self::assertSame([], $this->json()['missing'], 'Nothing changed: nothing to upload.');
@@ -60,9 +63,18 @@ final class InventoryApiTest extends IdentityWebTestCase
         self::assertResponseStatusCodeSame(202);
 
         $entries = AuditLog::entries($this->connection(), 'inventory.');
-        self::assertSame(['inventory.submit_manifest', 'inventory.complete', 'inventory.complete', 'inventory.submit_manifest', 'inventory.complete'], array_column($entries, 'action'));
-        self::assertSame(['success', 'denied', 'success', 'success', 'success'], array_column($entries, 'outcome'));
-        self::assertNotNull($entries[2]['team_id'], 'Scoped to the team of the agent.');
+        $outcomes = [];
+        foreach ($entries as $entry) {
+            $outcomes[$entry['action']][] = $entry['outcome'];
+            self::assertNotNull($entry['team_id'], 'Scoped to the team of the agent.');
+        }
+        ksort($outcomes);
+        self::assertSame(['inventory.complete' => ['denied', 'success', 'success'], 'inventory.process' => ['success', 'success'], 'inventory.submit_manifest' => ['success', 'success']], array_map(static function (array $o): array {
+            sort($o);
+
+            return $o;
+        }, $outcomes));
+        self::assertSame(1, $this->fetchInt('SELECT COUNT(*) FROM inventory_app_instance'), 'The same application, followed.');
     }
 
     #[Test]

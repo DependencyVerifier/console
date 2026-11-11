@@ -6,6 +6,7 @@ namespace Inventory\Domain\Model;
 
 use Doctrine\ORM\Mapping as ORM;
 use Inventory\Domain\Event\InventoryCompleted;
+use Inventory\Domain\Event\InventoryProcessed;
 use Shared\Domain\Model\EventRecording;
 use Shared\Domain\Model\RecordsEvents;
 use Symfony\Component\Uid\Uuid;
@@ -179,6 +180,7 @@ class InventoryRun implements RecordsEvents
 
         $this->status = RunStatus::Processed;
         $this->processedAt = $now;
+        $this->recordThat(new InventoryProcessed($this->id->toRfc4122(), $this->teamId->toRfc4122()));
 
         return true;
     }

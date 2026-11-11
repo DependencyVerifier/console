@@ -12,6 +12,11 @@ interface SnapshotRecordRepository
     public function add(SnapshotRecord $record): void;
 
     /**
+     * @return list<Uuid> the teams that have history
+     */
+    public function teams(): array;
+
+    /**
      * History entries of the team taken before $before, except the latest of each subject.
      *
      * @return int the entries deleted

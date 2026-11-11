@@ -6,6 +6,7 @@ namespace Inventory\Infrastructure\Doctrine;
 
 use Inventory\Domain\Model\SnapshotRecord;
 use Inventory\Domain\Repository\SnapshotRecordRepository;
+use Shared\Infrastructure\Doctrine\Row;
 use Symfony\Component\Uid\Uuid;
 
 final readonly class DoctrineSnapshotRecordRepository implements SnapshotRecordRepository
@@ -17,6 +18,16 @@ final readonly class DoctrineSnapshotRecordRepository implements SnapshotRecordR
     public function add(SnapshotRecord $record): void
     {
         $this->manager->get()->persist($record);
+    }
+
+    public function teams(): array
+    {
+        $teams = [];
+        foreach ($this->manager->get()->getConnection()->fetchFirstColumn('SELECT DISTINCT team_id FROM inventory_snapshot') as $team) {
+            $teams[] = Uuid::fromString(Row::string($team));
+        }
+
+        return $teams;
     }
 
     public function purgeBefore(Uuid $teamId, \DateTimeImmutable $before): int

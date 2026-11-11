@@ -83,7 +83,7 @@ final class RepositoriesTest extends KernelTestCase
     {
         [$teamId, $environmentId] = $this->environment();
         $apps = new DoctrineAppInstanceRepository($this->manager);
-        $app = AppInstance::discover(Uuid::v7(), Uuid::fromString($teamId), Uuid::fromString(Inv::HOST), Inv::compose(), Inv::now());
+        $app = AppInstance::discover(Uuid::v7(), Uuid::fromString($teamId), Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::compose(), Inv::now());
         $app->assign(Uuid::fromString($environmentId));
         $apps->add($app);
         $this->flush();
@@ -91,7 +91,7 @@ final class RepositoriesTest extends KernelTestCase
         self::assertCount(1, $apps->ofHost(Uuid::fromString(Inv::HOST)));
         self::assertSame($environmentId, $apps->find($app->id())?->environmentId()?->toRfc4122());
 
-        $foreign = AppInstance::discover(Uuid::v7(), Uuid::fromString(Inv::OTHER_TEAM), Uuid::v7(), Inv::compose(), Inv::now());
+        $foreign = AppInstance::discover(Uuid::v7(), Uuid::fromString(Inv::OTHER_TEAM), Uuid::v7(), Uuid::fromString(Inv::AGENT), Inv::compose(), Inv::now());
         $foreign->assign(Uuid::fromString($environmentId));
         $apps->add($foreign);
         try {
@@ -114,8 +114,8 @@ final class RepositoriesTest extends KernelTestCase
         self::assertNotNull($images->find(($images->findByImageId(Uuid::fromString(Inv::OTHER_TEAM), Inv::IMAGE) ?? self::fail('No image.'))->id()));
 
         $apps = new DoctrineAppInstanceRepository($this->manager);
-        $apps->add(AppInstance::discover(Uuid::v7(), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Inv::path(), Inv::now()));
-        $apps->add(AppInstance::discover(Uuid::v7(), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Inv::path(sbom: 5), Inv::now()));
+        $apps->add(AppInstance::discover(Uuid::v7(), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::path(), Inv::now()));
+        $apps->add(AppInstance::discover(Uuid::v7(), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::path(sbom: 5), Inv::now()));
         $this->expectException(UniqueConstraintViolationException::class);
         $this->flush();
     }
@@ -153,7 +153,7 @@ final class RepositoriesTest extends KernelTestCase
         $images = new DoctrineContainerImageRepository($this->manager);
         $images->add(ContainerImage::discover(Uuid::v7(), $team, Inv::image(), Inv::now()));
         $apps = new DoctrineAppInstanceRepository($this->manager);
-        $apps->add(AppInstance::discover(Uuid::v7(), $team, Uuid::fromString(Inv::HOST), Inv::path(), Inv::now()));
+        $apps->add(AppInstance::discover(Uuid::v7(), $team, Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::path(), Inv::now()));
         $records = new DoctrineSnapshotRecordRepository($this->manager);
         $records->add(SnapshotRecord::take(Uuid::v7(), $team, Uuid::fromString(Inv::RUN), SnapshotSubject::HostFacts, Uuid::fromString(Inv::HOST), Inv::digest(9), Inv::now()));
         $blobs = new DoctrineSnapshotBlobRepository($this->manager);

@@ -16,16 +16,29 @@ final class InMemoryRecords implements SnapshotRecordRepository
     /** @var list<array{string, string}> team, before */
     public array $purges = [];
 
+    /** The number each purge answers. */
+    public int $purged = 0;
+
     public function add(SnapshotRecord $record): void
     {
         $this->records[] = $record;
+    }
+
+    public function teams(): array
+    {
+        $teams = [];
+        foreach ($this->records as $record) {
+            $teams[$record->teamId()->toRfc4122()] = $record->teamId();
+        }
+
+        return array_values($teams);
     }
 
     public function purgeBefore(Uuid $teamId, \DateTimeImmutable $before): int
     {
         $this->purges[] = [$teamId->toRfc4122(), $before->format(\DATE_ATOM)];
 
-        return 0;
+        return $this->purged;
     }
 
     public function deleteOfTeam(Uuid $teamId): void

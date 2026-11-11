@@ -34,7 +34,7 @@ final class TeamContentTest extends TestCase
         $runs->add(Inv::run());
         $runs->add(Inv::run(id: '019a6b31-5e00-7f12-a3b4-c5d6e7f80913', teamId: Inv::OTHER_TEAM));
         $records->add(SnapshotRecord::take(Uuid::v7(), $team, Uuid::fromString(Inv::RUN), SnapshotSubject::Image, Uuid::v7(), Inv::digest(1), Inv::now()));
-        $app = AppInstance::discover(Uuid::fromString(Inv::APP), $team, Uuid::fromString(Inv::HOST), Inv::path(), Inv::now());
+        $app = AppInstance::discover(Uuid::fromString(Inv::APP), $team, Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::path(), Inv::now());
         $app->assign(Uuid::fromString(Inv::ENVIRONMENT));
         $apps->add($app);
         $images->add(ContainerImage::discover(Uuid::v7(), $team, Inv::image(), Inv::now()));

@@ -11,7 +11,8 @@ use Symfony\Component\Uid\Uuid;
  * An application found on a host (cadrage §5): a path, a Compose service or a standalone container, identified by
  * (host, subject_key). It belongs to an environment of a project of the host's team once attached: automatically by
  * the rules of the processing, or by a human, whose choice the rules never override. The key (up to 4 200 characters)
- * is unique per host through its SHA-256, a B-tree entry being smaller. An application missing from
+ * is unique per host through its SHA-256, a B-tree entry being smaller. A host may carry several agents (one per
+ * Compose project): an application is `gone` only when the agent that reported it no longer does. An application missing from
  * the last inventory of its host is `gone`, with its history.
  */
 #[ORM\Entity]
@@ -41,6 +42,8 @@ class AppInstance
         private Uuid $teamId,
         #[ORM\Column(type: 'uuid')]
         private Uuid $hostId,
+        #[ORM\Column(type: 'uuid')]
+        private Uuid $agentId,
         #[ORM\Column(type: 'text')]
         private string $subjectKey,
         #[ORM\Column(length: 64)]
@@ -60,13 +63,13 @@ class AppInstance
     ) {
     }
 
-    public static function discover(Uuid $id, Uuid $teamId, Uuid $hostId, Subject $subject, \DateTimeImmutable $at): self
+    public static function discover(Uuid $id, Uuid $teamId, Uuid $hostId, Uuid $agentId, Subject $subject, \DateTimeImmutable $at): self
     {
         if (!$subject->kind->isApplication()) {
             throw new InvalidInventory('Not an application subject.');
         }
 
-        return new self($id, $teamId, $hostId, $subject->key, self::hashOf($subject->key), $subject->kind, $subject->fields, $subject->sbom->digest->value, $subject->string('image_id'), $at, $at);
+        return new self($id, $teamId, $hostId, $agentId, $subject->key, self::hashOf($subject->key), $subject->kind, $subject->fields, $subject->sbom->digest->value, $subject->string('image_id'), $at, $at);
     }
 
     public static function hashOf(string $subjectKey): string
@@ -87,6 +90,11 @@ class AppInstance
     public function hostId(): Uuid
     {
         return $this->hostId;
+    }
+
+    public function agentId(): Uuid
+    {
+        return $this->agentId;
     }
 
     public function subjectKey(): string
@@ -145,13 +153,19 @@ class AppInstance
     /**
      * In the last inventory of its host again: its fields and SBOM as reported now.
      */
-    public function seen(Subject $subject, \DateTimeImmutable $at): void
+    public function seen(Subject $subject, Uuid $agentId, \DateTimeImmutable $at): void
     {
+        $this->agentId = $agentId;
         $this->fields = $subject->fields;
         $this->sbomDigest = $subject->sbom->digest->value;
         $this->imageId = $subject->string('image_id');
         $this->present = true;
         $this->lastSeenAt = $at;
+    }
+
+    public function isReportedBy(Uuid $agentId): bool
+    {
+        return $this->agentId->equals($agentId);
     }
 
     public function markGone(): void

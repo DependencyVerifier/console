@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Inventory\Unit\Domain;
 
 use Inventory\Domain\Event\InventoryCompleted;
+use Inventory\Domain\Event\InventoryProcessed;
 use Inventory\Domain\Model\AppInstance;
 use Inventory\Domain\Model\Assignment;
 use Inventory\Domain\Model\ContainerImage;
@@ -67,6 +68,7 @@ final class EntitiesTest extends TestCase
         $run->complete($run->manifest()->digests(), Inv::now());
         self::assertTrue($run->markProcessed(Inv::now()->modify('+5 seconds')));
         self::assertSame(RunStatus::Processed, $run->status());
+        self::assertEquals([new InventoryCompleted(Inv::RUN, Inv::TEAM), new InventoryProcessed(Inv::RUN, Inv::TEAM)], $run->releaseEvents());
         self::assertEquals(Inv::now()->modify('+5 seconds'), $run->processedAt());
         self::assertFalse($run->markProcessed(Inv::now()));
         self::assertFalse($run->complete([], Inv::now()), 'Processed: completing changes nothing.');
@@ -106,11 +108,12 @@ final class EntitiesTest extends TestCase
     #[Test]
     public function it_should_attach_an_application_automatically_until_a_human_decides(): void
     {
-        $app = AppInstance::discover(Uuid::fromString(Inv::APP), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Inv::compose(), Inv::now());
+        $app = AppInstance::discover(Uuid::fromString(Inv::APP), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::compose(), Inv::now());
         self::assertSame([Inv::APP, Inv::TEAM, Inv::HOST, 'compose:shop/php', SubjectKind::ComposeService, Inv::IMAGE, Assignment::None, true], [
             $app->id()->toRfc4122(), $app->teamId()->toRfc4122(), $app->hostId()->toRfc4122(), $app->subjectKey(), $app->kind(), $app->imageId(), $app->assignment(), $app->isPresent(),
         ]);
         self::assertSame(Inv::compose()->fields, $app->fields());
+        self::assertSame(Inv::AGENT, $app->agentId()->toRfc4122());
         self::assertEquals(Inv::digest(1), $app->sbomDigest());
         self::assertEquals([Inv::now(), Inv::now()], [$app->firstSeenAt(), $app->lastSeenAt()]);
         self::assertNull($app->environmentId());
@@ -132,21 +135,23 @@ final class EntitiesTest extends TestCase
     #[Test]
     public function it_should_follow_an_application_across_inventories(): void
     {
-        $app = AppInstance::discover(Uuid::fromString(Inv::APP), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Inv::path(), Inv::now());
+        $app = AppInstance::discover(Uuid::fromString(Inv::APP), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::path(), Inv::now());
         self::assertNull($app->imageId());
         $app->markGone();
         self::assertFalse($app->isPresent());
 
         $later = Inv::now()->modify('+6 hours');
-        $app->seen(Inv::path(sbom: 5), $later);
+        $app->seen(Inv::path(sbom: 5), Uuid::fromString(Inv::AGENT), $later);
         self::assertSame([true, Inv::digest(5)->value], [$app->isPresent(), $app->sbomDigest()->value]);
         self::assertEquals([Inv::now(), $later], [$app->firstSeenAt(), $app->lastSeenAt()]);
-        $app->seen(Inv::compose(), $later);
+        $app->seen(Inv::compose(), Uuid::fromString('019a6b2c-8f00-7a11-8b22-3c44d55e6f02'), $later);
+        self::assertTrue($app->isReportedBy(Uuid::fromString('019a6b2c-8f00-7a11-8b22-3c44d55e6f02')));
+        self::assertFalse($app->isReportedBy(Uuid::fromString(Inv::AGENT)));
         self::assertSame(Inv::IMAGE, $app->imageId());
         self::assertSame('shop', $app->fields()['compose_project'] ?? null);
 
         $this->expectException(InvalidInventory::class);
-        AppInstance::discover(Uuid::v7(), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Inv::image(), Inv::now());
+        AppInstance::discover(Uuid::v7(), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::image(), Inv::now());
     }
 
     #[Test]

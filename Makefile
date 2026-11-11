@@ -153,6 +153,10 @@ worker-restart: ## Restart the Messenger worker (it never reloads code, so after
 worker-logs: ## Follow the Messenger worker
 	@$(DC) logs -f worker
 
+.PHONY: inventory-maintain
+inventory-maintain: ## Inventory maintenance, stale inventories, history beyond retention, unreferenced snapshots (cron, hourly)
+	@$(CONSOLE) app:inventory:maintain
+
 .PHONY: fleet-maintain
 fleet-maintain: ## Fleet maintenance, inactive agents, late orders, request nonces (cron, every few minutes)
 	@$(CONSOLE) app:fleet:maintain
