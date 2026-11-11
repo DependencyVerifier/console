@@ -60,11 +60,13 @@ final class OrganizationFlowTest extends IdentityWebTestCase
         $members = $this->fetchInt('SELECT COUNT(*) FROM organization_project_membership');
         self::assertSame(0, $members, 'A TEAM_ADMIN creator gets no project membership.');
 
-        $crawler = $this->client->request('GET', \sprintf('/teams/%s/projects/%s', $teamId, $projectId));
+        $this->client->request('GET', \sprintf('/teams/%s/projects/%s', $teamId, $projectId));
         self::assertResponseIsSuccessful();
+        self::assertSelectorExists(\sprintf('turbo-frame#create-environment-form[src="/teams/%s/projects/%s/environments/new"]', $teamId, $projectId));
+        $frame = ['HTTP_TURBO_FRAME' => 'create-environment-form'];
         foreach (['prod', 'staging', 'dev', 'qa'] as $i => $name) {
-            $environment = $crawler->filter(\sprintf('form[action="/teams/%s/projects/%s/environments"]', $teamId, $projectId))->form(['environment[name]' => $name]);
-            $this->client->request('POST', $environment->getUri(), $environment->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
+            $environment = $this->client->request('GET', \sprintf('/teams/%s/projects/%s/environments/new', $teamId, $projectId), server: $frame)->filter('turbo-frame#create-environment-form form')->form(['environment[name]' => $name]);
+            $this->client->request('POST', $environment->getUri(), $environment->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
             self::assertResponseStatusCodeSame($i < 3 ? 200 : 422, $name);
         }
 
@@ -72,7 +74,7 @@ final class OrganizationFlowTest extends IdentityWebTestCase
         self::assertSame('rule:quota', $refused[0]['reason']);
         self::assertSame($teamId, $refused[0]['team_id'], 'Scope resolved from the real project.');
 
-        $draw = DataTables::draw($this->client, \sprintf('/teams/%s/projects/%s', $teamId, $projectId), 'environments');
+        $draw = DataTables::draw($this->client, \sprintf('/teams/%s/projects/%s/environments', $teamId, $projectId), 'environments');
         self::assertSame(3, $draw['recordsTotal']);
     }
 

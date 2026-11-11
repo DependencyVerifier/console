@@ -29,7 +29,7 @@ final readonly class UpdateEnvironmentController
             'environment_update:'.$environmentId,
             static fn ($form) => new UpdateEnvironment($environmentId, $projectId, FormData::string($form, 'name'), true === $form->get('production')->getData()),
             'organization.environments.updated',
-            new RouteReference(RouteCollection::PROJECT->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]), EnvironmentType::class, [],
+            new RouteReference(RouteCollection::PROJECT_ENVIRONMENTS->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]), EnvironmentType::class, [],
         );
     }
 }

@@ -41,7 +41,7 @@ final readonly class MemberPermissionsController
         ]);
         $page = null === $projectId
             ? new RouteReference(RouteCollection::TEAM_MEMBERS->prefixed(), ['teamId' => $teamId])
-            : new RouteReference(RouteCollection::PROJECT->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]);
+            : new RouteReference(RouteCollection::PROJECT_MEMBERS->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]);
 
         return $this->dialog->handle(
             $request,

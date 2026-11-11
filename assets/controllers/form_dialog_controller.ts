@@ -28,6 +28,31 @@ export default class extends Controller<HTMLElement> {
             ?.focus();
     }
 
+    /**
+     * Enter submits the dialog's form wherever the focus is (even on the close button, which a dialog focuses while
+     * its form is still loading), except where Enter means something else: a textarea, a button other than the
+     * close one, an open autocomplete list, a link.
+     */
+    submitOnEnter(event: KeyboardEvent): void {
+        const target = event.target instanceof HTMLElement ? event.target : null;
+        const form = this.#frame()?.querySelector<HTMLFormElement>('form') ?? null;
+        if (null === target || null === form || event.isComposing || event.shiftKey) {
+            return;
+        }
+
+        const isCloseButton = 'dialog-close' === target.dataset.slot;
+        const ownMeaning = target instanceof HTMLTextAreaElement
+            || target instanceof HTMLAnchorElement
+            || (target instanceof HTMLButtonElement && !isCloseButton)
+            || null !== target.closest('.ts-wrapper.dropdown-active');
+        if (ownMeaning) {
+            return;
+        }
+
+        event.preventDefault();
+        form.requestSubmit();
+    }
+
     submitted(event: CustomEvent<{ success: boolean }>): void {
         if (!event.detail.success) {
             return;

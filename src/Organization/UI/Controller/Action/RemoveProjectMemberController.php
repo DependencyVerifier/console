@@ -27,7 +27,7 @@ final readonly class RemoveProjectMemberController
             'project_member_remove:'.$userId,
             static fn () => new RemoveProjectMember($projectId, $userId),
             'organization.members.removed',
-            new RouteReference(RouteCollection::PROJECT->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]),
+            new RouteReference(RouteCollection::PROJECT_MEMBERS->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]),
         );
     }
 }

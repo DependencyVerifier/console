@@ -28,6 +28,20 @@ final readonly class TeamView
     ) {
     }
 
+    /**
+     * A creation gated by this quota is refused: its button is disabled (the handler refuses anyway).
+     */
+    public function quotaReached(string $name): bool
+    {
+        foreach ($this->quotas as $quota) {
+            if ($quota->name === $name) {
+                return $quota->isReached();
+            }
+        }
+
+        return false;
+    }
+
     public function can(string $permission): bool
     {
         return $this->can[$permission] ?? false;

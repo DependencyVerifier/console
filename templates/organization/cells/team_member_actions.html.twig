@@ -1,17 +1,30 @@
-{%- import 'organization/_actions.html.twig' as ui -%}
+{%- import 'shared/_row_menu.html.twig' as menu -%}
 {%- set team_id = app.request.attributes.get('teamId') -%}
-<div class="flex flex-wrap justify-end gap-1">
+{%- set dialog_id = 'member-permissions-' ~ row.userId -%}
+<div class="flex justify-end">
     {#- A TEAM_ADMIN holds every team permission: nothing to grant on top. -#}
     {%- if row.role != 'team_admin' %}
         <twig:FormDialog
-            id="member-permissions-{{ row.userId }}"
+            id="{{ dialog_id }}"
             :title="'organization.permissions.title'|trans({email: row.email})"
             :description="'organization.permissions.description'|trans"
             :trigger="'organization.permissions.open'|trans"
             :src="path('organization_team_member_extra', {teamId: team_id, userId: row.userId})"
-            variant="outline"
-            size="xs"
+            :hiddenTrigger="true"
         />
     {%- endif %}
-    {{ ui.button(path('organization_team_member_remove', {teamId: team_id, userId: row.userId}), 'team_member_remove:' ~ row.userId, 'organization.members.remove', 'destructive') }}
+    <twig:DropdownMenu id="member-{{ row.userId }}" side="bottom" align="end" class="inline-block text-start">
+        <twig:DropdownMenu:Trigger>
+            <twig:Button variant="ghost" size="icon-sm" :aria-label="'organization.members.actions_for'|trans({email: row.email})" :title="'organization.members.actions_for'|trans({email: row.email})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+        </twig:DropdownMenu:Trigger>
+        <twig:DropdownMenu:Content class="w-max min-w-44">
+            {%- import 'shared/_row_menu.html.twig' as menu -%}
+        {{ menu.role(path('organization_team_member_role', {teamId: team_id, userId: row.userId}), 'team_member_role:' ~ row.userId, ['team_admin', 'team_member', 'team_viewer', 'team_guest'], row.role) }}
+        {%- if row.role != 'team_admin' %}
+            {{ menu.dialog(dialog_id, 'organization.permissions.open', 'lucide:key-round') }}
+        {%- endif %}
+        <twig:DropdownMenu:Separator />
+        {{ menu.action(path('organization_team_member_remove', {teamId: team_id, userId: row.userId}), 'action', 'team_member_remove:' ~ row.userId, 'organization.members.remove', 'destructive') }}
+        </twig:DropdownMenu:Content>
+    </twig:DropdownMenu>
 </div>

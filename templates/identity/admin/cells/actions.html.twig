@@ -1,33 +1,52 @@
-{%- import 'identity/admin/_actions.html.twig' as admin -%}
-<div class="flex flex-wrap justify-end gap-1">
-    {%- if row.deleted %}
-    {{ admin.action('identity_admin_user_restore', 'restore', row, 'admin.users.restore', 'outline') }}
-    {%- else %}
-    <twig:FormDialog
-        id="edit-user-{{ row.id }}"
-        :title="'admin.users.edit_title'|trans({email: row.email})"
-        :trigger="'admin.users.edit'|trans"
-        :src="path('identity_admin_user_edit', {userId: row.id})"
-        variant="outline"
-        size="xs"
-    />
-    {%- if not row.superAdmin %}
-    <twig:FormDialog
-        id="change-email-{{ row.id }}"
-        :title="'admin.users.change_email_title'|trans({email: row.email})"
-        :description="'admin.users.change_email_description'|trans"
-        :trigger="'admin.users.change_email'|trans"
-        :src="path('identity_admin_user_email', {userId: row.id})"
-        variant="outline"
-        size="xs"
-    />
+{%- import 'shared/_row_menu.html.twig' as menu -%}
+{#- Gestures of an account row: dialogs (edit, change email) rendered next to the menu with their trigger hidden,
+    field-less actions (`action[_token]`, token id `<action>:<user id>`) as menu items. -#}
+{%- macro user_action(route, action, row, label, variant) -%}
+    {%- import 'shared/_row_menu.html.twig' as menu -%}
+    {{ menu.action(path(route, {userId: row.id}), 'action', action ~ ':' ~ row.id, label, variant|default('default')) }}
+{%- endmacro -%}
+{%- import _self as user -%}
+<div class="flex justify-end">
+    {%- if not row.deleted %}
+        <twig:FormDialog
+            id="edit-user-{{ row.id }}"
+            :title="'admin.users.edit_title'|trans({email: row.email})"
+            :trigger="'admin.users.edit'|trans"
+            :src="path('identity_admin_user_edit', {userId: row.id})"
+            :hiddenTrigger="true"
+        />
+        {%- if not row.superAdmin %}
+            <twig:FormDialog
+                id="change-email-{{ row.id }}"
+                :title="'admin.users.change_email_title'|trans({email: row.email})"
+                :description="'admin.users.change_email_description'|trans"
+                :trigger="'admin.users.change_email'|trans"
+                :src="path('identity_admin_user_email', {userId: row.id})"
+                :hiddenTrigger="true"
+            />
+        {%- endif %}
     {%- endif %}
-    {{ admin.action('identity_admin_user_reset_second_factor', 'reset_second_factor', row, 'admin.users.reset_second_factor', 'outline') }}
-    {% if row.active %}
-        {{ admin.action('identity_admin_user_deactivate', 'deactivate', row, 'admin.users.deactivate', 'destructive') }}
-    {% else %}
-        {{ admin.action('identity_admin_user_reactivate', 'reactivate', row, 'admin.users.reactivate', 'outline') }}
-    {% endif %}
-    {{ admin.action('identity_admin_user_delete', 'delete', row, 'admin.users.delete', 'destructive') }}
-    {%- endif %}
+    <twig:DropdownMenu id="user-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+        <twig:DropdownMenu:Trigger>
+            <twig:Button variant="ghost" size="icon-sm" :aria-label="'admin.users.actions_for'|trans({email: row.email})" :title="'admin.users.actions_for'|trans({email: row.email})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+        </twig:DropdownMenu:Trigger>
+        <twig:DropdownMenu:Content class="w-max min-w-44">
+            {%- import 'shared/_row_menu.html.twig' as menu -%}
+            {%- import 'identity/admin/cells/actions.html.twig' as user -%}
+        {%- if row.deleted %}
+            {{ user.user_action('identity_admin_user_restore', 'restore', row, 'admin.users.restore') }}
+        {%- else %}
+            {{ menu.dialog('edit-user-' ~ row.id, 'admin.users.edit', 'lucide:user-round') }}
+            {%- if not row.superAdmin %}{{ menu.dialog('change-email-' ~ row.id, 'admin.users.change_email') }}{% endif %}
+            {{ user.user_action('identity_admin_user_reset_second_factor', 'reset_second_factor', row, 'admin.users.reset_second_factor') }}
+            <twig:DropdownMenu:Separator />
+            {%- if row.active %}
+                {{ user.user_action('identity_admin_user_deactivate', 'deactivate', row, 'admin.users.deactivate', 'destructive') }}
+            {%- else %}
+                {{ user.user_action('identity_admin_user_reactivate', 'reactivate', row, 'admin.users.reactivate') }}
+            {%- endif %}
+            {{ user.user_action('identity_admin_user_delete', 'delete', row, 'admin.users.delete', 'destructive') }}
+        {%- endif %}
+        </twig:DropdownMenu:Content>
+    </twig:DropdownMenu>
 </div>

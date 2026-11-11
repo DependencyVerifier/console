@@ -1,5 +1,13 @@
 nav:
     overview: Overview
+    team_group: Team
+    team_members: Team members
+    team_settings: Team settings
+    project_group: "Project · {name}"
+    project_overview: Overview
+    project_environments: Environments
+    project_members: Project members
+    project_settings: Project settings
     team: Team
     projects: Projects
     members: Members
@@ -182,6 +190,7 @@ admin:
     title: Administration
     users:
         title: Users
+        actions_for: "Actions for {email}"
         description: "Accounts of the instance. A deleted account is only hidden: restore it to see it again (as deactivated)."
         empty: No account yet.
         status: Status
@@ -268,7 +277,8 @@ quota:
     min_scan_interval_minutes: Minimum scan interval (minutes)
 datatable:
     processing: Loading…
-    search: "Search:"
+    search: ""
+    searchPlaceholder: Search…
     lengthMenu: "_MENU_ per page"
     info: "_START_–_END_ of _TOTAL_"
     infoEmpty: No entries
@@ -329,6 +339,7 @@ organization:
         delete_title: "Delete {name}?"
         delete_description: "Its projects, environments and memberships are deleted, and its pending invitations stop working. This cannot be undone."
         delete_confirm: Delete the team
+        actions_for: "Actions for {name}"
         deleted: Team deleted.
     permissions:
         open: Permissions
@@ -340,12 +351,15 @@ organization:
         saved: Permissions saved.
     members:
         title: Members
+        actions_for: "Actions for {email}"
+        change_role: Change role
         remove: Remove
         removed: Member removed.
         role_changed: Role changed.
         no_project: no project
     invitations:
         title: Pending invitations
+        actions_for: "Actions for the invitation of {email}"
         send: Invite
         new: Invite member
         new_title: Invite a member
@@ -367,9 +381,32 @@ organization:
         delete: Delete the project
         deleted: Project deleted.
         settings: Settings
+    project:
+        subtitle: "Project of {team}"
+        tab:
+            overview: Overview
+            environments: Environments
+            members: Members
+            settings: Settings
+        environment_limit: "{limit} per project, set by the team"
+        facts:
+            environments: Environments of this project
+            environment_limit: Environment limit
+            members: Project members
+            team: Team
+            id: Project ID
+        invite_description: "They receive a link valid 7 days to join this project; someone outside the team joins it as a guest."
+        name_help: Shown in the lists and the breadcrumb. The slug and the ID never change.
+        delete_title: Delete this project
+        delete_help: "Only an empty project can be deleted: remove its environments first. Its pending invitations are revoked."
+        delete_confirm_title: "Delete {name}?"
     environments:
         title: Environments
         create: Add
+        new: Add environment
+        actions_for: "Actions for {name}"
+        new_title: Add an environment
+        new_description: A production environment is flagged in the lists and the findings.
         created: Environment added.
         updated: Environment updated.
         deleted: Environment deleted.
@@ -386,6 +423,7 @@ organization:
         unlimited: unlimited
         reached: Quota reached.
         warning: More than 80 % used.
+        blocked: "{quota}: the team's limit is reached. Ask the instance administrator to raise it, or free a place first."
         of: "{usage} of {limit}"
         banner_warning: "{quota}: {usage} of {limit} used. New creations stop at the limit."
         banner_reached: "{quota}: the limit of {limit} is reached. Contact the instance administrator to raise it."

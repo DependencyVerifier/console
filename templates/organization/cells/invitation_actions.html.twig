@@ -1,6 +1,15 @@
-{%- import 'organization/_actions.html.twig' as ui -%}
-{%- set teamId = app.request.attributes.get('teamId') -%}
-<div class="flex justify-end gap-1">
-    {{ ui.button(path('organization_invitation_resend', {teamId: teamId, invitationId: row.id}), 'invitation_resend:' ~ row.id, 'organization.invitations.resend', 'outline') }}
-    {{ ui.button(path('organization_invitation_revoke', {teamId: teamId, invitationId: row.id}), 'invitation_revoke:' ~ row.id, 'organization.invitations.revoke', 'destructive') }}
+{%- import 'shared/_row_menu.html.twig' as menu -%}
+{%- set team_id = app.request.attributes.get('teamId') -%}
+<div class="flex justify-end">
+    <twig:DropdownMenu id="invitation-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+        <twig:DropdownMenu:Trigger>
+            <twig:Button variant="ghost" size="icon-sm" :aria-label="'organization.invitations.actions_for'|trans({email: row.email})" :title="'organization.invitations.actions_for'|trans({email: row.email})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+        </twig:DropdownMenu:Trigger>
+        <twig:DropdownMenu:Content class="w-max min-w-44">
+            {%- import 'shared/_row_menu.html.twig' as menu -%}
+        {{ menu.action(path('organization_invitation_resend', {teamId: team_id, invitationId: row.id}), 'action', 'invitation_resend:' ~ row.id, 'organization.invitations.resend') }}
+        <twig:DropdownMenu:Separator />
+        {{ menu.action(path('organization_invitation_revoke', {teamId: team_id, invitationId: row.id}), 'action', 'invitation_revoke:' ~ row.id, 'organization.invitations.revoke', 'destructive') }}
+        </twig:DropdownMenu:Content>
+    </twig:DropdownMenu>
 </div>

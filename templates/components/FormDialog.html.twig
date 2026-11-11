@@ -12,14 +12,27 @@
     ## string Variant of the trigger button.
     variant = 'default',
     ## string Size of the trigger button (`xs` in a list row).
-    size = 'default'
+    size = 'default',
+    ## boolean Hide the trigger: the dialog is opened from a row menu item (shared/_row_menu.html.twig).
+    hiddenTrigger = false,
+    ## string|null A quota or rule forbids the creation for now: the trigger is disabled, this reason shown on hover
+    ## and read by screen readers (the handler refuses anyway).
+    disabledReason = null
 -%}
 {#- One dialog for every form: the form is not in the page, it is loaded from its endpoint into a lazy frame at the
     first opening (Skeleton placeholder, Retry on failure) and reloaded at each opening.
     The kit Dialog appends its own `dialog` controller to the data-controller given here. -#}
-<twig:Dialog id="{{ id }}" data-controller="form-dialog" data-action="turbo:submit-end->form-dialog#submitted turbo:frame-load->form-dialog#focus">
+<twig:Dialog id="{{ id }}" data-controller="form-dialog" data-action="turbo:submit-end->form-dialog#submitted turbo:frame-load->form-dialog#focus keydown.enter->form-dialog#submitOnEnter">
     <twig:Dialog:Trigger>
-        <twig:Button variant="{{ variant }}" size="{{ size }}" {{ ...dialog_trigger_attrs|merge({'data-action': 'click->dialog#open click->form-dialog#load'}) }}>{{ trigger }}</twig:Button>
+        {%- if disabledReason is not null %}
+            {#- A disabled button gets no hover: the wrapper carries the reason. -#}
+            <span class="inline-flex cursor-not-allowed" title="{{ disabledReason }}" tabindex="0" aria-describedby="{{ id }}-disabled-reason">
+                <twig:Button variant="{{ variant }}" size="{{ size }}" disabled data-dialog-trigger-for="{{ id }}">{{ trigger }}</twig:Button>
+            </span>
+            <span id="{{ id }}-disabled-reason" class="sr-only">{{ disabledReason }}</span>
+        {%- else %}
+            <twig:Button variant="{{ variant }}" size="{{ size }}" data-dialog-trigger-for="{{ id }}" :hidden="hiddenTrigger" {{ ...dialog_trigger_attrs|merge({'data-action': 'click->dialog#open click->form-dialog#load'}) }}>{{ trigger }}</twig:Button>
+        {%- endif %}
     </twig:Dialog:Trigger>
     <twig:Dialog:Content class="text-start sm:max-w-lg">
         <twig:Dialog:Header class="items-start pe-8 text-start">

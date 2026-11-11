@@ -27,7 +27,7 @@ final readonly class DeleteEnvironmentController
             'environment_delete:'.$environmentId,
             static fn () => new DeleteEnvironment($environmentId, $projectId),
             'organization.environments.deleted',
-            new RouteReference(RouteCollection::PROJECT->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]),
+            new RouteReference(RouteCollection::PROJECT_ENVIRONMENTS->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]),
         );
     }
 }

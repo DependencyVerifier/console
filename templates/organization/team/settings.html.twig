@@ -9,7 +9,7 @@
                 <p class="mt-1 text-xs text-muted-foreground">{{ 'organization.team.name_help'|trans }}</p>
             </div>
             {{ form_start(rename_form, {action: path('organization_team_rename', {teamId: team.id}), attr: {class: 'flex flex-wrap items-end gap-2', novalidate: 'novalidate'}}) }}
-                <div class="min-w-48 flex-1">{{ form_row(rename_form.name) }}</div>
+                <div class="min-w-48 flex-1">{{ form_row(rename_form.name, {label: false, attr: {'aria-labelledby': 'team-name-title'}}) }}</div>
                 <twig:Button type="submit" variant="outline">{{ 'organization.team.rename'|trans }}</twig:Button>
             {{ form_end(rename_form) }}
         </section>

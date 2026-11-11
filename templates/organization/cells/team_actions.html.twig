@@ -1,17 +1,16 @@
-{%- import 'organization/_actions.html.twig' as actions -%}
-<div class="flex flex-wrap justify-end gap-1">
+{%- import 'shared/_row_menu.html.twig' as menu -%}
+<div class="flex justify-end">
     <twig:FormDialog
         id="edit-team-{{ row.id }}"
         :title="'organization.teams.edit_title'|trans({name: row.name})"
         :trigger="'organization.teams.edit'|trans"
         :src="path('organization_admin_team_edit', {teamId: row.id})"
-        variant="outline"
-        size="xs"
+        :hiddenTrigger="true"
     />
     {#- A plain confirmation: the dialog holds the field-less delete form, answered by a Turbo Stream (the list reloads). -#}
     <twig:Dialog id="delete-team-{{ row.id }}">
         <twig:Dialog:Trigger>
-            <twig:Button variant="destructive" size="xs" {{ ...dialog_trigger_attrs }}>{{ 'organization.teams.delete'|trans }}</twig:Button>
+            <twig:Button variant="destructive" size="xs" hidden data-dialog-trigger-for="delete-team-{{ row.id }}" {{ ...dialog_trigger_attrs }}>{{ 'organization.teams.delete'|trans }}</twig:Button>
         </twig:Dialog:Trigger>
         <twig:Dialog:Content class="text-start sm:max-w-md">
             <twig:Dialog:Header class="items-start pe-8 text-start">
@@ -29,4 +28,15 @@
             </twig:Dialog:Footer>
         </twig:Dialog:Content>
     </twig:Dialog>
+    <twig:DropdownMenu id="team-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+        <twig:DropdownMenu:Trigger>
+            <twig:Button variant="ghost" size="icon-sm" :aria-label="'organization.teams.actions_for'|trans({name: row.name})" :title="'organization.teams.actions_for'|trans({name: row.name})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+        </twig:DropdownMenu:Trigger>
+        <twig:DropdownMenu:Content class="w-max min-w-44">
+            {%- import 'shared/_row_menu.html.twig' as menu -%}
+        {{ menu.dialog('edit-team-' ~ row.id, 'organization.teams.edit') }}
+        <twig:DropdownMenu:Separator />
+        <twig:DropdownMenu:Item variant="destructive" data-controller="dialog-opener" data-dialog-opener-dialog-value="delete-team-{{ row.id }}" data-action="click->dialog-opener#open">{{ 'organization.teams.delete'|trans }}</twig:DropdownMenu:Item>
+        </twig:DropdownMenu:Content>
+    </twig:DropdownMenu>
 </div>

@@ -1,0 +1,64 @@
+{% extends 'organization/project/_layout.html.twig' %}
+{% form_theme rename_form 'shared/form/theme.html.twig' %}
+
+{% block tab %}
+    <div class="grid max-w-3xl gap-4">
+        {%- if project.can('project.edit') %}
+            <section class="grid gap-4 rounded-lg border p-4 sm:grid-cols-[12rem_minmax(0,1fr)]" aria-labelledby="project-name-title">
+                <div>
+                    <h2 id="project-name-title" class="text-sm font-semibold">{{ 'organization.team.name_title'|trans }}</h2>
+                    <p class="mt-1 text-xs text-muted-foreground">{{ 'organization.project.name_help'|trans }}</p>
+                </div>
+                {{ form_start(rename_form, {action: path('organization_project_rename', {teamId: project.teamId, projectId: project.id}), attr: {class: 'flex flex-wrap items-end gap-2', novalidate: 'novalidate'}}) }}
+                    <div class="min-w-48 flex-1">{{ form_row(rename_form.name, {label: false, attr: {'aria-labelledby': 'project-name-title'}}) }}</div>
+                    <twig:Button type="submit" variant="outline">{{ 'organization.projects.rename'|trans }}</twig:Button>
+                {{ form_end(rename_form) }}
+            </section>
+        {%- endif %}
+
+        <section class="grid gap-4 rounded-lg border p-4 sm:grid-cols-[12rem_minmax(0,1fr)]" aria-labelledby="project-identity-title">
+            <h2 id="project-identity-title" class="text-sm font-semibold">{{ 'organization.team.identity_title'|trans }}</h2>
+            <dl class="grid gap-3 text-sm">
+                <div>
+                    <dt class="text-xs text-muted-foreground">{{ 'organization.team.facts.slug'|trans }}</dt>
+                    <dd class="mt-0.5 font-mono">{{ project.slug }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-muted-foreground">{{ 'organization.project.facts.id'|trans }}</dt>
+                    <dd class="mt-0.5 font-mono break-all">{{ project.id }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        {%- if project.can('project.delete') %}
+            <section class="grid gap-4 rounded-lg border border-destructive/30 p-4 sm:grid-cols-[12rem_minmax(0,1fr)]" aria-labelledby="project-delete-title">
+                <div>
+                    <h2 id="project-delete-title" class="text-sm font-semibold text-destructive">{{ 'organization.project.delete_title'|trans }}</h2>
+                    <p class="mt-1 text-xs text-muted-foreground">{{ 'organization.project.delete_help'|trans }}</p>
+                </div>
+                <div class="flex items-center">
+                    <twig:Dialog id="delete-project">
+                        <twig:Dialog:Trigger>
+                            <twig:Button variant="destructive" {{ ...dialog_trigger_attrs }}>{{ 'organization.projects.delete'|trans }}</twig:Button>
+                        </twig:Dialog:Trigger>
+                        <twig:Dialog:Content class="text-start sm:max-w-md">
+                            <twig:Dialog:Header class="items-start pe-8 text-start">
+                                <twig:Dialog:Title>{{ 'organization.project.delete_confirm_title'|trans({name: project.name}) }}</twig:Dialog:Title>
+                                <twig:Dialog:Description>{{ 'organization.project.delete_help'|trans }}</twig:Dialog:Description>
+                            </twig:Dialog:Header>
+                            <twig:Dialog:Footer>
+                                <twig:Dialog:Close>
+                                    <twig:Button type="button" variant="outline" {{ ...dialog_close_attrs }}>{{ 'action.cancel'|trans }}</twig:Button>
+                                </twig:Dialog:Close>
+                                {#- A full visit: on success the project is gone, the answer is the Projects section. -#}
+                                {{ form_start(delete_form, {action: path('organization_project_delete', {teamId: project.teamId, projectId: project.id}), attr: {'data-turbo': 'false'}}) }}
+                                    <twig:Button type="submit" variant="destructive" class="w-full sm:w-auto">{{ 'organization.projects.delete'|trans }}</twig:Button>
+                                {{ form_end(delete_form) }}
+                            </twig:Dialog:Footer>
+                        </twig:Dialog:Content>
+                    </twig:Dialog>
+                </div>
+            </section>
+        {%- endif %}
+    </div>
+{% endblock %}

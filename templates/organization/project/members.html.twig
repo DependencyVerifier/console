@@ -1,0 +1,10 @@
+{% extends 'organization/project/_layout.html.twig' %}
+{% import 'organization/project/_layout.html.twig' as project_ui %}
+
+{% block primary_action %}
+    {%- if project.can('project.members.manage') %}{{ project_ui.invite_member(project, 'default') }}{% endif %}
+{% endblock %}
+
+{% block tab %}
+    <twig:DataTable :table="tables.members" :title="'organization.members.title'|trans" />
+{% endblock %}

@@ -1,0 +1,66 @@
+{#- Shared frame of the four project sections (reached from the sidebar, under "Projects"): breadcrumb, object header,
+    then the section. Variables: project (ProjectView), tab. -#}
+{% extends 'shared/layout/app.html.twig' %}
+
+{% block title %}{{ ('organization.project.tab.' ~ tab)|trans }} · {{ project.name }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_team_projects', {teamId: project.teamId}) }}">{{ 'organization.team.tab.projects'|trans }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Separator />
+            {%- if tab == 'overview' %}
+                <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ project.name }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+            {%- else %}
+                <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_project', {teamId: project.teamId, projectId: project.id}) }}">{{ project.name }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
+                <twig:Breadcrumb:Separator />
+                <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ ('organization.project.tab.' ~ tab)|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+            {%- endif %}
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    {{ include('shared/_flashes.html.twig') }}
+    <div id="action-alerts"></div>
+
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-3">
+            <span class="grid size-10 shrink-0 place-items-center rounded-lg border bg-muted text-muted-foreground" aria-hidden="true">
+                <twig:ux:icon name="lucide:layers" class="size-5" />
+            </span>
+            <div class="min-w-0">
+                <h1 class="truncate text-2xl font-semibold tracking-tight">{{ project.name }}</h1>
+                <p class="text-sm text-muted-foreground">{{ 'organization.project.subtitle'|trans({team: project.teamName}) }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">{% block primary_action %}{% endblock %}</div>
+    </header>
+
+    {% block tab %}{% endblock %}
+{% endblock %}
+
+{#- The "Add environment" and "Invite member" dialogs, shared by the overview shortcuts and the sections' action. -#}
+{% macro add_environment(project, variant) %}
+    <twig:FormDialog
+        id="create-environment"
+        :title="'organization.environments.new_title'|trans"
+        :description="'organization.environments.new_description'|trans"
+        :trigger="'organization.environments.new'|trans"
+        :src="path('organization_environment_create', {teamId: project.teamId, projectId: project.id})"
+        :variant="variant"
+        :disabledReason="project.environmentQuotaReached() ? 'organization.quotas.blocked'|trans({quota: 'quota.max_environments_per_project'|trans}) : null"
+    />
+{% endmacro %}
+
+{% macro invite_member(project, variant) %}
+    <twig:FormDialog
+        id="invite-project-member"
+        :title="'organization.invitations.new_title'|trans"
+        :description="'organization.project.invite_description'|trans"
+        :trigger="'organization.invitations.new'|trans"
+        :src="path('organization_project_invite', {teamId: project.teamId, projectId: project.id})"
+        :variant="variant"
+        :disabledReason="project.memberQuotaReached ? 'organization.quotas.blocked'|trans({quota: 'quota.max_members'|trans}) : null"
+    />
+{% endmacro %}

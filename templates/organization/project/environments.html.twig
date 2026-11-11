@@ -1,0 +1,10 @@
+{% extends 'organization/project/_layout.html.twig' %}
+{% import 'organization/project/_layout.html.twig' as project_ui %}
+
+{% block primary_action %}
+    {%- if project.can('project.environments.manage') %}{{ project_ui.add_environment(project, 'default') }}{% endif %}
+{% endblock %}
+
+{% block tab %}
+    <twig:DataTable :table="tables.environments" :title="'organization.environments.title'|trans" />
+{% endblock %}

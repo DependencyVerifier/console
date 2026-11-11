@@ -1,11 +1,24 @@
-{%- import 'organization/_actions.html.twig' as ui -%}
+{%- import 'shared/_row_menu.html.twig' as menu -%}
 {%- set params = {teamId: app.request.attributes.get('teamId'), projectId: app.request.attributes.get('projectId'), environmentId: row.id} -%}
-<div class="flex justify-end gap-1">
-    <form method="post" action="{{ path('organization_environment_update', params) }}" class="inline-flex items-center gap-1">
-        <input type="hidden" name="environment[_token]" value="{{ csrf_token('environment_update:' ~ row.id) }}">
-        <input type="hidden" name="environment[name]" value="{{ row.name }}">
-        {%- if not row.production %}<input type="hidden" name="environment[production]" value="1">{% endif -%}
-        <twig:Button type="submit" size="xs" variant="ghost">{{ (row.production ? 'organization.environments.unmark_production' : 'organization.environments.mark_production')|trans }}</twig:Button>
-    </form>
-    {{ ui.button(path('organization_environment_delete', params), 'environment_delete:' ~ row.id, 'organization.environments.delete', 'destructive') }}
+<div class="flex justify-end">
+    <twig:DropdownMenu id="environment-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+        <twig:DropdownMenu:Trigger>
+            <twig:Button variant="ghost" size="icon-sm" :aria-label="'organization.environments.actions_for'|trans({name: row.name})" :title="'organization.environments.actions_for'|trans({name: row.name})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+        </twig:DropdownMenu:Trigger>
+        <twig:DropdownMenu:Content class="w-max min-w-44">
+            {%- import 'shared/_row_menu.html.twig' as menu -%}
+        {#- The update keeps the name and flips the production flag (an unchecked checkbox sends nothing). -#}
+        <form method="post" action="{{ path('organization_environment_update', params) }}">
+            <input type="hidden" name="environment[_token]" value="{{ csrf_token('environment_update:' ~ row.id) }}">
+            <input type="hidden" name="environment[name]" value="{{ row.name }}">
+            {%- if not row.production %}<input type="hidden" name="environment[production]" value="1">{% endif -%}
+            <twig:DropdownMenu:Item type="submit">
+                <twig:ux:icon name="lucide:server" />
+                {{ (row.production ? 'organization.environments.unmark_production' : 'organization.environments.mark_production')|trans }}
+            </twig:DropdownMenu:Item>
+        </form>
+        <twig:DropdownMenu:Separator />
+        {{ menu.action(path('organization_environment_delete', params), 'action', 'environment_delete:' ~ row.id, 'organization.environments.delete', 'destructive') }}
+        </twig:DropdownMenu:Content>
+    </twig:DropdownMenu>
 </div>

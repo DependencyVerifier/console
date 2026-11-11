@@ -12,7 +12,7 @@
     {%- set _breadcrumb %}{% block breadcrumb %}{% endblock %}{% endset -%}
     {%- set _main %}{% block main %}{% endblock %}{% endset -%}
     <twig:Sidebar:Provider>
-        <twig:AppSidebar active="{{ nav_active|default('overview') }}" :team="current_team|default(null)" />
+        <twig:AppSidebar active="{{ nav_active|default('overview') }}" :team="current_team|default(null)" :project="current_project|default(null)" />
         <twig:Sidebar:Inset>
             <header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
                 <twig:Sidebar:Trigger class="-ms-1">

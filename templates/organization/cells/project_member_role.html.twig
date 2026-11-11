@@ -1,2 +1,5 @@
-{%- import 'organization/_actions.html.twig' as ui -%}
-{{ ui.role(path('organization_project_member_role', {teamId: app.request.attributes.get('teamId'), projectId: app.request.attributes.get('projectId'), userId: row.userId}), 'project_member_role:' ~ row.userId, ['project_admin', 'project_member', 'project_viewer'], row.role) }}
+{#- The role as a badge (it changes from the row menu), then the extra permissions granted on top. -#}
+<span class="inline-flex flex-wrap items-center gap-1">
+    <twig:Badge variant="secondary">{{ ('role.' ~ row.role)|trans }}</twig:Badge>
+    {%- for extra in row.extras %}<twig:Badge variant="outline" class="font-mono">{{ extra }}</twig:Badge>{% endfor -%}
+</span>

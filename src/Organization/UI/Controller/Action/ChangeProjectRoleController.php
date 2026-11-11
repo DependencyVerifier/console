@@ -29,7 +29,7 @@ final readonly class ChangeProjectRoleController
             'project_member_role:'.$userId,
             static fn ($form) => new ChangeProjectRole($projectId, $userId, FormData::string($form, 'role')),
             'organization.members.role_changed',
-            new RouteReference(RouteCollection::PROJECT->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]), RoleType::class, ['project' => true],
+            new RouteReference(RouteCollection::PROJECT_MEMBERS->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]), RoleType::class, ['project' => true],
         );
     }
 }

@@ -48,7 +48,7 @@ final class OrganizationAccessTest extends IdentityWebTestCase
 
         // A token for "remove Bob" is legitimately obtained on Alpha; replayed on Beta, the handler judges the real team.
         $row = array_values(array_filter(DataTables::draw($this->client, '/teams/'.$a.'/members', 'team_members')['data'], static fn (array $r): bool => u($r['email'])->containsAny('bob@example.com')));
-        $form = DataTables::cell($row[0]['actions'])->filter('form')->form();
+        $form = DataTables::cell($row[0]['actions'])->filter('form[action$="/remove"]')->form();
         $this->client->request('POST', \sprintf('/teams/%s/members/%s/remove', $b, $bobId), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
         self::assertResponseStatusCodeSame(404);
         self::assertSame(1, $this->fetchInt('SELECT COUNT(*) FROM organization_team_membership WHERE team_id = ? AND user_id = ?', [$b, $bobId]));
@@ -92,7 +92,8 @@ final class OrganizationAccessTest extends IdentityWebTestCase
         $this->logIn('alice@example.com');
 
         $row = DataTables::draw($this->client, '/teams/'.$teamId.'/members', 'team_members')['data'][0];
-        $form = DataTables::cell($row['role'])->filter('form')->form(['role[role]' => 'team_member']);
+        // "Change role" of the row menu: one form per role.
+        $form = DataTables::cell($row['actions'])->filter('form:has(input[name="role[role]"][value="team_member"])')->form();
         $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
 
         self::assertResponseStatusCodeSame(422);
@@ -186,19 +187,14 @@ final class OrganizationAccessTest extends IdentityWebTestCase
     }
 
     /**
-     * A team invitation goes through the "Invite member" dialog of the team page, a project one through the form of
-     * the project page.
+     * Through the "Invite member" dialog of the team page or of the project page.
      */
     private function invite(string $page, string $email, string $role): string
     {
-        if (u($page)->containsAny('/projects/')) {
-            $form = $this->client->request('GET', $page)->filter('form[action$="/invite"]')->form(['invite[email]' => $email, 'invite[role]' => $role]);
-            $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
-        } else {
-            $frame = ['HTTP_TURBO_FRAME' => 'invite-member-form'];
-            $form = $this->client->request('GET', $page.'/members/invite', server: $frame)->filter('turbo-frame#invite-member-form form')->form(['invite[email]' => $email, 'invite[role]' => $role]);
-            $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
-        }
+        $id = u($page)->containsAny('/projects/') ? 'invite-project-member-form' : 'invite-member-form';
+        $frame = ['HTTP_TURBO_FRAME' => $id];
+        $form = $this->client->request('GET', $page.'/members/invite', server: $frame)->filter(\sprintf('turbo-frame#%s form', $id))->form(['invite[email]' => $email, 'invite[role]' => $role]);
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
 
         self::assertResponseIsSuccessful();
 

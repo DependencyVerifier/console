@@ -31,18 +31,18 @@ final class TeamTabsTest extends IdentityWebTestCase
         $id = $team->id()->toString();
         $this->logIn('alice@example.com');
 
-        foreach (['' => 'Overview', '/projects' => 'Projects', '/members' => 'Members', '/settings' => 'Settings'] as $suffix => $label) {
+        foreach (['' => 'Overview', '/projects' => 'Projects', '/members' => 'Team members', '/settings' => 'Team settings'] as $suffix => $label) {
             $this->client->request('GET', '/teams/'.$id.$suffix);
             self::assertResponseIsSuccessful($label);
             self::assertSelectorTextSame('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]', $label, 'The section is picked in the sidebar.');
             self::assertSame('/teams/'.$id.$suffix, $this->client->getCrawler()->filter('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]')->attr('href'));
         }
-        self::assertSame(['Overview', 'Projects', 'Members', 'Settings'], $this->sections());
+        self::assertSame(['Overview', 'Projects', 'Team members', 'Team settings'], $this->sections());
 
         $this->client->getCookieJar()->clear();
         $this->logIn('bob@example.com');
         $this->client->request('GET', '/teams/'.$id);
-        self::assertSame(['Overview', 'Projects', 'Members'], $this->sections(), 'A TEAM_MEMBER has no Settings section.');
+        self::assertSame(['Overview', 'Projects', 'Team members'], $this->sections(), 'A TEAM_MEMBER has no Settings section.');
         $this->client->request('GET', '/teams/'.$id.'/settings');
         self::assertResponseStatusCodeSame(403);
         self::assertCount(1, AuditLog::entries($this->connection(), 'security.access_denied'), 'The refusal is audited once.');

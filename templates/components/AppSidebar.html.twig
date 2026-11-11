@@ -2,7 +2,9 @@
     ## string Key of the active navigation entry.
     active = 'overview',
     ## string|null Id of the team being browsed.
-    team = null
+    team = null,
+    ## array{id:string,name:string,tab:string,tabs:list<string>}|null The project being browsed, listed under Projects.
+    project = null
 -%}
 {%- set user = app.user -%}
 {%- set myTeams = user ? sidebar_teams() : [] -%}
@@ -15,12 +17,20 @@
     {key: 'team_overview', title: 'nav.overview'|trans, url: path('organization_team', {teamId: currentTeam}), icon: 'lucide:layout-dashboard'},
     {key: 'team_projects', title: 'nav.projects'|trans, url: path('organization_team_projects', {teamId: currentTeam}), icon: 'lucide:layers'},
 ]|merge(roleKey != 'team_guest' ? [
-    {key: 'team_members', title: 'nav.members'|trans, url: path('organization_team_members', {teamId: currentTeam}), icon: 'lucide:users'},
+    {key: 'team_members', title: 'nav.team_members'|trans, url: path('organization_team_members', {teamId: currentTeam}), icon: 'lucide:users'},
 ] : [])|merge(roleKey == 'team_admin' or superAdmin ? [
-    {key: 'team_settings', title: 'nav.settings'|trans, url: path('organization_team_settings', {teamId: currentTeam}), icon: 'lucide:settings'},
+    {key: 'team_settings', title: 'nav.team_settings'|trans, url: path('organization_team_settings', {teamId: currentTeam}), icon: 'lucide:settings'},
 ] : []) : [
     {key: 'overview', title: 'nav.overview'|trans, url: path('shared_home'), icon: 'lucide:layout-dashboard'},
 ] -%}
+{#- The project being browsed has its own group, titled with its name, below the team's: its environments, members and
+    settings are the project's, never the team's. -#}
+{%- set projectNav = project ? project.tabs|map(t => {
+    key: 'project_' ~ t,
+    title: ('nav.project_' ~ t)|trans,
+    url: path({overview: 'organization_project', environments: 'organization_project_environments', members: 'organization_project_members', settings: 'organization_project_settings'}[t], {teamId: currentTeam, projectId: project.id}),
+    icon: {overview: 'lucide:layout-dashboard', environments: 'lucide:server', members: 'lucide:users', settings: 'lucide:settings'}[t],
+}) : [] -%}
 {%- set data = {
     user: {name: user ? user.label : '', email: user ? user.userIdentifier : ''},
     teams: myTeams,
@@ -44,7 +54,10 @@
         <twig:TeamSwitcher :teams="data.teams" :current="currentTeam" />
     </twig:Sidebar:Header>
     <twig:Sidebar:Content>
-        <twig:NavMain :items="data.navMain" :active="active" />
+        <twig:NavMain :items="data.navMain" :active="active" :label="currentTeam ? 'nav.team_group'|trans : null" />
+        {%- if projectNav|length %}
+            <twig:NavMain :items="projectNav" :active="active" :label="'nav.project_group'|trans({name: project.name})" />
+        {%- endif %}
         {%- if data.navSecondary %}
             <twig:NavMain :items="data.navSecondary" :active="active" :label="'nav.administration'|trans" class="mt-auto" />
         {%- endif %}

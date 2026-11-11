@@ -1,17 +1,26 @@
 {#- Server-side table (omines/datatables-bundle + datatables.net), driven by datatable_controller.ts. The rows come
-    from the page URL (POST, `_dt` = table name) through the query bus. Reloaded after any Turbo Stream action. -#}
+    from the page URL (POST, `_dt` = table name) through the query bus. Reloaded after any Turbo Stream action.
+    A bordered card: its header line holds the title, the actions (block `actions`) and the search, always shown; the
+    footer (info, paging) hides while there is a single page. -#}
 {%- props
     ## Omines\DataTablesBundle\DataTable The table built by the controller.
-    table
+    table,
+    ## string|null Title of the card (translated).
+    title = null
 -%}
 {%- set config = datatable_config(table) -%}
-<div data-controller="datatable"
+<section data-controller="datatable"
      data-datatable-name-value="{{ config.name }}"
      data-datatable-url-value="{{ app.request.requestUri }}"
      data-datatable-columns-value="{{ config.columns|json_encode }}"
      data-datatable-language-value="{{ config.language|json_encode }}"
      data-datatable-page-length-value="{{ config.pageLength }}"
-     {{ attributes.defaults({class: 'w-full'}) }}>
+     {% if title %}aria-label="{{ title }}"{% endif %}
+     {{ attributes.defaults({class: 'dt-card w-full rounded-xl border bg-card text-card-foreground'}) }}>
+    <div data-datatable-target="header" class="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
+        {%- if title %}<h2 class="text-sm font-semibold">{{ title }}</h2>{% endif %}
+        <div class="flex items-center gap-2">{% block actions %}{% endblock %}</div>
+    </div>
     <table data-datatable-target="table" class="w-full caption-bottom text-sm">
         <thead>
             <tr>
@@ -22,4 +31,4 @@
         </thead>
         <tbody></tbody>
     </table>
-</div>
+</section>

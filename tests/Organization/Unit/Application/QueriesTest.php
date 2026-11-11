@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Organization\Unit\Application;
 
+use Organization\Application\Command\QuotaInput;
 use Organization\Application\Query\Instance\GetDefaultQuotas;
 use Organization\Application\Query\Instance\Handler\GetDefaultQuotasHandler;
 use Organization\Application\Query\Invitation\Handler\FindPendingInvitationHandler;
@@ -28,8 +29,11 @@ use Organization\Application\Query\Team\ListTeams;
 use Organization\Application\Query\View\MemberRow;
 use Organization\Application\Query\View\QuotaUsage;
 use Organization\Application\Query\View\TeamSummary;
+use Organization\Domain\Model\EnvironmentId;
+use Organization\Domain\Model\ProjectId;
 use Organization\Domain\Model\ProjectRole;
 use Organization\Domain\Model\QuotaName;
+use Organization\Domain\Model\TeamId;
 use Organization\Domain\Model\TeamQuotas;
 use Organization\Domain\Model\TeamRole;
 use PHPUnit\Framework\Attributes\Test;
@@ -42,6 +46,7 @@ use Shared\Application\Contract\Organization\FindPendingInvitation;
 use Shared\Application\Contract\Organization\PendingInvitation;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
+use Symfony\Component\Uid\Uuid;
 use Tests\Organization\Support\FixedQueries;
 use Tests\Organization\Support\RecordingReadModel;
 use Tests\Organization\Support\Teams;
@@ -167,22 +172,38 @@ final class QueriesTest extends TestCase
     public function it_should_show_a_project_with_its_gestures(): void
     {
         $world = $this->world()->as(Teams::GUEST, TeamRole::Guest, ProjectRole::Admin);
-        $view = new GetProjectHandler($world->permissions, $world->projects, $world->teams)(new GetProject(Teams::PROJECT));
+        $view = new GetProjectHandler($world->permissions, $world->projects, $world->teams, $world->invitations, $world->clock)(new GetProject(Teams::PROJECT));
 
         self::assertSame([Teams::PROJECT, Teams::TEAM, 'Platform', 'Shop', 0], [$view->id, $view->teamId, $view->teamName, $view->name, $view->environments]);
+        self::assertSame(['shop', 0], [$view->slug, $view->memberCount], 'A TEAM_ADMIN creator gets no project membership.');
+        self::assertEquals(Teams::now(), $view->createdAt);
         self::assertSame(TeamQuotas::defaults()->get(QuotaName::MaxEnvironmentsPerProject)->toStorage(), $view->environmentQuota);
         self::assertSame(['project.edit' => true, 'project.delete' => false, 'project.members.manage' => true, 'project.environments.manage' => true], $view->can);
 
         $world->as(Teams::GUEST, TeamRole::Guest, ProjectRole::Viewer);
-        self::assertSame(['project.edit' => false, 'project.delete' => false, 'project.members.manage' => false, 'project.environments.manage' => false], new GetProjectHandler($world->permissions, $world->projects, $world->teams)(new GetProject(Teams::PROJECT))->can);
+        self::assertSame(['project.edit' => false, 'project.delete' => false, 'project.members.manage' => false, 'project.environments.manage' => false], new GetProjectHandler($world->permissions, $world->projects, $world->teams, $world->invitations, $world->clock)(new GetProject(Teams::PROJECT))->can);
+        $world->projects->find(ProjectId::fromString(Teams::PROJECT))?->admit(Uuid::fromString(Teams::MEMBER), ProjectRole::Viewer, Teams::now());
+        self::assertSame(1, new GetProjectHandler($world->permissions, $world->projects, $world->teams, $world->invitations, $world->clock)(new GetProject(Teams::PROJECT))->memberCount);
+
+        // The quota states that disable the creation buttons.
+        $team = $world->teams->find(TeamId::fromString(Teams::TEAM));
+        self::assertNotNull($team);
+        $team->changeQuotas(QuotaInput::teamQuotas([...array_fill_keys(array_map(static fn (QuotaName $n): string => $n->value, QuotaName::cases()), null), QuotaName::MaxMembers->value => 2, QuotaName::MaxEnvironmentsPerProject->value => 1]));
+        $handler = new GetProjectHandler($world->permissions, $world->projects, $world->teams, $world->invitations, $world->clock);
+        self::assertFalse($handler(new GetProject(Teams::PROJECT))->memberQuotaReached, '1 active member of 2.');
+        self::assertFalse($handler(new GetProject(Teams::PROJECT))->environmentQuotaReached());
+        $world->invitations->pendingOfTeam = 1;
+        self::assertTrue($handler(new GetProject(Teams::PROJECT))->memberQuotaReached, 'Pending invitations count.');
+        $world->projects->find(ProjectId::fromString(Teams::PROJECT))?->addEnvironment(EnvironmentId::of(Uuid::v7()), 'prod', true);
+        self::assertTrue($handler(new GetProject(Teams::PROJECT))->environmentQuotaReached());
 
         $world->as(Teams::GUEST, TeamRole::Guest);
-        $this->assertNotFound(static fn () => new GetProjectHandler($world->permissions, $world->projects, $world->teams)(new GetProject(Teams::PROJECT)));
-        $this->assertNotFound(static fn () => new GetProjectHandler($world->asSuperAdmin()->permissions, $world->projects, $world->teams)(new GetProject(Teams::OTHER_TEAM)));
+        $this->assertNotFound(static fn () => new GetProjectHandler($world->permissions, $world->projects, $world->teams, $world->invitations, $world->clock)(new GetProject(Teams::PROJECT)));
+        $this->assertNotFound(static fn () => new GetProjectHandler($world->asSuperAdmin()->permissions, $world->projects, $world->teams, $world->invitations, $world->clock)(new GetProject(Teams::OTHER_TEAM)));
 
         $orphan = new World()->asSuperAdmin();
         $orphan->projects->add(Teams::project());
-        $this->assertNotFound(static fn () => new GetProjectHandler($orphan->permissions, $orphan->projects, $orphan->teams)(new GetProject(Teams::PROJECT)));
+        $this->assertNotFound(static fn () => new GetProjectHandler($orphan->permissions, $orphan->projects, $orphan->teams, $orphan->invitations, $orphan->clock)(new GetProject(Teams::PROJECT)));
     }
 
     #[Test]

@@ -1,0 +1,23 @@
+{% extends 'organization/project/_layout.html.twig' %}
+{% import 'organization/project/_layout.html.twig' as project_ui %}
+
+{% block tab %}
+    <twig:MetaGrid :items="[
+        {label: 'organization.project.facts.environments'|trans, value: project.environments},
+        {label: 'organization.project.facts.environment_limit'|trans, value: project.environmentQuota is null ? 'organization.quotas.unlimited'|trans : 'organization.project.environment_limit'|trans({limit: project.environmentQuota})},
+        {label: 'organization.project.facts.members'|trans, value: project.memberCount},
+        {label: 'organization.team.facts.created'|trans, value: project.createdAt|date('Y-m-d')},
+        {label: 'organization.team.facts.slug'|trans, value: project.slug, mono: true},
+        {label: 'organization.project.facts.id'|trans, value: project.id, mono: true},
+    ]" />
+
+    {%- if project.can('project.environments.manage') or project.can('project.members.manage') %}
+        <section class="flex flex-col gap-3" aria-labelledby="project-shortcuts-title">
+            <h2 id="project-shortcuts-title" class="text-base font-semibold">{{ 'organization.team.shortcuts'|trans }}</h2>
+            <div class="flex flex-wrap gap-2">
+                {%- if project.can('project.environments.manage') %}{{ project_ui.add_environment(project, 'outline') }}{% endif %}
+                {%- if project.can('project.members.manage') %}{{ project_ui.invite_member(project, 'outline') }}{% endif %}
+            </div>
+        </section>
+    {%- endif %}
+{% endblock %}

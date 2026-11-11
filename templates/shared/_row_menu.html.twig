@@ -1,0 +1,49 @@
+{#- Items of a row menu (a kit DropdownMenu with a ⋯ trigger, written in each cell). An action is a form whose submit button IS the menu item (never a button inside a
+    button: the browser would close the first one and the click would submit nothing). -#}
+
+{#- A field-less action (`<form name>[_token]`, CSRF token id given), answered by a Turbo Stream. -#}
+{%- macro action(url, form_name, token_id, label, variant, icon) -%}
+    <form method="post" action="{{ url }}">
+        <input type="hidden" name="{{ form_name }}[_token]" value="{{ csrf_token(token_id) }}">
+        <twig:DropdownMenu:Item type="submit" variant="{{ variant|default('default') }}">
+            {%- if icon|default(null) %}<twig:ux:icon name="{{ icon }}" />{% endif -%}
+            {{ label|trans }}
+        </twig:DropdownMenu:Item>
+    </form>
+{%- endmacro -%}
+
+{#- "Change role": a sub-menu opening towards the start (the menu sits at the right edge), one form per role
+    (`role[role]`, `role[_token]`), the current role checked and not submittable. -#}
+{%- macro role(url, token_id, roles, current) -%}
+    <twig:DropdownMenu:Sub>
+        <twig:DropdownMenu:SubTrigger>
+            <twig:ux:icon name="lucide:user-round" />
+            {{ 'organization.members.change_role'|trans }}
+        </twig:DropdownMenu:SubTrigger>
+        <twig:DropdownMenu:SubContent class="start-auto end-full ms-0 me-1">
+            {%- for role in roles %}
+                {%- if role == current %}
+                    <twig:DropdownMenu:Item disabled aria-checked="true" class="font-medium">
+                        <twig:ux:icon name="lucide:check" />
+                        {{ ('role.' ~ role)|trans }}
+                    </twig:DropdownMenu:Item>
+                {%- else %}
+                    <form method="post" action="{{ url }}">
+                        <input type="hidden" name="role[_token]" value="{{ csrf_token(token_id) }}">
+                        <input type="hidden" name="role[role]" value="{{ role }}">
+                        <twig:DropdownMenu:Item type="submit" class="ps-7">{{ ('role.' ~ role)|trans }}</twig:DropdownMenu:Item>
+                    </form>
+                {%- endif %}
+            {%- endfor %}
+        </twig:DropdownMenu:SubContent>
+    </twig:DropdownMenu:Sub>
+{%- endmacro -%}
+
+{#- Opens a <twig:FormDialog> rendered next to the menu (a dialog inside the menu would close with it): clicks the
+    dialog's hidden trigger. -#}
+{%- macro dialog(dialog_id, label, icon) -%}
+    <twig:DropdownMenu:Item data-controller="dialog-opener" data-dialog-opener-dialog-value="{{ dialog_id }}" data-action="click->dialog-opener#open">
+        {%- if icon|default(null) %}<twig:ux:icon name="{{ icon }}" />{% endif -%}
+        {{ label|trans }}
+    </twig:DropdownMenu:Item>
+{%- endmacro -%}

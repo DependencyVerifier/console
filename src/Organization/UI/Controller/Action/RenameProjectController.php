@@ -29,7 +29,7 @@ final readonly class RenameProjectController
             'project_rename:'.$projectId,
             static fn ($form) => new RenameProject($projectId, FormData::string($form, 'name')),
             'organization.projects.renamed',
-            new RouteReference(RouteCollection::PROJECT->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]), NameType::class, [],
+            new RouteReference(RouteCollection::PROJECT_SETTINGS->prefixed(), ['teamId' => $teamId, 'projectId' => $projectId]), NameType::class, [],
         );
     }
 }

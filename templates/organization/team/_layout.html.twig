@@ -48,6 +48,7 @@
         :trigger="'organization.projects.new'|trans"
         :src="path('organization_project_create', {teamId: team.id})"
         :variant="variant"
+        :disabledReason="team.quotaReached('max_projects') ? 'organization.quotas.blocked'|trans({quota: 'quota.max_projects'|trans}) : null"
     />
 {% endmacro %}
 
@@ -59,5 +60,6 @@
         :trigger="'organization.invitations.new'|trans"
         :src="path('organization_team_invite', {teamId: team.id})"
         :variant="variant"
+        :disabledReason="team.quotaReached('max_members') ? 'organization.quotas.blocked'|trans({quota: 'quota.max_members'|trans}) : null"
     />
 {% endmacro %}

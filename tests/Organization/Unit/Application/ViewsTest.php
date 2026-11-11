@@ -17,8 +17,13 @@ final class ViewsTest extends TestCase
     #[Test]
     public function it_should_deny_any_gesture_it_does_not_list(): void
     {
-        $team = new TeamView('t', 'Platform', 'platform', 'team_admin', true, [], ['team.edit' => true, 'team.audit.view' => false], 1, 0, 0, new \DateTimeImmutable());
-        $project = new ProjectView('p', 't', 'Platform', 'Shop', 0, 3, ['project.edit' => true, 'project.delete' => false]);
+        $team = new TeamView('t', 'Platform', 'platform', 'team_admin', true, [new QuotaUsage('max_projects', 2, 2, true), new QuotaUsage('max_members', 5, 1, true)], ['team.edit' => true, 'team.audit.view' => false], 1, 0, 0, new \DateTimeImmutable());
+        self::assertTrue($team->quotaReached('max_projects'));
+        self::assertFalse($team->quotaReached('max_members'));
+        self::assertFalse($team->quotaReached('max_agents'), 'An unknown quota never blocks.');
+        self::assertFalse(new ProjectView('p', 't', 'Platform', 'Shop', 5, null, [], 'shop', 0, new \DateTimeImmutable(), false)->environmentQuotaReached(), 'Unlimited.');
+        self::assertTrue(new ProjectView('p', 't', 'Platform', 'Shop', 4, 3, [], 'shop', 0, new \DateTimeImmutable(), false)->environmentQuotaReached(), 'Over a lowered quota.');
+        $project = new ProjectView('p', 't', 'Platform', 'Shop', 0, 3, ['project.edit' => true, 'project.delete' => false], 'shop', 0, new \DateTimeImmutable(), false);
 
         foreach ([$team, $project] as $view) {
             self::assertFalse($view->can('unknown.gesture'));

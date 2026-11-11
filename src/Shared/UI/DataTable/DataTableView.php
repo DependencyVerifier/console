@@ -35,7 +35,7 @@ final readonly class DataTableView
      */
     public function language(): array
     {
-        $keys = ['processing', 'search', 'lengthMenu', 'info', 'infoEmpty', 'infoFiltered', 'loadingRecords', 'zeroRecords', 'emptyTable'];
+        $keys = ['processing', 'search', 'searchPlaceholder', 'lengthMenu', 'info', 'infoEmpty', 'infoFiltered', 'loadingRecords', 'zeroRecords', 'emptyTable'];
         $language = [];
         foreach ($keys as $key) {
             $language[$key] = $this->translator->trans('datatable.'.$key);

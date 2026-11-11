@@ -14,7 +14,7 @@ interface ColumnMeta {
  * persisted by the library. The table reloads after every Turbo Stream (an action of the page succeeded or failed).
  */
 export default class extends Controller<HTMLElement> {
-    static targets = ['table'];
+    static targets = ['table', 'header'];
 
     static values = {
         name: String,
@@ -25,6 +25,7 @@ export default class extends Controller<HTMLElement> {
     };
 
     declare readonly tableTarget: HTMLTableElement;
+    declare readonly headerTarget: HTMLElement;
     declare readonly nameValue: string;
     declare readonly urlValue: string;
     declare readonly columnsValue: ColumnMeta[];
@@ -42,8 +43,15 @@ export default class extends Controller<HTMLElement> {
             processing: true,
             autoWidth: false,
             pageLength: this.pageLengthValue,
-            lengthMenu: [10, 25, 50, 100],
             order: [],
+            // One header line: the card title and actions (rendered by Twig), then the search; info and paging below.
+            layout: {
+                topStart: this.headerTarget,
+                topEnd: 'search',
+                bottomStart: 'info',
+                bottomEnd: 'paging',
+            },
+            drawCallback: () => this.#markSize(),
             language: this.languageValue,
             columns: this.columnsValue.map((column) => ({
                 data: column.name,
@@ -60,6 +68,15 @@ export default class extends Controller<HTMLElement> {
 
         this.#table = new DataTable(this.tableTarget, config);
         document.addEventListener('turbo:before-stream-render', this.#reload);
+    }
+
+    /** `data-single-page`: everything fits on one page, the footer (info, paging) hides. */
+    #markSize(): void {
+        if (null === this.#table) {
+            return;
+        }
+
+        this.element.toggleAttribute('data-single-page', this.#table.page.info().pages <= 1);
     }
 
     disconnect(): void {

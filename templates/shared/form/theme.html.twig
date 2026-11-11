@@ -29,6 +29,18 @@
     </span>
 {%- endblock checkbox_widget -%}
 
+{#- A single checkbox: the box then its label on one line, help under it. -#}
+{%- block checkbox_row -%}
+    <div data-slot="field" class="group/field flex flex-col gap-1"{% if not valid %} data-invalid="true"{% endif %}>
+        <label for="{{ id }}" class="flex w-fit cursor-pointer items-start gap-2 text-sm leading-snug font-medium select-none">
+            {{- form_widget(form) -}}
+            <span>{{ (label is empty ? name|humanize : label)|trans({}, translation_domain) }}</span>
+        </label>
+        {{- form_help(form) -}}
+        {{- form_errors(form) -}}
+    </div>
+{%- endblock checkbox_row -%}
+
 {#- Several checkboxes (a multiple, expanded choice): one bordered list, a row per choice, the whole row clickable. -#}
 {%- block choice_widget_expanded -%}
     <div {{ block('widget_container_attributes') }} class="divide-y rounded-lg border">

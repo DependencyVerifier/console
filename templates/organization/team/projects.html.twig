@@ -7,5 +7,5 @@
 
 {#- Always the table, even empty (its own "Nothing here yet"): a creation from the dialog reloads the DataTables only. -#}
 {% block tab %}
-    <twig:DataTable :table="tables.projects" />
+    <twig:DataTable :table="tables.projects" :title="'organization.projects.title'|trans" />
 {% endblock %}
