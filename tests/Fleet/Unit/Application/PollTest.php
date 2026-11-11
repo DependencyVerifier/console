@@ -27,6 +27,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Audit\Target;
 use Shared\Application\Contract\Organization\GetTeamQuota;
+use Shared\Domain\BusinessRuleViolated;
 use Symfony\Component\Uid\Uuid;
 use Tests\Fleet\Support\Fleet;
 use Tests\Fleet\Support\FleetWorld;
@@ -130,8 +131,8 @@ final class PollTest extends TestCase
             try {
                 $world->poll()($this->poll([$result]));
                 self::fail('Malformed: '.json_encode($result));
-            } catch (ProtocolRefusal $refusal) {
-                self::assertSame(Problem::InvalidPayload, $refusal->problem);
+            } catch (BusinessRuleViolated $refusal) {
+                self::assertSame(Problem::InvalidPayload->value, $refusal->ruleKey());
             }
         }
     }

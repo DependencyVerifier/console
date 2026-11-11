@@ -8,6 +8,7 @@ use Fleet\Application\Port\NonceStore;
 use Fleet\Application\Port\SignatureVerifier;
 use Fleet\Domain\Model\AgentPublicKey;
 use Psr\Clock\ClockInterface;
+use Shared\Application\Protocol\AgentPayload;
 
 use function Symfony\Component\String\b;
 use function Symfony\Component\String\u;

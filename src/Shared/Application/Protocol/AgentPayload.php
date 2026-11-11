@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Fleet\Application\Protocol;
+namespace Shared\Application\Protocol;
 
 /**
- * A JSON request body of protocol v1, read field by field: unknown fields are ignored (§2), a wrong type or a
+ * A JSON request body of the agent protocol v1 (Fleet, Inventory…), read field by field: unknown fields are ignored (§2), a wrong type or a
  * missing required field is `invalid_payload`, any `protocol_version` but 1 is `unsupported_protocol_version`.
  */
 final readonly class AgentPayload
@@ -24,17 +24,17 @@ final readonly class AgentPayload
         try {
             $fields = json_decode($body, true, 16, \JSON_THROW_ON_ERROR | \JSON_BIGINT_AS_STRING);
         } catch (\JsonException) {
-            throw new ProtocolRefusal(Problem::InvalidPayload, 'The body is not JSON.');
+            throw PayloadRefused::invalid('The body is not JSON.');
         }
 
         if (!\is_array($fields) || array_is_list($fields)) {
-            throw new ProtocolRefusal(Problem::InvalidPayload, 'The body is not a JSON object.');
+            throw PayloadRefused::invalid('The body is not a JSON object.');
         }
 
         /** @var array<string, mixed> $fields */
         $payload = new self($fields);
         if (1 !== ($fields['protocol_version'] ?? null)) {
-            throw new ProtocolRefusal(Problem::UnsupportedProtocolVersion, 'This console speaks protocol version 1.');
+            throw PayloadRefused::unsupportedVersion();
         }
 
         return $payload;
@@ -79,6 +79,21 @@ final readonly class AgentPayload
     }
 
     /**
+     * A list of scalars (strings, numbers…), or null when absent.
+     *
+     * @return list<mixed>|null
+     */
+    public function listOrNull(string $name): ?array
+    {
+        $value = $this->fields[$name] ?? null;
+        if (null === $value) {
+            return null;
+        }
+
+        return \is_array($value) && array_is_list($value) ? $value : throw self::invalid($name);
+    }
+
+    /**
      * @return list<self>
      */
     public function objects(string $name): array
@@ -101,8 +116,8 @@ final readonly class AgentPayload
         return $objects;
     }
 
-    private static function invalid(string $name): ProtocolRefusal
+    private static function invalid(string $name): PayloadRefused
     {
-        return new ProtocolRefusal(Problem::InvalidPayload, \sprintf('Field "%s" is missing or has the wrong type.', $name));
+        return PayloadRefused::invalid(\sprintf('Field "%s" is missing or has the wrong type.', $name));
     }
 }

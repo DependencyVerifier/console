@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Fleet\Application\Command\Agent\Handler;
 
 use Fleet\Application\Command\Agent\RecordAgentPoll;
-use Fleet\Application\Protocol\AgentPayload;
 use Fleet\Application\Protocol\OrderSigner;
 use Fleet\Application\Protocol\Problem;
 use Fleet\Application\Protocol\ProtocolRefusal;
@@ -21,6 +20,7 @@ use Fleet\Domain\Repository\AgentRepository;
 use Fleet\Domain\Repository\HostRepository;
 use Psr\Clock\ClockInterface;
 use Shared\Application\Bus\CommandHandler;
+use Shared\Application\Protocol\AgentPayload;
 use Symfony\Component\Uid\Uuid;
 
 /**

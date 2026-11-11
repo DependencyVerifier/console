@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Fleet\UI\Controller\Agent;
 
 use Fleet\Application\Command\Agent\EnrollAgent;
-use Fleet\Application\Protocol\AgentPayload;
 use Fleet\Application\Protocol\OrderSigner;
 use Fleet\Application\Protocol\Problem;
 use Fleet\Application\Protocol\ProtocolRefusal;
@@ -16,6 +15,7 @@ use Fleet\UI\Controller\RouteCollection;
 use Psr\Clock\ClockInterface;
 use Shared\Application\Bus\CommandBus;
 use Shared\Application\Bus\QueryBus;
+use Shared\Application\Protocol\AgentPayload;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\AsController;

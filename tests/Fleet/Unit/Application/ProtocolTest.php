@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Fleet\Unit\Application;
 
-use Fleet\Application\Protocol\AgentPayload;
 use Fleet\Application\Protocol\OrderSigner;
 use Fleet\Application\Protocol\Problem;
 use Fleet\Application\Protocol\ProtocolRefusal;
@@ -16,6 +15,8 @@ use Fleet\Domain\Model\OrderType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Shared\Application\Protocol\AgentPayload;
+use Shared\Application\Protocol\PayloadRefused;
 use Tests\Fleet\Support\Fleet;
 use Tests\Fleet\Support\FleetWorld;
 use Tests\Fleet\Support\ProtocolVectors;
@@ -123,9 +124,9 @@ final class ProtocolTest extends TestCase
         try {
             $read(AgentPayload::parse($body));
             self::fail('Expected '.$problem->value);
-        } catch (ProtocolRefusal $refusal) {
-            self::assertSame($problem, $refusal->problem);
-            self::assertNotSame('', $refusal->detail);
+        } catch (PayloadRefused $refusal) {
+            self::assertSame($problem->value, $refusal->ruleKey());
+            self::assertNotSame($refusal->ruleKey(), $refusal->getMessage(), 'A detail for the agent.');
         }
     }
 

@@ -6,8 +6,10 @@ namespace Fleet\UI\Http;
 
 use Fleet\Application\Protocol\Problem;
 use Fleet\Application\Protocol\ProtocolRefusal;
+use Inventory\Domain\Model\SnapshotsMissing;
 use Psr\Clock\ClockInterface;
 use Shared\Application\Audit\AlreadyAudited;
+use Shared\Application\Authorization\ResourceNotFound;
 use Shared\Application\Security\Throttled;
 use Shared\Domain\BusinessRuleViolated;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -40,7 +42,9 @@ final readonly class AgentApiExceptionSubscriber
         $cause = $exception instanceof AlreadyAudited ? $exception->cause() : $exception;
         $event->setResponse(match (true) {
             $cause instanceof ProtocolRefusal => ProblemResponse::of($cause->problem, $now, $cause->detail),
-            $cause instanceof BusinessRuleViolated => ProblemResponse::of(Problem::ofRule($cause->ruleKey()), $now),
+            $cause instanceof SnapshotsMissing => ProblemResponse::of(Problem::MissingSnapshots, $now, extra: ['missing' => $cause->digests]),
+            $cause instanceof BusinessRuleViolated => ProblemResponse::of(Problem::ofRule($cause->ruleKey()), $now, $cause->getMessage() === $cause->ruleKey() ? '' : $cause->getMessage()),
+            $cause instanceof ResourceNotFound => ProblemResponse::of(Problem::NotFound, $now),
             $cause instanceof Throttled => ProblemResponse::of(Problem::RateLimited, $now, retryAfter: $cause->retryAfter),
             $cause instanceof HttpExceptionInterface && 404 === $cause->getStatusCode() => ProblemResponse::of(Problem::NotFound, $now),
             $cause instanceof HttpExceptionInterface && $cause->getStatusCode() < 500 => ProblemResponse::of(Problem::InvalidPayload, $now),

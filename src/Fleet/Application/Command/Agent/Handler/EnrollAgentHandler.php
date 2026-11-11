@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Fleet\Application\Command\Agent\Handler;
 
 use Fleet\Application\Command\Agent\EnrollAgent;
-use Fleet\Application\Protocol\AgentPayload;
 use Fleet\Application\Protocol\Problem;
 use Fleet\Application\Protocol\ProtocolRefusal;
 use Fleet\Application\Protocol\RequestVerifier;
@@ -28,6 +27,7 @@ use Fleet\Domain\Repository\HostRepository;
 use Psr\Clock\ClockInterface;
 use Shared\Application\Bus\CommandHandler;
 use Shared\Application\Crypto\TokenHasher;
+use Shared\Application\Protocol\AgentPayload;
 use Shared\Application\Security\AttemptThrottle;
 use Shared\Application\Security\RequestContextProvider;
 use Shared\Application\Security\Throttled;

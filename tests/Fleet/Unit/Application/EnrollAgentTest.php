@@ -6,7 +6,6 @@ namespace Tests\Fleet\Unit\Application;
 
 use Fleet\Application\Command\Agent\EnrollAgent;
 use Fleet\Application\Protocol\Problem;
-use Fleet\Application\Protocol\ProtocolRefusal;
 use Fleet\Domain\Model\AgentId;
 use Fleet\Domain\Model\AgentMode;
 use Fleet\Domain\Model\AgentScope;
@@ -293,8 +292,8 @@ final class EnrollAgentTest extends TestCase
         try {
             $gesture();
             self::fail('Expected '.$problem->value);
-        } catch (ProtocolRefusal $refusal) {
-            self::assertSame($problem, $refusal->problem, $refusal->detail);
+        } catch (BusinessRuleViolated $refusal) {
+            self::assertSame($problem->value, $refusal->ruleKey(), $refusal->getMessage());
         }
     }
 }
