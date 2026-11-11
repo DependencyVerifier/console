@@ -75,6 +75,16 @@ final readonly class DoctrineAgentRepository implements AgentRepository
         return $this->manager->get()->getRepository(Agent::class)->findBy(['hostId' => $hostId->value], ['enrolledAt' => 'ASC']);
     }
 
+    public function inactiveSilentSince(\DateTimeImmutable $before, int $limit): array
+    {
+        /** @var list<Agent> */
+        return $this->manager->get()->createQueryBuilder()
+            ->select('a')->from(Agent::class, 'a')
+            ->where('a.status = :inactive')->andWhere('a.lastSeenAt <= :before')
+            ->setParameter('inactive', AgentStatus::Inactive)->setParameter('before', $before)
+            ->orderBy('a.lastSeenAt')->setMaxResults($limit)->getQuery()->getResult();
+    }
+
     public function approvedSilentSince(\DateTimeImmutable $before, int $limit): array
     {
         /** @var list<Agent> */

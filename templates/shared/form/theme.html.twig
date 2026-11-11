@@ -3,7 +3,7 @@
 {% use 'form_div_layout.html.twig' %}
 
 {%- block form_row -%}
-    <div data-slot="field" class="group/field flex w-full flex-col gap-2"{% if not valid %} data-invalid="true"{% endif %}>
+    <div data-slot="field" class="group/field flex w-full flex-col gap-2"{% if not valid %} data-invalid="true"{% endif %}{% for name, value in row_attr|filter((v, k) => k != 'class') %} {{ name }}="{{ value }}"{% endfor %}>
         {{- form_label(form) -}}
         {{- form_widget(form) -}}
         {{- form_help(form) -}}

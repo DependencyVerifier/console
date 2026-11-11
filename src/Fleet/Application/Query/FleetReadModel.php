@@ -6,6 +6,7 @@ namespace Fleet\Application\Query;
 
 use Fleet\Application\Query\View\AgentRow;
 use Fleet\Application\Query\View\HostRow;
+use Fleet\Application\Query\View\OrderRow;
 use Fleet\Application\Query\View\TokenRow;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
@@ -26,6 +27,13 @@ interface FleetReadModel
      * @return Page<HostRow>
      */
     public function hosts(string $teamId, PageRequest $page): Page;
+
+    /**
+     * The orders of one agent, newest first.
+     *
+     * @return Page<OrderRow>
+     */
+    public function orders(string $agentId, PageRequest $page): Page;
 
     /**
      * @return Page<TokenRow> rows with an empty environment name (filled by the handler)

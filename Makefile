@@ -145,6 +145,10 @@ audit-partitions: ## Create the next audit partitions and drop the expired ones 
 rate-limiter-prune: ## Delete expired rate limiter states
 	@$(CONSOLE) app:rate-limiter:prune
 
+.PHONY: fleet-maintain
+fleet-maintain: ## Fleet maintenance: inactive agents, late orders, request nonces (cron, every few minutes)
+	@$(CONSOLE) app:fleet:maintain
+
 .PHONY: db-dump
 db-dump: ## Dump the dev database to var/DUMP, example: make db-dump DUMP=backup.sql
 	@:$(if $(DUMP),,$(error Usage: make db-dump DUMP=<file.sql>))

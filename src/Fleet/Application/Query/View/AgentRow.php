@@ -6,6 +6,9 @@ namespace Fleet\Application\Query\View;
 
 final readonly class AgentRow
 {
+    /**
+     * @param array<string, mixed>|null $desiredConfig the SET_CONFIG payload last asked (GetAgent only)
+     */
     public function __construct(
         public string $id,
         public string $teamId,
@@ -20,6 +23,8 @@ final readonly class AgentRow
         public \DateTimeImmutable $enrolledAt,
         public \DateTimeImmutable $lastSeenAt,
         public string $teamName = '',
+        public ?array $desiredConfig = null,
+        public int $appliedConfigVersion = 0,
     ) {
     }
 }

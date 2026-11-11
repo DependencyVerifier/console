@@ -15,7 +15,7 @@ final class FleetPageRefresh implements PageRefreshMap
 {
     private const array ACTIONS = [
         'fleet.approve_agent', 'fleet.revoke_agent', 'fleet.delete_host',
-        'fleet.approve_enrollment_token', 'fleet.revoke_enrollment_token',
+        'fleet.approve_enrollment_token', 'fleet.revoke_enrollment_token', 'fleet.configure_agent',
     ];
 
     public function refreshesPage(AuditAction $action): bool

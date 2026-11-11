@@ -1,0 +1,65 @@
+{% extends 'organization/team/_layout.html.twig' %}
+{#- One agent (variables: team, fleet, agent, tables.orders). -#}
+
+{% block title %}{{ agent.hostname }} · {{ 'fleet.agents.title'|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block primary_action %}
+    {%- if fleet.can('host.order') and agent.status == 'approved' %}
+        <form method="post" action="{{ path('fleet_agent_scan', {teamId: team.id, agentId: agent.id}) }}">
+            <input type="hidden" name="action[_token]" value="{{ csrf_token('agent_scan:' ~ agent.id) }}">
+            <twig:Button type="submit" variant="outline"><twig:ux:icon name="lucide:radar" />{{ 'fleet.agents.scan_now'|trans }}</twig:Button>
+        </form>
+        <twig:FormDialog
+            id="configure-agent"
+            :title="'fleet.configure.title'|trans({host: agent.hostname})"
+            :description="'fleet.configure.description'|trans"
+            :trigger="'fleet.configure.open'|trans"
+            :src="path('fleet_agent_configure', {teamId: team.id, agentId: agent.id})"
+        />
+    {%- endif %}
+{% endblock %}
+
+{% block tab %}
+    {%- set config = agent.desiredConfig -%}
+    <section class="grid gap-4 rounded-lg border p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">{{ agent.hostname }}</h2>
+            {{ include('fleet/cells/agent_status.html.twig', {row: agent}) }}
+        </div>
+        <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <div class="sm:col-span-2 lg:col-span-3">
+                <dt class="text-muted-foreground">{{ 'fleet.field.fingerprint'|trans }}</dt>
+                <dd><code class="font-mono text-sm break-all">{{ agent.fingerprint }}</code></dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'fleet.field.mode'|trans }}</dt>
+                <dd>{{ include('fleet/cells/agent_mode.html.twig', {row: agent}) }}{% if agent.composeProject %} · {{ agent.composeProject }}{% endif %}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'fleet.field.version'|trans }}</dt>
+                <dd>{{ agent.version }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'fleet.field.last_seen'|trans }}</dt>
+                <dd>{{ include('fleet/cells/time.html.twig', {value: agent.lastSeenAt}) }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'fleet.field.scan_interval'|trans }}</dt>
+                <dd>{{ config ? 'fleet.configure.every'|trans({minutes: config.scan_interval_minutes}) : 'fleet.configure.agent_default'|trans }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'fleet.field.config_version'|trans }}</dt>
+                <dd class="tabular-nums">{{ 'fleet.configure.versions'|trans({applied: agent.appliedConfigVersion, desired: config.config_version ?? 0}) }}</dd>
+            </div>
+            {%- for field in ['discovery_roots', 'declared_paths', 'exclusions'] %}
+                {%- if config and config[field] is not empty %}
+                    <div>
+                        <dt class="text-muted-foreground">{{ ('fleet.field.' ~ field)|trans }}</dt>
+                        <dd>{% for path in config[field] %}<code class="block font-mono text-xs">{{ path }}</code>{% endfor %}</dd>
+                    </div>
+                {%- endif %}
+            {%- endfor %}
+        </dl>
+    </section>
+    <twig:DataTable :table="tables.orders" :title="'fleet.orders.title'|trans" />
+{% endblock %}

@@ -7,6 +7,7 @@ namespace Tests\Fleet\Support;
 use Fleet\Application\Query\FleetReadModel;
 use Fleet\Application\Query\View\AgentRow;
 use Fleet\Application\Query\View\HostRow;
+use Fleet\Application\Query\View\OrderRow;
 use Fleet\Application\Query\View\TokenRow;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
@@ -25,6 +26,9 @@ final class RecordingFleetReadModel implements FleetReadModel
     /** @var list<HostRow> */
     public array $hosts = [];
 
+    /** @var list<OrderRow> */
+    public array $orders = [];
+
     /** @var list<TokenRow> */
     public array $tokens = [];
 
@@ -40,6 +44,13 @@ final class RecordingFleetReadModel implements FleetReadModel
         $this->calls[] = ['hosts', $teamId];
 
         return new Page($this->hosts, \count($this->hosts), 9);
+    }
+
+    public function orders(string $agentId, PageRequest $page): Page
+    {
+        $this->calls[] = ['orders', $agentId];
+
+        return new Page($this->orders, \count($this->orders), 9);
     }
 
     public function tokens(string $teamId, PageRequest $page, \DateTimeImmutable $now): Page

@@ -19,6 +19,9 @@ enum RouteCollection: string implements RouteCollectionInterface
     case TOKEN_REVOKE_WITH_AGENTS = 'token_revoke_with_agents';
     case AGENT_APPROVE = 'agent_approve';
     case AGENT_REVOKE = 'agent_revoke';
+    case AGENT = 'agent';
+    case AGENT_SCAN = 'agent_scan';
+    case AGENT_CONFIGURE = 'agent_configure';
     case HOST_DELETE = 'host_delete';
     case ADMIN_AGENTS = 'admin_agents';
 

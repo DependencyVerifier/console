@@ -44,8 +44,9 @@ final readonly class FleetPage
     /**
      * @param array<string, DataTable> $tables
      * @param array<string, mixed>     $context
+     * @param string|null              $template the template under fleet/team/ (default: the section's)
      */
-    public function render(string $teamId, string $section, array $tables = [], array $context = []): Response
+    public function render(string $teamId, string $section, array $tables = [], array $context = [], ?string $template = null): Response
     {
         $team = $this->team($teamId);
         $fleet = $this->fleet($teamId);
@@ -56,7 +57,7 @@ final readonly class FleetPage
             }
         }
 
-        return new Response($this->twig->render(\sprintf('fleet/team/%s.html.twig', $section), [
+        return new Response($this->twig->render(\sprintf('fleet/team/%s.html.twig', $template ?? $section), [
             ...$context,
             'team' => $team,
             'fleet' => $fleet,

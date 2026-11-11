@@ -1,0 +1,2 @@
+{%- set dot = {executed: 'ok', queued: 'unknown', delivered: 'warning', failed: 'critical', rejected: 'critical', expired: 'unknown', cancelled: 'unknown'}[row.status] ?? 'unknown' -%}
+<twig:StatusDot :status="dot">{{ ('fleet.order_status.' ~ row.status)|trans }}{% if row.reason %} <span class="font-mono text-xs text-muted-foreground">{{ row.reason }}</span>{% endif %}</twig:StatusDot>

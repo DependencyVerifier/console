@@ -1,3 +1,5 @@
-{%- set status = row.usable ? row.status : (row.status == 'revoked' ? 'revoked' : 'spent') -%}
-{%- set dot = {approved: 'ok', pending: 'warning', revoked: 'critical', spent: 'unknown'}[status] -%}
-<twig:StatusDot :status="dot">{{ ('fleet.token_status.' ~ status)|trans }}</twig:StatusDot>
+{#- `state`, not `status`: inside <twig:StatusDot>, `status` is the component's prop (the dot color). A single-use token
+    is never approved: usable, it is active. -#}
+{%- set state = not row.usable ? (row.status == 'revoked' ? 'revoked' : 'spent') : (row.kind == 'single' ? 'active' : row.status) -%}
+{%- set dot = {active: 'ok', approved: 'ok', pending: 'warning', revoked: 'critical', spent: 'unknown'}[state] -%}
+<twig:StatusDot :status="dot">{{ ('fleet.token_status.' ~ state)|trans }}</twig:StatusDot>

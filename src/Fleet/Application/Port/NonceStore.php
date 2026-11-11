@@ -16,4 +16,9 @@ interface NonceStore
      * @return bool false when the pair was already seen
      */
     public function remember(string $keyId, string $nonce, \DateTimeImmutable $now): bool;
+
+    /**
+     * @return int the nonces forgotten (seen before $before)
+     */
+    public function purgeBefore(\DateTimeImmutable $before): int;
 }

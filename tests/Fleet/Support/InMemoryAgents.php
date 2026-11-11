@@ -62,6 +62,11 @@ final class InMemoryAgents implements AgentRepository
         return array_values(array_filter($this->agents, static fn (Agent $a): bool => $a->hostId()->value->equals($hostId->value)));
     }
 
+    public function inactiveSilentSince(\DateTimeImmutable $before, int $limit): array
+    {
+        return \array_slice(array_values(array_filter($this->agents, static fn (Agent $a): bool => $a->isInactive() && $a->lastSeenAt() <= $before)), 0, $limit);
+    }
+
     public function approvedSilentSince(\DateTimeImmutable $before, int $limit): array
     {
         return \array_slice(array_values(array_filter($this->agents, static fn (Agent $a): bool => $a->isApproved() && $a->lastSeenAt() <= $before)), 0, $limit);

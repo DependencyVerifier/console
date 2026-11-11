@@ -90,6 +90,7 @@ rule:
     invalid_order_payload: These collection settings are not valid.
     invalid_public_key: This is not an ed25519 public key.
     scan_now_rate: A scan was requested less than 5 minutes ago.
+    scan_interval_below_minimum: The interval is below the minimum scan interval of the team.
 identity:
     back_to_login: Back to sign in
     field:
@@ -496,6 +497,37 @@ fleet:
         validity_days: Valid for (days)
         max_uses: Maximum agents
         team: Team
+        order: Order
+        requested: Requested
+        finished: Finished
+        scan_interval: Scan interval (minutes)
+        config_version: Configuration version
+        discovery_roots: Discovery roots
+        declared_paths: Declared paths
+        exclusions: Exclusions
+    order_status:
+        queued: Queued
+        delivered: Delivered
+        executed: Executed
+        failed: Failed
+        rejected: Rejected by the agent
+        expired: Expired
+        cancelled: Cancelled
+    orders:
+        title: Orders
+    configure:
+        open: Configure
+        title: "Collection settings of {host}"
+        description: The agent receives them as a signed SET_CONFIG order at its next poll.
+        submit: Send settings
+        done: Settings sent. The agent applies them at its next poll.
+        interval_help: "Between 5 and 10,080 minutes, never below the team's minimum."
+        discovery_roots_help: Absolute paths the agent explores for applications, one per line.
+        declared_paths_help: Absolute paths of applications to inventory, one per line.
+        exclusions_help: Absolute glob patterns to skip, one per line.
+        every: "Every {minutes} minutes"
+        agent_default: Agent default
+        versions: "{applied} applied · {desired} asked"
     mode:
         host: Host
         container: Container
@@ -512,6 +544,7 @@ fleet:
         single: Single use
         reusable: Reusable
     token_status:
+        active: Active
         pending: Waiting for approval
         approved: Approved
         revoked: Revoked
@@ -535,6 +568,8 @@ fleet:
         refuse: Refuse
         revoke: Revoke
         revoked: Agent revoked. It will never come back with this key.
+        scan_now: Scan now
+        scan_requested: Scan requested. The agent runs it at its next poll.
     enrollment:
         title: Enrollment
         description: "Tokens enroll new agents. A single-use token is valid one hour; a reusable one, once approved, enrolls approved agents (images, autoscaling)."
@@ -546,14 +581,13 @@ fleet:
         new_description: The token is shown once. Only its hash is kept.
         create: Create token
         created: Token created.
-        kind_help: A single-use token enrolls one agent, which then waits for approval.
-        environment_help: Required for a reusable token.
+        kind_help: "Single use: one agent, within one hour, then approved by a human. Reusable: several agents (images, autoscaling) until it expires; once approved, its agents are approved at enrollment."
+        environment_help: Optional for a single-use token, required for a reusable one.
         no_environment: None
-        reusable_only: Reusable tokens only.
         shown_once: Copy this token now
         shown_once_description: It will never be shown again. Anyone holding it can enroll an agent into this team until it expires.
         token: Token
-        token_file: "store it in this file, then start the stack"
+        token_file: "On the server, next to the Compose file, store it as the agent secret:"
         compose: Compose snippet
         console_key: "Fingerprint of the console key the agent pins:"
         done: Done

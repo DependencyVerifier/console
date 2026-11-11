@@ -49,6 +49,13 @@ interface AgentRepository
     public function ofHost(HostId $hostId): array;
 
     /**
+     * Inactive agents silent since $before (candidates to revocation).
+     *
+     * @return list<Agent>
+     */
+    public function inactiveSilentSince(\DateTimeImmutable $before, int $limit): array;
+
+    /**
      * Approved agents silent since $before (candidates to inactive).
      *
      * @return list<Agent>

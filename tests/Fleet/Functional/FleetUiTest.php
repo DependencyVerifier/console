@@ -41,7 +41,10 @@ final class FleetUiTest extends IdentityWebTestCase
         self::assertStringContainsString('SHA256:', $crawler->filter('main')->text());
         self::assertSame([], DataTables::draw($this->client, '/teams/'.$teamId.'/enrollment', 'tokens')['data']);
 
-        $form = $this->client->request('GET', '/teams/'.$teamId.'/enrollment/new', server: ['HTTP_TURBO_FRAME' => 'create-token-form'])->filter('form')->form();
+        $dialog = $this->client->request('GET', '/teams/'.$teamId.'/enrollment/new', server: ['HTTP_TURBO_FRAME' => 'create-token-form']);
+        self::assertCount(1, $dialog->filter('[data-token-kind] input[value="single"]'), 'The kind the CSS rule reads…');
+        self::assertCount(2, $dialog->filter('[data-reusable-only] input'), '…to hide the fields of a reusable token.');
+        $form = $dialog->filter('form')->form();
         $this->client->submit($form, ['token[kind]' => 'single'], ['HTTP_ACCEPT' => self::STREAM]);
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('no-store', (string) $this->client->getResponse()->headers->get('Cache-Control'));
@@ -55,6 +58,7 @@ final class FleetUiTest extends IdentityWebTestCase
         $rows = DataTables::draw($this->client, '/teams/'.$teamId.'/enrollment', 'tokens')['data'];
         self::assertCount(1, $rows);
         self::assertStringContainsString('Single use', (string) $rows[0]['kind']);
+        self::assertStringContainsString('Active', (string) $rows[0]['status'], 'Translated, never the dot color.');
 
         $agent = AgentClient::generate();
         $agent->enroll($this->client, $token);

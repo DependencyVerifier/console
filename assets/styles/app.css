@@ -187,3 +187,10 @@
         @apply font-sans antialiased;
     }
 }
+
+@layer components {
+    /* New enrollment token (Fleet): a single-use token has nothing to set but its environment. */
+    form:has([data-token-kind] input[value="single"]:checked) [data-reusable-only] {
+        display: none;
+    }
+}

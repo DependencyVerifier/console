@@ -21,4 +21,12 @@ final class RecordingNonces implements NonceStore
 
         return true;
     }
+
+    public function purgeBefore(\DateTimeImmutable $before): int
+    {
+        $count = \count($this->seen);
+        $this->seen = array_filter($this->seen, static fn (\DateTimeImmutable $seen): bool => $seen >= $before);
+
+        return $count - \count($this->seen);
+    }
 }
