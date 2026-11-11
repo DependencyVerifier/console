@@ -1,0 +1,2 @@
+<a href="{{ path('inventory_application', {teamId: row.teamId, appId: row.id}) }}" class="font-medium underline-offset-4 hover:underline{{ row.present ? '' : ' text-muted-foreground line-through' }}">{{ row.name }}</a>
+<span class="block font-mono text-xs text-muted-foreground">{{ ('inventory.kind.' ~ row.kind)|trans }}{% if row.runtime %} · {{ row.runtime }}{% endif %}</span>

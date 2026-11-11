@@ -11,6 +11,13 @@ enum RouteCollection: string implements RouteCollectionInterface
     case AGENT_MANIFEST = 'agent_manifest';
     case AGENT_SNAPSHOT = 'agent_snapshot';
     case AGENT_COMPLETE = 'agent_complete';
+    case TEAM_APPLICATIONS = 'team_applications';
+    case PROJECT_APPLICATIONS = 'project_applications';
+    case APPLICATION = 'application';
+    case APPLICATION_ATTACH = 'application_attach';
+    case APPLICATION_DETACH = 'application_detach';
+    case HOST = 'host';
+    case IMAGE = 'image';
 
     public function prefixed(): string
     {

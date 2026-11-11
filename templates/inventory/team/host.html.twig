@@ -1,0 +1,40 @@
+{% extends 'inventory/team/_object.html.twig' %}
+{#- One host as its last inventory saw it (variables: host HostView, tables.applications, tables.packages). -#}
+
+{% block title %}{{ host.hostname }} · {{ team.name }} · DependencyVerifier{% endblock %}
+{% block section_link %}<twig:Breadcrumb:Link href="{{ path('fleet_team_hosts', {teamId: team.id}) }}">{{ 'fleet.hosts.title'|trans }}</twig:Breadcrumb:Link>{% endblock %}
+{% block object_icon %}lucide:server{% endblock %}
+{% block object_title %}<span class="font-mono">{{ host.hostname }}</span>{% endblock %}
+{% block object_subtitle %}
+    <span>{{ host.os ?? 'inventory.hosts.not_inventoried'|trans }}</span>
+    {%- if host.fact('arch') %}<span aria-hidden="true">·</span><span class="font-mono">{{ host.fact('arch') }}</span>{% endif %}
+{% endblock %}
+
+{% block tab %}
+    <section class="rounded-lg border p-4">
+        <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+                <dt class="text-muted-foreground">{{ 'inventory.field.kernel'|trans }}</dt>
+                <dd class="font-mono">{{ host.fact('kernel') ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'inventory.field.docker'|trans }}</dt>
+                <dd class="font-mono">{{ host.dockerVersion ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'inventory.field.inventoried'|trans }}</dt>
+                <dd>{{ include('fleet/cells/time.html.twig', {value: host.inventoriedAt}) }}</dd>
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3">
+                <dt class="text-muted-foreground">{{ 'inventory.field.runtimes'|trans }}</dt>
+                <dd class="flex flex-wrap gap-2">
+                    {%- for runtime in host.runtimes %}
+                        <twig:Badge variant="outline" class="font-mono">{{ runtime.name }} {{ runtime.version }}{% if runtime.service %} · {{ runtime.service }}{% endif %}</twig:Badge>
+                    {%- else %}<span class="text-muted-foreground">—</span>{% endfor %}
+                </dd>
+            </div>
+        </dl>
+    </section>
+    <twig:DataTable :table="tables.applications" :title="'inventory.applications.title'|trans" />
+    <twig:DataTable :table="tables.packages" :title="'inventory.packages.os_title'|trans({count: host.packages})" />
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'inventory/team/_object.html.twig' %}
+{#- One application (variables: view ApplicationView, application AppRow, never `app`: the Twig global, tables.packages). -#}
+
+{% block title %}{{ application.name }} · {{ team.name }} · DependencyVerifier{% endblock %}
+{% block section_link %}<twig:Breadcrumb:Link href="{{ path('inventory_team_applications', {teamId: team.id}) }}">{{ 'inventory.applications.title'|trans }}</twig:Breadcrumb:Link>{% endblock %}
+{% block object_title %}{{ application.name }}{% endblock %}
+{% block object_subtitle %}
+    <span>{{ ('inventory.kind.' ~ application.kind)|trans }}</span>
+    <span aria-hidden="true">·</span>
+    {{ include('inventory/cells/app_environment.html.twig', {row: application}) }}
+{% endblock %}
+{% block object_actions %}
+    {%- if view.mayDetach %}
+        <form method="post" action="{{ path('inventory_application_detach', {teamId: team.id, appId: application.id}) }}">
+            <input type="hidden" name="action[_token]" value="{{ csrf_token('application_detach:' ~ application.id) }}">
+            <twig:Button type="submit" variant="outline">{{ 'inventory.applications.detach'|trans }}</twig:Button>
+        </form>
+    {%- endif %}
+    {%- if view.assignable is not empty %}
+        <twig:FormDialog
+            id="attach-application"
+            :title="'inventory.applications.attach_title'|trans({name: application.name})"
+            :description="'inventory.applications.attach_description'|trans"
+            :trigger="(application.environmentId ? 'inventory.applications.move' : 'inventory.applications.attach')|trans"
+            :src="path('inventory_application_attach', {teamId: team.id, appId: application.id})"
+        />
+    {%- endif %}
+{% endblock %}
+
+{% block tab %}
+    <section class="rounded-lg border p-4">
+        <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+                <dt class="text-muted-foreground">{{ 'inventory.field.host'|trans }}</dt>
+                <dd>{{ include('inventory/cells/app_host.html.twig', {row: application}) }}</dd>
+            </div>
+            {%- if application.runtime %}
+                <div>
+                    <dt class="text-muted-foreground">{{ 'inventory.field.runtime'|trans }}</dt>
+                    <dd class="font-mono">{{ application.runtime }}{% if application.fields.runtime.service ?? null %} · {{ application.fields.runtime.service }}{% endif %}</dd>
+                </div>
+            {%- endif %}
+            {%- if application.imageId %}
+                <div>
+                    <dt class="text-muted-foreground">{{ 'inventory.field.image'|trans }}</dt>
+                    <dd>{% if view.imageRecordId %}<a href="{{ path('inventory_image', {teamId: team.id, imageId: view.imageRecordId}) }}" class="font-mono text-xs break-all underline-offset-4 hover:underline">{{ application.imageId }}</a>{% else %}<span class="font-mono text-xs break-all">{{ application.imageId }}</span>{% endif %}</dd>
+                </div>
+            {%- endif %}
+            <div class="sm:col-span-2 lg:col-span-3">
+                <dt class="text-muted-foreground">{{ 'inventory.field.subject'|trans }}</dt>
+                <dd class="font-mono text-xs break-all">{{ application.subjectKey }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'inventory.field.last_seen'|trans }}</dt>
+                <dd>{{ include('fleet/cells/time.html.twig', {value: application.lastSeenAt}) }}</dd>
+            </div>
+        </dl>
+    </section>
+    <twig:DataTable :table="tables.packages" :title="'inventory.packages.title'|trans({count: application.packages})" />
+{% endblock %}

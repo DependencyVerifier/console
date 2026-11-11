@@ -1,0 +1,3 @@
+{%- if not row.present %}<span class="text-muted-foreground">{{ 'inventory.applications.gone'|trans }}</span>
+{%- elseif row.environmentId %}{{ row.environment }}{% if row.assignment == 'auto' %} <span class="text-xs text-muted-foreground">{{ 'inventory.applications.auto'|trans }}</span>{% endif %}
+{%- else %}<twig:Badge variant="outline">{{ 'inventory.applications.unattached'|trans }}</twig:Badge>{% endif -%}

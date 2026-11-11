@@ -7,6 +7,7 @@ nav:
     hosts: Hosts
     agents: Agents
     enrollment: Enrollment
+    applications: Applications
     audit: Audit log
     project_group: "Project · {name}"
     project_overview: Overview
@@ -91,6 +92,12 @@ rule:
     invalid_public_key: This is not an ed25519 public key.
     scan_now_rate: A scan was requested less than 5 minutes ago.
     scan_interval_below_minimum: The interval is below the minimum scan interval of the team.
+    environment_of_another_team: This environment is not one of the team of the application.
+    inventory_not_open: This inventory no longer accepts snapshots.
+    agent_pending: This agent is waiting for approval.
+    scope_violation: This inventory steps out of the scope of its agent.
+    digest_mismatch: The snapshot does not match its digest.
+    missing_snapshots: Some snapshots of the inventory are missing.
 identity:
     back_to_login: Back to sign in
     field:
@@ -336,6 +343,7 @@ organization:
             hosts: Hosts
             agents: Agents
             enrollment: Enrollment
+            applications: Applications
         facts:
             members: Members
             projects: Projects
@@ -411,6 +419,7 @@ organization:
         tab:
             overview: Overview
             environments: Environments
+            applications: Applications
             members: Members
             settings: Settings
         environment_limit: "{limit} per project, set by the team"
@@ -604,3 +613,59 @@ fleet:
     admin:
         title: Agents
         description: Every agent of the instance, by team.
+inventory:
+    field:
+        application: Application
+        host: Host
+        environment: Environment
+        packages: Packages
+        last_seen: Last seen
+        package: Package
+        version: Version
+        ecosystem: Ecosystem
+        dependency: Dependency
+        runtime: Runtime
+        image: Image
+        subject: Subject key
+        kernel: Kernel
+        docker: Docker engine
+        inventoried: Last inventory
+        runtimes: Runtimes
+        image_id: Image ID
+        references: Tags and digests
+    kind:
+        path: Path
+        compose_service: Compose service
+        container: Container
+    dependency:
+        direct: Direct
+        transitive: Transitive
+    provenance:
+        registry: From a registry
+        local-build: Built locally
+        unknown: Unknown provenance
+    applications:
+        title: Applications
+        description: What the agents found running on the hosts of the team, attached to the environments of its projects.
+        project_description: The applications attached to the environments of this project.
+        to_attach: To attach
+        unattached: Not attached
+        auto: (automatic)
+        gone: No longer found
+        attach: Attach
+        move: Move
+        detach: Detach
+        attach_title: "Attach {name}"
+        attach_description: "Choose the environment it runs for. The automatic rules never change it afterwards."
+        choose_environment: Choose an environment
+        attached: Application attached.
+        detached: Application detached. The automatic rules will not attach it again.
+    packages:
+        title: "{count, plural, one {# package} other {# packages}}"
+        os_title: "{count, plural, one {# OS package} other {# OS packages}}"
+    hosts:
+        not_inventoried: Not inventoried yet
+    images:
+        untagged: Untagged image
+        from: "from {base}"
+        applications: Applications running it

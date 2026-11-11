@@ -1,0 +1,6 @@
+{% extends 'organization/project/_layout.html.twig' %}
+
+{% block tab %}
+    <p class="text-sm text-muted-foreground">{{ 'inventory.applications.project_description'|trans }}</p>
+    <twig:DataTable :table="tables.applications" :title="'inventory.applications.title'|trans" />
+{% endblock %}

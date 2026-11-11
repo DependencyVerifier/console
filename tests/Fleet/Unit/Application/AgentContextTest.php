@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Fleet\Unit\Application;
 
+use Fleet\Application\Query\Contract\Handler\FindTeamHostHandler;
 use Fleet\Application\Query\Contract\Handler\GetAgentContextHandler;
 use Fleet\Domain\Model\Agent;
 use Fleet\Domain\Model\AgentId;
@@ -16,6 +17,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Authorization\ResourceNotFound;
 use Shared\Application\Contract\Fleet\AgentContext;
+use Shared\Application\Contract\Fleet\FindTeamHost;
 use Shared\Application\Contract\Fleet\GetAgentContext;
 use Symfony\Component\Uid\Uuid;
 use Tests\Fleet\Support\Fleet;
@@ -63,5 +65,18 @@ final class AgentContextTest extends TestCase
         self::assertFalse($context('approved', 'container', 'host')->isConfinedToComposeProject());
         self::assertFalse($context('approved', 'host', null)->isConfinedToComposeProject());
         self::assertFalse($context('approved', 'host', 'compose')->isConfinedToComposeProject(), 'Only a container agent has a scope.');
+    }
+
+    #[Test]
+    public function it_should_name_a_host_of_the_team_only(): void
+    {
+        $world = new FleetWorld();
+        $world->hosts->add(Fleet::host());
+        $handler = new FindTeamHostHandler($world->hosts);
+
+        self::assertSame('web-01', $handler(new FindTeamHost(Fleet::TEAM, Fleet::HOST)));
+        self::assertNull($handler(new FindTeamHost(Fleet::OTHER_TEAM, Fleet::HOST)), 'Another team asks.');
+        self::assertNull($handler(new FindTeamHost(Fleet::TEAM, Fleet::AGENT)));
+        self::assertNull($handler(new FindTeamHost(Fleet::TEAM, 'nope')));
     }
 }

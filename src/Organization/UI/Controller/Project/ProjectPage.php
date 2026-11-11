@@ -24,6 +24,8 @@ final readonly class ProjectPage
     public const string ENVIRONMENTS = 'environments';
     public const string MEMBERS = 'members';
     public const string SETTINGS = 'settings';
+    /** Rendered by Inventory (its own template), listed here so the sidebar shows it. */
+    public const string APPLICATIONS = 'applications';
 
     public function __construct(private QueryBus $queries, private Environment $twig)
     {
@@ -53,7 +55,7 @@ final readonly class ProjectPage
      */
     public static function tabsOf(ProjectView $project): array
     {
-        $tabs = [self::OVERVIEW, self::ENVIRONMENTS, self::MEMBERS];
+        $tabs = [self::OVERVIEW, self::ENVIRONMENTS, self::APPLICATIONS, self::MEMBERS];
         if ($project->can('project.edit') || $project->can('project.delete')) {
             $tabs[] = self::SETTINGS;
         }
@@ -71,8 +73,9 @@ final readonly class ProjectPage
     /**
      * @param array<string, DataTable> $tables
      * @param array<string, mixed>     $context
+     * @param string|null              $template another context's template for its section (default: Organization's)
      */
-    public function render(ProjectView $project, string $tab, array $tables = [], array $context = []): Response
+    public function render(ProjectView $project, string $tab, array $tables = [], array $context = [], ?string $template = null): Response
     {
         foreach ($tables as $table) {
             if ($table->isCallback()) {
@@ -80,7 +83,7 @@ final readonly class ProjectPage
             }
         }
 
-        return new Response($this->twig->render(\sprintf('organization/project/%s.html.twig', $tab), [
+        return new Response($this->twig->render($template ?? \sprintf('organization/project/%s.html.twig', $tab), [
             ...$context,
             'project' => $project,
             'tab' => $tab,

@@ -8,7 +8,9 @@ use Organization\Application\Query\Contract\Handler\FindTeamEnvironmentHandler;
 use Organization\Application\Query\Contract\Handler\FindTeamNamesHandler;
 use Organization\Application\Query\Contract\Handler\GetTeamAccessHandler;
 use Organization\Application\Query\Contract\Handler\GetTeamQuotaHandler;
+use Organization\Application\Query\Contract\Handler\GetVisibleProjectsHandler;
 use Organization\Application\Query\Contract\Handler\ListTeamEnvironmentsHandler;
+use Organization\Domain\Model\ProjectRole;
 use Organization\Domain\Model\Quota;
 use Organization\Domain\Model\QuotaName;
 use Organization\Domain\Model\TeamId;
@@ -21,9 +23,11 @@ use Shared\Application\Contract\Organization\FindTeamEnvironment;
 use Shared\Application\Contract\Organization\FindTeamNames;
 use Shared\Application\Contract\Organization\GetTeamAccess;
 use Shared\Application\Contract\Organization\GetTeamQuota;
+use Shared\Application\Contract\Organization\GetVisibleProjects;
 use Shared\Application\Contract\Organization\ListTeamEnvironments;
 use Shared\Application\Contract\Organization\TeamAccess;
 use Shared\Application\Contract\Organization\TeamEnvironment;
+use Shared\Application\Contract\Organization\VisibleProjects;
 use Tests\Organization\Support\RecordingReadModel;
 use Tests\Organization\Support\Teams;
 use Tests\Organization\Support\World;
@@ -93,6 +97,25 @@ final class ContractQueriesTest extends TestCase
             ['teamEnvironments', [Teams::OTHER_TEAM, self::ENVIRONMENT]],
             ['teamEnvironments', [Teams::TEAM, null]],
         ], $read->calls, 'The invalid id never reaches the database.');
+    }
+
+    #[Test]
+    public function it_should_tell_which_projects_of_a_team_the_actor_sees(): void
+    {
+        $world = $this->world()->as(Teams::MEMBER, TeamRole::Viewer);
+        $handler = static fn () => new GetVisibleProjectsHandler($world->permissions, $world->teams)(new GetVisibleProjects(Teams::TEAM));
+        self::assertEquals(new VisibleProjects(true), $handler());
+        self::assertTrue($handler()->sees('any'));
+
+        $world->as(Teams::GUEST, TeamRole::Guest, ProjectRole::Viewer);
+        self::assertEquals(new VisibleProjects(false, [Teams::PROJECT]), $handler());
+        self::assertTrue($handler()->sees(Teams::PROJECT));
+        self::assertFalse($handler()->sees(Teams::TEAM));
+
+        $world->as(Teams::MEMBER, TeamRole::Admin, teamId: Teams::OTHER_TEAM);
+        $this->assertNotFound($handler);
+        $this->assertNotFound(static fn () => new GetVisibleProjectsHandler($world->asSuperAdmin()->permissions, $world->teams)(new GetVisibleProjects(Teams::OTHER_TEAM)));
+        self::assertEquals(new VisibleProjects(true), new GetVisibleProjectsHandler($world->permissions, $world->teams)(new GetVisibleProjects(Teams::TEAM)), 'The super admin sees every project.');
     }
 
     #[Test]

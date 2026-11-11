@@ -1,0 +1,30 @@
+{% extends 'inventory/team/_object.html.twig' %}
+{#- One container image (variables: image ImageView, tables.applications, tables.packages). -#}
+
+{% block title %}{{ image.tags|first ?: image.imageId }} · {{ team.name }} · DependencyVerifier{% endblock %}
+{% block section_link %}<twig:Breadcrumb:Link href="{{ path('inventory_team_applications', {teamId: team.id}) }}">{{ 'inventory.applications.title'|trans }}</twig:Breadcrumb:Link>{% endblock %}
+{% block object_icon %}lucide:layers{% endblock %}
+{% block object_title %}<span class="font-mono">{{ image.tags|first ?: ('inventory.images.untagged'|trans) }}</span>{% endblock %}
+{% block object_subtitle %}
+    <span>{{ ('inventory.provenance.' ~ (image.provenance ?? 'unknown'))|trans }}</span>
+    {%- if image.baseImage %}<span aria-hidden="true">·</span><span class="font-mono">{{ 'inventory.images.from'|trans({base: image.baseImage}) }}</span>{% endif %}
+{% endblock %}
+
+{% block tab %}
+    <section class="rounded-lg border p-4">
+        <dl class="grid gap-3 text-sm">
+            <div>
+                <dt class="text-muted-foreground">{{ 'inventory.field.image_id'|trans }}</dt>
+                <dd class="font-mono text-xs break-all">{{ image.imageId }}</dd>
+            </div>
+            {%- if image.tags|length > 1 or image.repoDigests is not empty %}
+                <div>
+                    <dt class="text-muted-foreground">{{ 'inventory.field.references'|trans }}</dt>
+                    <dd>{% for reference in image.tags|merge(image.repoDigests) %}<code class="block font-mono text-xs break-all">{{ reference }}</code>{% endfor %}</dd>
+                </div>
+            {%- endif %}
+        </dl>
+    </section>
+    <twig:DataTable :table="tables.applications" :title="'inventory.images.applications'|trans" />
+    <twig:DataTable :table="tables.packages" :title="'inventory.packages.title'|trans({count: image.packages})" />
+{% endblock %}

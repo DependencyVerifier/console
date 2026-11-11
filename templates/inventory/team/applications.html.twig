@@ -1,0 +1,11 @@
+{% extends 'organization/team/_layout.html.twig' %}
+
+{% block title %}{{ 'inventory.applications.title'|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block tab %}
+    <p class="text-sm text-muted-foreground">{{ 'inventory.applications.description'|trans }}</p>
+    {%- if team.role != 'team_guest' %}
+        <twig:DataTable :table="tables.unattached" :title="'inventory.applications.to_attach'|trans" />
+    {%- endif %}
+    <twig:DataTable :table="tables.applications" :title="'inventory.applications.title'|trans" />
+{% endblock %}

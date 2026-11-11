@@ -1,0 +1,38 @@
+{#- Frame of one inventory object of a team (application, host, image): breadcrumb Team › section › object, object
+    header. Blocks: section_link, object_title, object_subtitle, object_icon, object_actions, tab. -#}
+{% extends 'organization/team/_layout.html.twig' %}
+
+{% block breadcrumb %}
+    {#- Rendered here: inside a component tag, block() would look in the component's template. -#}
+    {%- set object_title = block('object_title') %}
+    {%- set section_link = block('section_link') %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_team', {teamId: team.id}) }}">{{ team.name }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Separator />
+            <twig:Breadcrumb:Item>{{ section_link|raw }}</twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Separator />
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ object_title|raw }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block section_link %}{% endblock %}
+
+{% block object_icon %}lucide:monitor{% endblock %}
+
+{% block header %}
+    {%- set object_icon = block('object_icon')|trim %}
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-3">
+            <span class="grid size-10 shrink-0 place-items-center rounded-lg border bg-muted text-muted-foreground" aria-hidden="true">
+                <twig:ux:icon :name="object_icon" class="size-5" />
+            </span>
+            <div class="min-w-0">
+                <h1 class="truncate text-2xl font-semibold tracking-tight">{% block object_title %}{% endblock %}</h1>
+                <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">{% block object_subtitle %}{% endblock %}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">{% block object_actions %}{% endblock %}</div>
+    </header>
+{% endblock %}

@@ -1,2 +1,2 @@
-<span class="font-medium">{{ row.hostname }}</span>
+<a href="{{ path('inventory_host', {teamId: app.request.attributes.get('teamId'), hostId: row.id}) }}" class="font-mono font-medium underline-offset-4 hover:underline">{{ row.hostname }}</a>
 {%- if row.arch %} <span class="text-xs text-muted-foreground">{{ row.arch }}</span>{% endif -%}
