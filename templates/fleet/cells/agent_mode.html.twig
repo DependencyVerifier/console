@@ -1,1 +1,1 @@
-{{ ('fleet.mode.' ~ row.mode)|trans }}{% if row.scope %} <span class="text-xs text-muted-foreground">· {{ ('fleet.scope.' ~ row.scope)|trans }}</span>{% endif %}
+{{ include('fleet/cells/agent_runtime.html.twig') }}

@@ -535,6 +535,10 @@ fleet:
         compose: Compose project
         labeled: Labeled containers
         host: Whole host
+    scope_of:
+        compose: "Compose project {name}"
+        labeled: "Labeled containers of {name}"
+        host: Whole host
     agent_status:
         pending: Waiting for approval
         approved: Approved
@@ -559,7 +563,6 @@ fleet:
         title: Agents
         description: "Every agent is approved by a human, after comparing its fingerprint with the one logged at installation."
         enroll: Enroll an agent
-        compose_project: "Compose project {name}"
         actions_for: "Actions for the agent on {host}"
         approve: Approve
         approve_title: "Approve the agent on {host}"

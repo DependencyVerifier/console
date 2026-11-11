@@ -3,37 +3,59 @@
 
 {% block title %}{{ agent.hostname }} · {{ 'fleet.agents.title'|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
 
-{% block primary_action %}
-    {%- if fleet.can('host.order') and agent.status == 'approved' %}
-        <form method="post" action="{{ path('fleet_agent_scan', {teamId: team.id, agentId: agent.id}) }}">
-            <input type="hidden" name="action[_token]" value="{{ csrf_token('agent_scan:' ~ agent.id) }}">
-            <twig:Button type="submit" variant="outline"><twig:ux:icon name="lucide:radar" />{{ 'fleet.agents.scan_now'|trans }}</twig:Button>
-        </form>
-        <twig:FormDialog
-            id="configure-agent"
-            :title="'fleet.configure.title'|trans({host: agent.hostname})"
-            :description="'fleet.configure.description'|trans"
-            :trigger="'fleet.configure.open'|trans"
-            :src="path('fleet_agent_configure', {teamId: team.id, agentId: agent.id})"
-        />
-    {%- endif %}
+{#- The object is the agent: its own breadcrumb and header (hostname, status, mode), the gestures beside it. -#}
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_team', {teamId: team.id}) }}">{{ team.name }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Separator />
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('fleet_team_agents', {teamId: team.id}) }}">{{ 'fleet.agents.title'|trans }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Separator />
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ agent.hostname }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block header %}
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-3">
+            <span class="grid size-10 shrink-0 place-items-center rounded-lg border bg-muted text-muted-foreground" aria-hidden="true">
+                <twig:ux:icon name="lucide:server" class="size-5" />
+            </span>
+            <div class="min-w-0">
+                <h1 class="truncate font-mono text-2xl font-semibold tracking-tight">{{ agent.hostname }}</h1>
+                <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+                    {{ include('fleet/cells/agent_status.html.twig', {row: agent}) }}
+                    <span aria-hidden="true">·</span>
+                    <span>{{ include('fleet/cells/agent_runtime.html.twig', {row: agent}) }}</span>
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            {%- if fleet.can('host.order') and agent.status == 'approved' %}
+                <form method="post" action="{{ path('fleet_agent_scan', {teamId: team.id, agentId: agent.id}) }}">
+                    <input type="hidden" name="action[_token]" value="{{ csrf_token('agent_scan:' ~ agent.id) }}">
+                    <twig:Button type="submit" variant="outline"><twig:ux:icon name="lucide:radar" />{{ 'fleet.agents.scan_now'|trans }}</twig:Button>
+                </form>
+                <twig:FormDialog
+                    id="configure-agent"
+                    :title="'fleet.configure.title'|trans({host: agent.hostname})"
+                    :description="'fleet.configure.description'|trans"
+                    :trigger="'fleet.configure.open'|trans"
+                    :src="path('fleet_agent_configure', {teamId: team.id, agentId: agent.id})"
+                />
+            {%- endif %}
+        </div>
+    </header>
 {% endblock %}
 
 {% block tab %}
     {%- set config = agent.desiredConfig -%}
     <section class="grid gap-4 rounded-lg border p-4">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-lg font-semibold">{{ agent.hostname }}</h2>
-            {{ include('fleet/cells/agent_status.html.twig', {row: agent}) }}
-        </div>
         <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
             <div class="sm:col-span-2 lg:col-span-3">
                 <dt class="text-muted-foreground">{{ 'fleet.field.fingerprint'|trans }}</dt>
                 <dd><code class="font-mono text-sm break-all">{{ agent.fingerprint }}</code></dd>
-            </div>
-            <div>
-                <dt class="text-muted-foreground">{{ 'fleet.field.mode'|trans }}</dt>
-                <dd>{{ include('fleet/cells/agent_mode.html.twig', {row: agent}) }}{% if agent.composeProject %} · {{ agent.composeProject }}{% endif %}</dd>
             </div>
             <div>
                 <dt class="text-muted-foreground">{{ 'fleet.field.version'|trans }}</dt>

@@ -38,6 +38,10 @@ final class AgentOrdersTest extends IdentityWebTestCase
         $crawler = $this->client->request('GET', $page);
         self::assertResponseIsSuccessful();
         self::assertStringContainsString($agent->key->fingerprint(), $crawler->filter('main')->text());
+        self::assertSelectorTextSame('main h1', 'web-01', 'The header is the agent, not its team.');
+        self::assertSelectorTextContains('main h1 + p', 'Container · Compose project shop');
+        self::assertSelectorTextContains('[data-slot="breadcrumb-page"]', 'web-01');
+        self::assertSelectorExists('[data-slot="breadcrumb"] a[href="/teams/'.$teamId.'/agents"]');
         $this->client->submit($crawler->filter('form[action="'.$page.'/scan"]')->form(), [], ['HTTP_ACCEPT' => self::STREAM]);
         self::assertResponseIsSuccessful();
         $this->client->submit($this->client->request('GET', $page)->filter('form[action="'.$page.'/scan"]')->form(), [], ['HTTP_ACCEPT' => self::STREAM]);

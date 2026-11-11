@@ -1,0 +1,4 @@
+{#- How the agent runs, in one phrase: "Host", "Container · Compose project shop", "Container · Labeled containers of
+    shop", "Container · Whole host". -#}
+{{- ('fleet.mode.' ~ row.mode)|trans -}}
+{%- if row.scope %} · {{ ('fleet.scope_of.' ~ row.scope)|trans({name: row.composeProject ?? ''}) }}{% endif -%}
