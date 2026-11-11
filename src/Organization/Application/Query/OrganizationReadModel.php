@@ -29,6 +29,13 @@ interface OrganizationReadModel
 
     public function team(string $teamId): ?TeamSummary;
 
+    /**
+     * @param non-empty-list<string> $teamIds
+     *
+     * @return array<string, string> id => name
+     */
+    public function teamNames(array $teamIds): array;
+
     public function activeMembers(string $teamId): int;
 
     public function pendingInvitations(string $teamId, \DateTimeImmutable $now): int;

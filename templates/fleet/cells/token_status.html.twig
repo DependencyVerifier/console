@@ -1,0 +1,3 @@
+{%- set status = row.usable ? row.status : (row.status == 'revoked' ? 'revoked' : 'spent') -%}
+{%- set dot = {approved: 'ok', pending: 'warning', revoked: 'critical', spent: 'unknown'}[status] -%}
+<twig:StatusDot :status="dot">{{ ('fleet.token_status.' ~ status)|trans }}</twig:StatusDot>

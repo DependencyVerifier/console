@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fleet\Application\Content;
 
+use Fleet\Application\Quota\FleetQuotas;
 use Fleet\Domain\Repository\AgentOrderRepository;
 use Fleet\Domain\Repository\AgentRepository;
 use Fleet\Domain\Repository\EnrollmentTokenRepository;
@@ -15,7 +16,9 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * What Fleet holds for Organization's objects:
- * - a deleted team takes its orders, agents, hosts and tokens with it (its agents then get unknown_agent and stop);
+ * - a deleted team takes its orders, agents, hosts and tokens with it (its agents then get unknown_agent and stop).
+ *   Under the team's fleet lock: an enrollment in flight either commits before (and is erased) or waits, then reads
+ *   its token again and finds it gone (token_invalid): no agent survives its team;
  * - an environment that a usable token enrolls into cannot be deleted (revoke the token first).
  */
 final readonly class FleetTeamContent implements TeamContentEraser, ProjectContentProbe
@@ -26,12 +29,14 @@ final readonly class FleetTeamContent implements TeamContentEraser, ProjectConte
         private AgentRepository $agents,
         private AgentOrderRepository $orders,
         private ClockInterface $clock,
+        private FleetQuotas $quotas,
     ) {
     }
 
     public function eraseTeam(string $teamId): void
     {
         $team = Uuid::fromString($teamId);
+        $this->quotas->lock($team);
         $this->orders->deleteOfTeam($team);
         $this->agents->deleteOfTeam($team);
         $this->hosts->deleteOfTeam($team);

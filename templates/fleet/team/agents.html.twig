@@ -1,0 +1,14 @@
+{% extends 'organization/team/_layout.html.twig' %}
+
+{% block title %}{{ 'fleet.agents.title'|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block primary_action %}
+    {%- if fleet.can('host.enroll') %}
+        <twig:Button as="a" href="{{ path('fleet_team_enrollment', {teamId: team.id}) }}" variant="outline">{{ 'fleet.agents.enroll'|trans }}</twig:Button>
+    {%- endif %}
+{% endblock %}
+
+{% block tab %}
+    <p class="text-sm text-muted-foreground">{{ 'fleet.agents.description'|trans }}</p>
+    <twig:DataTable :table="tables.agents" :title="'fleet.agents.title'|trans" />
+{% endblock %}

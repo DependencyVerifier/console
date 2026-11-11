@@ -44,6 +44,12 @@ final readonly class DoctrineAgentRepository implements AgentRepository
         return $this->manager->get()->getRepository(Agent::class)->findOneBy(['enrollmentTokenId' => $tokenId->value, 'fingerprint' => $fingerprint]);
     }
 
+    public function ofToken(EnrollmentTokenId $tokenId): array
+    {
+        /** @var list<Agent> */
+        return $this->manager->get()->getRepository(Agent::class)->findBy(['enrollmentTokenId' => $tokenId->value], ['enrolledAt' => 'ASC']);
+    }
+
     public function add(Agent $agent): void
     {
         $this->manager->get()->persist($agent);

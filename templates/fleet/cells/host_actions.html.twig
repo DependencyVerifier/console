@@ -1,0 +1,14 @@
+{%- set fleet = app.request.attributes.get('_fleet') -%}
+<div class="flex justify-end">
+    {%- if fleet.can('host.delete') %}
+        <twig:DropdownMenu id="host-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+            <twig:DropdownMenu:Trigger>
+                <twig:Button variant="ghost" size="icon-sm" :aria-label="'fleet.hosts.actions_for'|trans({host: row.hostname})" :title="'fleet.hosts.actions_for'|trans({host: row.hostname})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+            </twig:DropdownMenu:Trigger>
+            <twig:DropdownMenu:Content class="w-max min-w-44">
+                {%- import 'shared/_row_menu.html.twig' as menu -%}
+                {{ menu.action(path('fleet_host_delete', {teamId: fleet.teamId, hostId: row.id}), 'action', 'host_delete:' ~ row.id, 'fleet.hosts.delete', 'destructive') }}
+            </twig:DropdownMenu:Content>
+        </twig:DropdownMenu>
+    {%- endif %}
+</div>

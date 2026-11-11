@@ -29,6 +29,11 @@ interface AgentRepository
      */
     public function findEnrolled(EnrollmentTokenId $tokenId, string $fingerprint): ?Agent;
 
+    /**
+     * @return list<Agent>
+     */
+    public function ofToken(EnrollmentTokenId $tokenId): array;
+
     public function add(Agent $agent): void;
 
     public function remove(Agent $agent): void;

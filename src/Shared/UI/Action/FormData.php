@@ -25,6 +25,34 @@ final class FormData
     }
 
     /**
+     * An optional string field (an empty choice or text is null).
+     *
+     * @param FormInterface<covariant mixed> $form
+     */
+    public static function nullableString(FormInterface $form, string $field): ?string
+    {
+        $value = $form->get($field)->getData();
+        if (null !== $value && !\is_string($value)) {
+            throw new \UnexpectedValueException(\sprintf('Field "%s" is not a string.', $field));
+        }
+
+        return '' === $value ? null : $value;
+    }
+
+    /**
+     * @param FormInterface<covariant mixed> $form
+     */
+    public static function int(FormInterface $form, string $field): int
+    {
+        $value = $form->get($field)->getData();
+        if (!\is_int($value)) {
+            throw new \UnexpectedValueException(\sprintf('Field "%s" is not an integer.', $field));
+        }
+
+        return $value;
+    }
+
+    /**
      * A compound field of optional integers (an empty field is null), keyed by child name.
      *
      * @param FormInterface<covariant mixed> $form

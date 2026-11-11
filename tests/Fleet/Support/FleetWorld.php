@@ -9,10 +9,20 @@ use Fleet\Application\Command\Agent\Handler\RecordAgentPollHandler;
 use Fleet\Application\Protocol\OrderSigner;
 use Fleet\Application\Protocol\RequestVerifier;
 use Fleet\Application\Quota\FleetQuotas;
+use Fleet\Application\Security\FleetAccess;
 use Fleet\Infrastructure\Crypto\SodiumConsoleSigner;
 use Fleet\Infrastructure\Crypto\SodiumSignatureVerifier;
+use Shared\Application\Authorization\ResourceNotFound;
+use Shared\Application\Contract\Organization\FindTeamEnvironment;
+use Shared\Application\Contract\Organization\FindTeamNames;
+use Shared\Application\Contract\Organization\GetTeamAccess;
 use Shared\Application\Contract\Organization\GetTeamQuota;
+use Shared\Application\Contract\Organization\ListTeamEnvironments;
+use Shared\Application\Contract\Organization\TeamAccess;
+use Shared\Application\Contract\Organization\TeamEnvironment;
+use Shared\Domain\Authorization\Permission;
 use Symfony\Component\Clock\MockClock;
+use Tests\Identity\Support\FixedActor;
 use Tests\Identity\Support\FixedRequest;
 use Tests\Identity\Support\PrefixTokenHasher;
 use Tests\Identity\Support\RecordingLock;
@@ -41,6 +51,15 @@ final class FleetWorld
     /** @var array<string, int> */
     public array $limits = [];
 
+    /** @var array<string, TeamAccess> teams the actor belongs to */
+    public array $teams = [];
+
+    /** @var list<TeamEnvironment> environments of Fleet::TEAM */
+    public array $environments = [];
+
+    public GrantedPermissions $permissions;
+    public FixedActor $actor;
+
     public function __construct(public ?string $ip = '203.0.113.7')
     {
         $this->tokens = new InMemoryTokens();
@@ -51,8 +70,33 @@ final class FleetWorld
         $this->lock = new RecordingLock();
         $this->throttle = new ScriptedThrottle();
         $this->clock = new MockClock('2026-11-09 08:00:00', 'UTC');
-        $this->queries = new FixedQueries([GetTeamQuota::class => fn (object $query): ?int => $query instanceof GetTeamQuota ? ($this->limits[$query->quota] ?? null) : null]);
+        $this->permissions = new GrantedPermissions();
+        $this->actor = FixedActor::user(Fleet::ADMIN);
+        $this->queries = new FixedQueries([
+            GetTeamQuota::class => fn (object $query): ?int => $query instanceof GetTeamQuota ? ($this->limits[$query->quota] ?? null) : null,
+            GetTeamAccess::class => fn (object $query): TeamAccess => $query instanceof GetTeamAccess && isset($this->teams[$query->teamId]) ? $this->teams[$query->teamId] : throw ResourceNotFound::of('team'),
+            FindTeamEnvironment::class => fn (object $query): ?TeamEnvironment => $query instanceof FindTeamEnvironment && Fleet::TEAM === $query->teamId
+                ? array_find($this->environments, static fn (TeamEnvironment $e): bool => $e->environmentId === $query->environmentId) : null,
+            ListTeamEnvironments::class => fn (object $query): array => $query instanceof ListTeamEnvironments && Fleet::TEAM === $query->teamId ? $this->environments : [],
+            FindTeamNames::class => static fn (object $query): array => $query instanceof FindTeamNames ? array_intersect_key([Fleet::TEAM => 'Platform'], array_flip($query->teamIds)) : [],
+        ]);
         $this->signer = new SodiumConsoleSigner(self::CONSOLE_SEED);
+    }
+
+    /**
+     * The actor is a member of Fleet::TEAM with this role, holding these permissions there.
+     */
+    public function as(?string $role, Permission ...$permissions): self
+    {
+        $this->teams[Fleet::TEAM] = new TeamAccess(Fleet::TEAM, 'Platform', $role, false);
+        $this->permissions->team[Fleet::TEAM] = array_values($permissions);
+
+        return $this;
+    }
+
+    public function access(): FleetAccess
+    {
+        return new FleetAccess($this->queries, $this->permissions);
     }
 
     public function verifier(): RequestVerifier

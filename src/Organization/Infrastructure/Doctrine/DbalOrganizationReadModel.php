@@ -55,6 +55,16 @@ final readonly class DbalOrganizationReadModel implements OrganizationReadModel
         return $page->items[0] ?? null;
     }
 
+    public function teamNames(array $teamIds): array
+    {
+        $names = [];
+        foreach ($this->connection->fetchAllAssociative('SELECT id, name FROM organization_team WHERE id IN (:ids)', ['ids' => $teamIds], ['ids' => ArrayParameterType::STRING]) as $row) {
+            $names[Row::string($row['id'])] = Row::string($row['name']);
+        }
+
+        return $names;
+    }
+
     public function activeMembers(string $teamId): int
     {
         return Row::int($this->connection->fetchOne("SELECT COUNT(*) FROM organization_team_membership WHERE team_id = :team AND status = 'active'", ['team' => $teamId]));

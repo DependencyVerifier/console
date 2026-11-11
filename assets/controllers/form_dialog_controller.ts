@@ -8,7 +8,8 @@ type Closable = { close(): void };
  * - The first opening makes the frame visible, which loads it; every later opening reloads it, so the CSRF token
  *   is fresh and the errors of a previous attempt are gone.
  * - The first field gets the focus once the form is in.
- * - A successful submission (the page answered a Turbo Stream) closes the dialog; a 422 or a refusal stays in it.
+ * - A successful submission answered by a Turbo Stream closes the dialog; a 422 or a refusal stays in it, and so does
+ *   a success answered in the frame itself (a secret shown once, closed by the user).
  */
 export default class extends Controller<HTMLElement> {
     #opened = false;
@@ -53,8 +54,9 @@ export default class extends Controller<HTMLElement> {
         form.requestSubmit();
     }
 
-    submitted(event: CustomEvent<{ success: boolean }>): void {
-        if (!event.detail.success) {
+    submitted(event: CustomEvent<{ success: boolean; fetchResponse?: { response: Response } }>): void {
+        const contentType = event.detail.fetchResponse?.response.headers.get('Content-Type') ?? '';
+        if (!event.detail.success || !contentType.startsWith('text/vnd.turbo-stream.html')) {
             return;
         }
 

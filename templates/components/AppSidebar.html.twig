@@ -9,7 +9,8 @@
 {%- set user = app.user -%}
 {%- set myTeams = user ? sidebar_teams() : [] -%}
 {%- set currentTeam = team ?? (myTeams|first ? (myTeams|first).id : null) -%}
-{#- The sections of the selected team (UI hints: each page checks again). Members: not for a TEAM_GUEST; Settings: for
+{#- The sections of the selected team (UI hints: each page checks again). Members and the fleet (Hosts, Agents,
+    Enrollment): not for a TEAM_GUEST; Settings: for
     a TEAM_ADMIN or a super admin (team.edit is never granted on top of another role). Without a team, the home page. -#}
 {%- set roleKey = (myTeams|filter(t => t.id == currentTeam)|first).role_key ?? '' -%}
 {%- set superAdmin = is_granted('ROLE_SUPER_ADMIN') -%}
@@ -18,6 +19,9 @@
     {key: 'team_projects', title: 'nav.projects'|trans, url: path('organization_team_projects', {teamId: currentTeam}), icon: 'lucide:layers'},
 ]|merge(roleKey != 'team_guest' ? [
     {key: 'team_members', title: 'nav.team_members'|trans, url: path('organization_team_members', {teamId: currentTeam}), icon: 'lucide:users'},
+    {key: 'team_hosts', title: 'nav.hosts'|trans, url: path('fleet_team_hosts', {teamId: currentTeam}), icon: 'lucide:server'},
+    {key: 'team_agents', title: 'nav.agents'|trans, url: path('fleet_team_agents', {teamId: currentTeam}), icon: 'lucide:radio-tower'},
+    {key: 'team_enrollment', title: 'nav.enrollment'|trans, url: path('fleet_team_enrollment', {teamId: currentTeam}), icon: 'lucide:key-round'},
 ] : [])|merge(roleKey == 'team_admin' or superAdmin ? [
     {key: 'team_settings', title: 'nav.team_settings'|trans, url: path('organization_team_settings', {teamId: currentTeam}), icon: 'lucide:settings'},
 ] : [])|merge(roleKey == 'team_admin' or superAdmin ? [
@@ -40,6 +44,7 @@
     navSecondary: superAdmin ? [
         {key: 'admin_users', title: 'nav.users'|trans, url: path('identity_admin_users'), icon: 'lucide:shield-check'},
         {key: 'admin_teams', title: 'nav.teams'|trans, url: path('organization_admin_teams'), icon: 'lucide:building-2'},
+        {key: 'admin_agents', title: 'nav.agents'|trans, url: path('fleet_admin_agents'), icon: 'lucide:radio-tower'},
         {key: 'admin_audit', title: 'nav.audit'|trans, url: path('audit_admin_audit'), icon: 'lucide:scan-search'},
     ] : [],
 } -%}

@@ -1,0 +1,36 @@
+{#- Approval of an agent: the fingerprint to compare with the one the installation logged (protocol §5.2). -#}
+{% form_theme form 'shared/form/theme.html.twig' %}
+<turbo-frame id="{{ frame_id }}">
+    {{ form_start(form, {action: action, attr: {class: 'grid gap-4', novalidate: 'novalidate'}}) }}
+        {{ form_errors(form) }}
+        <dl class="grid gap-3 text-sm">
+            <div>
+                <dt class="text-muted-foreground">{{ 'fleet.field.fingerprint'|trans }}</dt>
+                <dd><code class="font-mono text-sm break-all select-all">{{ agent.fingerprint }}</code></dd>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <dt class="text-muted-foreground">{{ 'fleet.field.host'|trans }}</dt>
+                    <dd class="font-medium">{{ agent.hostname }}</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">{{ 'fleet.field.mode'|trans }}</dt>
+                    <dd>{{ ('fleet.mode.' ~ agent.mode)|trans }}{% if agent.composeProject %} · {{ agent.composeProject }}{% endif %}</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">{{ 'fleet.field.version'|trans }}</dt>
+                    <dd>{{ agent.version }}</dd>
+                </div>
+                <div>
+                    <dt class="text-muted-foreground">{{ 'fleet.field.enrolled'|trans }}</dt>
+                    <dd><time datetime="{{ agent.enrolledAt|date('c') }}">{{ agent.enrolledAt|date('Y-m-d H:i') }}</time></dd>
+                </div>
+            </div>
+        </dl>
+        {{ form_rest(form) }}
+        <footer class="flex justify-end gap-2">
+            <twig:Button type="button" variant="outline" data-action="dialog#close">{{ 'action.cancel'|trans }}</twig:Button>
+            <twig:Button type="submit">{{ submit_key|trans }}</twig:Button>
+        </footer>
+    {{ form_end(form, {render_rest: false}) }}
+</turbo-frame>

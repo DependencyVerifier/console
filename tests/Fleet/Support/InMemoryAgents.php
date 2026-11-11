@@ -37,6 +37,11 @@ final class InMemoryAgents implements AgentRepository
         return array_find($this->agents, static fn (Agent $a): bool => $a->fingerprint() === $fingerprint && $a->enrollmentTokenId()->value->equals($tokenId->value));
     }
 
+    public function ofToken(EnrollmentTokenId $tokenId): array
+    {
+        return array_values(array_filter($this->agents, static fn (Agent $a): bool => $a->enrollmentTokenId()->value->equals($tokenId->value)));
+    }
+
     public function add(Agent $agent): void
     {
         $this->agents[$agent->id()->toString()] = $agent;

@@ -1,0 +1,8 @@
+{% extends 'organization/team/_layout.html.twig' %}
+
+{% block title %}{{ 'fleet.hosts.title'|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block tab %}
+    <p class="text-sm text-muted-foreground">{{ 'fleet.hosts.description'|trans }}</p>
+    <twig:DataTable :table="tables.hosts" :title="'fleet.hosts.title'|trans" />
+{% endblock %}

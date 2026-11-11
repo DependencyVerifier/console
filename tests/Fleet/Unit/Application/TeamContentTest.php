@@ -27,6 +27,7 @@ final class TeamContentTest extends TestCase
         $world->tokens->add(Fleet::single(Fleet::OTHER_TEAM, '019a6b2c-6f00-7a11-8b22-3c44d55e6f02'));
 
         $this->content($world)->eraseTeam(Fleet::TEAM);
+        self::assertSame(['fleet.team:'.Fleet::TEAM], $world->lock->keys, 'The lock of the enrollments.');
         self::assertSame([[], [], ['019a6b2c-7f00-7a11-8b22-3c44d55e6f02'], ['019a6b2c-6f00-7a11-8b22-3c44d55e6f02']], [
             $world->orders->orders, $world->agents->agents, array_keys($world->hosts->hosts), array_keys($world->tokens->tokens),
         ]);
@@ -49,6 +50,6 @@ final class TeamContentTest extends TestCase
 
     private function content(FleetWorld $world): FleetTeamContent
     {
-        return new FleetTeamContent($world->tokens, $world->hosts, $world->agents, $world->orders, $world->clock);
+        return new FleetTeamContent($world->tokens, $world->hosts, $world->agents, $world->orders, $world->clock, $world->quotas());
     }
 }

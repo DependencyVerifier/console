@@ -1,0 +1,1 @@
+{%- if value %}<time datetime="{{ value|date('c') }}" class="tabular-nums">{{ value|date('Y-m-d H:i') }}</time>{% else %}<span class="text-muted-foreground">{{ 'fleet.never'|trans }}</span>{% endif -%}

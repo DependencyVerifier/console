@@ -1,0 +1,24 @@
+{% extends 'organization/team/_layout.html.twig' %}
+
+{% block title %}{{ 'fleet.enrollment.title'|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block primary_action %}
+    {%- if fleet.can('host.enroll') %}
+        <twig:FormDialog
+            id="create-token"
+            :title="'fleet.tokens.new_title'|trans"
+            :description="'fleet.tokens.new_description'|trans"
+            :trigger="'fleet.tokens.new'|trans"
+            :src="path('fleet_token_create', {teamId: team.id})"
+            :disabledReason="team.quotaReached('max_agents') ? 'organization.quotas.blocked'|trans({quota: 'quota.max_agents'|trans}) : null"
+        />
+    {%- endif %}
+{% endblock %}
+
+{% block tab %}
+    <div class="grid gap-1 text-sm text-muted-foreground">
+        <p>{{ 'fleet.enrollment.description'|trans }}</p>
+        <p>{{ 'fleet.enrollment.console_key'|trans }} <code class="font-mono text-xs text-foreground break-all">{{ fleet.consoleKeyId }}</code></p>
+    </div>
+    <twig:DataTable :table="tables.tokens" :title="'fleet.tokens.title'|trans" />
+{% endblock %}

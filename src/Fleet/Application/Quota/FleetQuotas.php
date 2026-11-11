@@ -48,6 +48,18 @@ final readonly class FleetQuotas
     }
 
     /**
+     * Approving a pending agent adds no seat (it already counts) but is refused while the team is over its limit
+     * (the quota was lowered under the usage). Call after lock().
+     */
+    public function assertAgentsWithinLimit(Uuid $teamId): void
+    {
+        $limit = $this->limit($teamId, self::MAX_AGENTS);
+        if (null !== $limit && $this->agents->countInQuota($teamId) > $limit) {
+            throw new FleetQuotaReached(self::MAX_AGENTS, $limit);
+        }
+    }
+
+    /**
      * One more active reusable token. Call after lock().
      */
     public function assertReusableTokenSeat(Uuid $teamId): void

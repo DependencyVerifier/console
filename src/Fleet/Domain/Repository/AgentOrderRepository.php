@@ -17,6 +17,11 @@ interface AgentOrderRepository
     public function add(AgentOrder $order): void;
 
     /**
+     * Every order of the agent (its host is deleted).
+     */
+    public function deleteOfAgent(AgentId $agentId): void;
+
+    /**
      * Queued and delivered orders of the agent, oldest first.
      *
      * @return list<AgentOrder>

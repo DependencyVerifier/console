@@ -35,7 +35,8 @@ final class InMemoryTokens implements EnrollmentTokenRepository
 
     public function add(EnrollmentToken $token): void
     {
-        $this->addWithHash($token, 'hash-'.$token->id()->toString());
+        // The hash the handler gave the aggregate (never exposed by it: read as Doctrine does).
+        $this->addWithHash($token, (fn (): string => $this->tokenHash)->call($token));
     }
 
     public function addWithHash(EnrollmentToken $token, string $hash): void

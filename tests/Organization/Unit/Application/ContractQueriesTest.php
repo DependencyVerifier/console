@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Organization\Unit\Application;
 
 use Organization\Application\Query\Contract\Handler\FindTeamEnvironmentHandler;
+use Organization\Application\Query\Contract\Handler\FindTeamNamesHandler;
 use Organization\Application\Query\Contract\Handler\GetTeamAccessHandler;
 use Organization\Application\Query\Contract\Handler\GetTeamQuotaHandler;
 use Organization\Application\Query\Contract\Handler\ListTeamEnvironmentsHandler;
@@ -17,6 +18,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Authorization\ResourceNotFound;
 use Shared\Application\Contract\Organization\FindTeamEnvironment;
+use Shared\Application\Contract\Organization\FindTeamNames;
 use Shared\Application\Contract\Organization\GetTeamAccess;
 use Shared\Application\Contract\Organization\GetTeamQuota;
 use Shared\Application\Contract\Organization\ListTeamEnvironments;
@@ -91,6 +93,17 @@ final class ContractQueriesTest extends TestCase
             ['teamEnvironments', [Teams::OTHER_TEAM, self::ENVIRONMENT]],
             ['teamEnvironments', [Teams::TEAM, null]],
         ], $read->calls, 'The invalid id never reaches the database.');
+    }
+
+    #[Test]
+    public function it_should_name_the_known_teams_only(): void
+    {
+        $read = new RecordingReadModel();
+        self::assertSame([Teams::TEAM => 'Platform'], new FindTeamNamesHandler($read)(new FindTeamNames([Teams::TEAM, Teams::OTHER_TEAM, 'nope'])));
+        self::assertSame([['teamNames', [Teams::TEAM, Teams::OTHER_TEAM]]], $read->calls, 'Invalid ids never reach the database.');
+        $none = new RecordingReadModel();
+        self::assertSame([], new FindTeamNamesHandler($none)(new FindTeamNames(['nope'])));
+        self::assertSame([], $none->calls, 'Nothing to ask.');
     }
 
     private function world(): World

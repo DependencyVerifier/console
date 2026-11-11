@@ -27,6 +27,11 @@ final class InMemoryOrders implements AgentOrderRepository
         $this->orders[$order->id()->toString()] = $order;
     }
 
+    public function deleteOfAgent(AgentId $agentId): void
+    {
+        $this->orders = array_filter($this->orders, static fn (AgentOrder $o): bool => !$o->agentId()->value->equals($agentId->value));
+    }
+
     public function openOf(AgentId $agentId, int $limit): array
     {
         return \array_slice(array_values(array_filter($this->orders, static fn (AgentOrder $o): bool => $o->agentId()->value->equals($agentId->value) && $o->status()->isOpen())), 0, $limit);

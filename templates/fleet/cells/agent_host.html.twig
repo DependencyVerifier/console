@@ -1,0 +1,2 @@
+<span class="font-medium">{{ row.hostname }}</span>
+{%- if row.composeProject %}<span class="block text-xs text-muted-foreground">{{ 'fleet.agents.compose_project'|trans({name: row.composeProject}) }}</span>{% endif -%}

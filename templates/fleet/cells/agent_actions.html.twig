@@ -1,0 +1,30 @@
+{#- Row menu of an agent. Gestures from the FleetView of the page (UI hints: each command checks again). -#}
+{%- set fleet = app.request.attributes.get('_fleet') -%}
+{%- set params = {teamId: row.teamId, agentId: row.id} -%}
+{%- set can_approve = fleet.can('host.approve') and row.status == 'pending' -%}
+{%- set can_revoke = fleet.can('host.revoke') and row.status != 'revoked' -%}
+<div class="flex justify-end">
+    {%- if can_approve %}
+        <twig:FormDialog
+            id="approve-agent-{{ row.id }}"
+            :title="'fleet.agents.approve_title'|trans({host: row.hostname})"
+            :description="'fleet.agents.approve_description'|trans"
+            :trigger="'fleet.agents.approve'|trans"
+            :src="path('fleet_agent_approve', params)"
+            :hiddenTrigger="true"
+        />
+    {%- endif %}
+    {%- if can_approve or can_revoke %}
+        <twig:DropdownMenu id="agent-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+            <twig:DropdownMenu:Trigger>
+                <twig:Button variant="ghost" size="icon-sm" :aria-label="'fleet.agents.actions_for'|trans({host: row.hostname})" :title="'fleet.agents.actions_for'|trans({host: row.hostname})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+            </twig:DropdownMenu:Trigger>
+            <twig:DropdownMenu:Content class="w-max min-w-44">
+                {%- import 'shared/_row_menu.html.twig' as menu -%}
+                {%- if can_approve %}{{ menu.dialog('approve-agent-' ~ row.id, 'fleet.agents.approve', 'lucide:shield-check') }}{% endif %}
+                {%- if can_approve and can_revoke %}<twig:DropdownMenu:Separator />{% endif %}
+                {%- if can_revoke %}{{ menu.action(path('fleet_agent_revoke', params), 'action', 'agent_revoke:' ~ row.id, row.status == 'pending' ? 'fleet.agents.refuse' : 'fleet.agents.revoke', 'destructive') }}{% endif %}
+            </twig:DropdownMenu:Content>
+        </twig:DropdownMenu>
+    {%- endif %}
+</div>

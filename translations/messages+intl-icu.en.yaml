@@ -4,6 +4,9 @@ nav:
     team_members: Team members
     team_settings: Team settings
     team_audit: Audit log
+    hosts: Hosts
+    agents: Agents
+    enrollment: Enrollment
     audit: Audit log
     project_group: "Project · {name}"
     project_overview: Overview
@@ -75,6 +78,18 @@ rule:
     role_not_assignable: You can only grant a role lower than or equal to your own.
     permission_not_grantable: This permission cannot be granted to this role.
     invalid_name: Names need 1 to 120 characters.
+    agent_not_pending: Only an agent waiting for approval can be approved.
+    agent_not_approved: Orders go to approved agents only.
+    agent_revoked: This agent is revoked.
+    enrollment_token_not_approvable: Only a reusable token waiting for approval, still usable, can be approved.
+    invalid_enrollment_token_settings: "A reusable token needs a default environment, 1 to 90 days and 1 to 10,000 agents."
+    host_has_agents: "This host still has agents: revoke them first."
+    token_invalid: This enrollment token is unknown, used up or revoked.
+    token_expired: This enrollment token has expired.
+    invalid_payload: The agent sent facts the console cannot accept.
+    invalid_order_payload: These collection settings are not valid.
+    invalid_public_key: This is not an ed25519 public key.
+    scan_now_rate: A scan was requested less than 5 minutes ago.
 identity:
     back_to_login: Back to sign in
     field:
@@ -317,6 +332,9 @@ organization:
             projects: Projects
             members: Members
             settings: Settings
+            hosts: Hosts
+            agents: Agents
+            enrollment: Enrollment
         facts:
             members: Members
             projects: Projects
@@ -458,3 +476,94 @@ audit:
         cli: Command line
         system: System
         anonymous: Anonymous
+fleet:
+    never: Never
+    field:
+        hostname: Host
+        host: Host
+        os: Operating system
+        agents: Agents
+        last_seen: Last report
+        status: Status
+        fingerprint: Fingerprint
+        mode: Mode
+        version: Version
+        enrolled: Enrolled
+        kind: Kind
+        environment: Default environment
+        uses: Agents enrolled
+        expires: Expires
+        validity_days: Valid for (days)
+        max_uses: Maximum agents
+        team: Team
+    mode:
+        host: Host
+        container: Container
+    scope:
+        compose: Compose project
+        labeled: Labeled containers
+        host: Whole host
+    agent_status:
+        pending: Waiting for approval
+        approved: Approved
+        inactive: Inactive
+        revoked: Revoked
+    token_kind:
+        single: Single use
+        reusable: Reusable
+    token_status:
+        pending: Waiting for approval
+        approved: Approved
+        revoked: Revoked
+        spent: Expired or used up
+    hosts:
+        title: Hosts
+        description: "The machines of the team, grouped from their agents (Docker engine or machine id)."
+        actions_for: "Actions for {host}"
+        delete: Delete host
+        deleted: Host deleted.
+    agents:
+        title: Agents
+        description: "Every agent is approved by a human, after comparing its fingerprint with the one logged at installation."
+        enroll: Enroll an agent
+        compose_project: "Compose project {name}"
+        actions_for: "Actions for the agent on {host}"
+        approve: Approve
+        approve_title: "Approve the agent on {host}"
+        approve_description: Compare this fingerprint with the one the agent logged at installation. Approve only if they are identical.
+        approved: Agent approved.
+        refuse: Refuse
+        revoke: Revoke
+        revoked: Agent revoked. It will never come back with this key.
+    enrollment:
+        title: Enrollment
+        description: "Tokens enroll new agents. A single-use token is valid one hour; a reusable one, once approved, enrolls approved agents (images, autoscaling)."
+        console_key: "Agents pin this console key:"
+    tokens:
+        title: Enrollment tokens
+        new: New token
+        new_title: New enrollment token
+        new_description: The token is shown once. Only its hash is kept.
+        create: Create token
+        created: Token created.
+        kind_help: A single-use token enrolls one agent, which then waits for approval.
+        environment_help: Required for a reusable token.
+        no_environment: None
+        reusable_only: Reusable tokens only.
+        shown_once: Copy this token now
+        shown_once_description: It will never be shown again. Anyone holding it can enroll an agent into this team until it expires.
+        token: Token
+        token_file: "store it in this file, then start the stack"
+        compose: Compose snippet
+        console_key: "Fingerprint of the console key the agent pins:"
+        done: Done
+        actions: Token actions
+        approve: Approve token
+        approved: Token approved. Its next enrollments give approved agents.
+        revoke: Revoke token
+        revoke_with_agents: Revoke token and its agents
+        revoked: Token revoked.
+        revoked_with_agents: Token and its agents revoked.
+    admin:
+        title: Agents
+        description: Every agent of the instance, by team.

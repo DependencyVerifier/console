@@ -1,0 +1,22 @@
+{%- set fleet = app.request.attributes.get('_fleet') -%}
+{%- set params = {teamId: fleet.teamId, tokenId: row.id} -%}
+{%- set can_approve = fleet.can('host.approve') and row.kind == 'reusable' and row.status == 'pending' and row.usable -%}
+{%- set can_revoke = fleet.can('host.revoke') and row.status != 'revoked' -%}
+<div class="flex justify-end">
+    {%- if can_approve or can_revoke %}
+        <twig:DropdownMenu id="token-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+            <twig:DropdownMenu:Trigger>
+                <twig:Button variant="ghost" size="icon-sm" :aria-label="'fleet.tokens.actions'|trans" :title="'fleet.tokens.actions'|trans" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+            </twig:DropdownMenu:Trigger>
+            <twig:DropdownMenu:Content class="w-max min-w-52">
+                {%- import 'shared/_row_menu.html.twig' as menu -%}
+                {%- if can_approve %}{{ menu.action(path('fleet_token_approve', params), 'action', 'token_approve:' ~ row.id, 'fleet.tokens.approve', 'default', 'lucide:shield-check') }}{% endif %}
+                {%- if can_approve and can_revoke %}<twig:DropdownMenu:Separator />{% endif %}
+                {%- if can_revoke %}
+                    {{ menu.action(path('fleet_token_revoke', params), 'action', 'token_revoke:' ~ row.id, 'fleet.tokens.revoke', 'destructive') }}
+                    {{ menu.action(path('fleet_token_revoke_with_agents', params), 'action', 'token_revoke_with_agents:' ~ row.id, 'fleet.tokens.revoke_with_agents', 'destructive') }}
+                {%- endif %}
+            </twig:DropdownMenu:Content>
+        </twig:DropdownMenu>
+    {%- endif %}
+</div>

@@ -28,6 +28,12 @@ final readonly class DoctrineAgentOrderRepository implements AgentOrderRepositor
         $this->manager->get()->persist($order);
     }
 
+    public function deleteOfAgent(AgentId $agentId): void
+    {
+        $this->manager->get()->createQueryBuilder()->delete(AgentOrder::class, 'o')->where('o.agentId = :agent')
+            ->setParameter('agent', $agentId->value, 'uuid')->getQuery()->execute();
+    }
+
     public function openOf(AgentId $agentId, int $limit): array
     {
         /** @var list<AgentOrder> */
