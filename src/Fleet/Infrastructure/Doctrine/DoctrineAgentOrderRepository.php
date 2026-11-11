@@ -10,6 +10,7 @@ use Fleet\Domain\Model\AgentOrderId;
 use Fleet\Domain\Model\OrderStatus;
 use Fleet\Domain\Model\OrderType;
 use Fleet\Domain\Repository\AgentOrderRepository;
+use Symfony\Component\Uid\Uuid;
 
 final readonly class DoctrineAgentOrderRepository implements AgentOrderRepository
 {
@@ -51,5 +52,11 @@ final readonly class DoctrineAgentOrderRepository implements AgentOrderRepositor
             ->where('o.status = :delivered')->andWhere('o.expiresAt <= :before')
             ->setParameter('delivered', OrderStatus::Delivered)->setParameter('before', $before)
             ->orderBy('o.expiresAt')->setMaxResults($limit)->getQuery()->getResult();
+    }
+
+    public function deleteOfTeam(Uuid $teamId): void
+    {
+        $this->manager->get()->createQueryBuilder()->delete(AgentOrder::class, 'x')->where('x.teamId = :team')
+            ->setParameter('team', $teamId, 'uuid')->getQuery()->execute();
     }
 }

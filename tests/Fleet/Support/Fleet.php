@@ -74,6 +74,15 @@ final class Fleet
         return $agent;
     }
 
+    public static function approvedWithId(string $id): Agent
+    {
+        $agent = self::agent(id: $id);
+        $agent->approve(Uuid::fromString(self::ADMIN), self::now());
+        $agent->releaseEvents();
+
+        return $agent;
+    }
+
     public static function approved(): Agent
     {
         $agent = self::agent();

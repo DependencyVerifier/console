@@ -11,6 +11,14 @@ security:
         dev:
             pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
             security: false
+        # Signed agent API (protocol v1): no session, no CSRF, no redirect. The enrollment is public (proof of
+        # possession checked by EnrollAgent); every other request is authenticated by its signature.
+        agent:
+            pattern: ^/agent/v1/
+            stateless: true
+            custom_authenticators:
+                - Fleet\Infrastructure\Security\AgentRequestAuthenticator
+            entry_point: Fleet\Infrastructure\Security\AgentRequestAuthenticator
         main:
             lazy: true
             provider: accounts
@@ -49,6 +57,8 @@ security:
     # Only the first matching rule applies.
     access_control:
         - { path: ^/_healthcheck$, roles: PUBLIC_ACCESS }
+        - { path: ^/agent/v1/enrollments$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/agent/v1/, roles: ROLE_AGENT }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
         - { path: ^/password/forgot$, roles: PUBLIC_ACCESS }

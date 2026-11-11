@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Fleet\Infrastructure\Doctrine;
 
+use Doctrine\ORM\Query;
 use Fleet\Domain\Model\EnrollmentToken;
 use Fleet\Domain\Model\EnrollmentTokenId;
 use Fleet\Domain\Model\EnrollmentTokenKind;
@@ -24,7 +25,10 @@ final readonly class DoctrineEnrollmentTokenRepository implements EnrollmentToke
 
     public function findByHash(string $tokenHash): ?EnrollmentToken
     {
-        return $this->manager->get()->getRepository(EnrollmentToken::class)->findOneBy(['tokenHash' => $tokenHash]);
+        /** @var ?EnrollmentToken */
+        return $this->manager->get()->createQueryBuilder()
+            ->select('t')->from(EnrollmentToken::class, 't')->where('t.tokenHash = :hash')->setParameter('hash', $tokenHash)
+            ->getQuery()->setHint(Query::HINT_REFRESH, true)->getOneOrNullResult();
     }
 
     public function add(EnrollmentToken $token): void
@@ -52,5 +56,11 @@ final readonly class DoctrineEnrollmentTokenRepository implements EnrollmentToke
             ->setParameter('environment', $environmentId, 'uuid')
             ->setParameter('revoked', EnrollmentTokenStatus::Revoked)->setParameter('now', $now)
             ->setMaxResults(1)->getQuery()->getOneOrNullResult();
+    }
+
+    public function deleteOfTeam(Uuid $teamId): void
+    {
+        $this->manager->get()->createQueryBuilder()->delete(EnrollmentToken::class, 'x')->where('x.teamId = :team')
+            ->setParameter('team', $teamId, 'uuid')->getQuery()->execute();
     }
 }

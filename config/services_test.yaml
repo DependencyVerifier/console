@@ -24,6 +24,9 @@ services:
     test.token_hasher:
         alias: Shared\Application\Crypto\TokenHasher
         public: true
+    test.console_signer:
+        alias: Fleet\Application\Port\ConsoleSigner
+        public: true
 
     # The default kernel logger writes warnings and errors to stderr, and Infection aborts its initial test run on the
     # first stderr output. Tests that expect an error log would therefore break mutation testing.

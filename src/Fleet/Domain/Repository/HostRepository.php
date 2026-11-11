@@ -18,4 +18,9 @@ interface HostRepository
     public function add(Host $host): void;
 
     public function remove(Host $host): void;
+
+    /**
+     * Every row of the team (DeleteTeam cascade).
+     */
+    public function deleteOfTeam(Uuid $teamId): void;
 }

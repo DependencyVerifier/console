@@ -150,6 +150,16 @@ final class RepositoriesTest extends KernelTestCase
         self::assertCount(0, $orders->deliveredExpiredBefore(Fleet::now()->modify('+15 minutes -1 second'), 10));
         self::assertSame([Fleet::ORDER], array_map(static fn (AgentOrder $o): string => $o->id()->toString(), $orders->deliveredExpiredBefore(Fleet::now()->modify('+15 minutes'), 10)));
         self::assertSame('signature', $orders->find(AgentOrderId::fromString(Fleet::ORDER))?->signature());
+        $other = Fleet::host(Fleet::OTHER_TEAM, '019a6b2c-7f00-7a11-8b22-3c44d55e6f02');
+        new DoctrineHostRepository($this->manager)->add($other);
+        $this->flush();
+        foreach ([$orders, $agents, new DoctrineHostRepository($this->manager), new DoctrineEnrollmentTokenRepository($this->manager)] as $repository) {
+            $repository->deleteOfTeam(Uuid::fromString(Fleet::TEAM));
+        }
+
+        self::assertNull($orders->find(AgentOrderId::fromString(Fleet::ORDER)));
+        self::assertNull($agents->find($agent->id()));
+        self::assertNotNull(new DoctrineHostRepository($this->manager)->find($other->id()), 'Another team keeps its fleet.');
         self::assertEquals(new HostFacts('web-01', 'debian', '12', 'Debian GNU/Linux 12 (bookworm)', '6.1.0-27-amd64', 'x86_64', 'b1c7a0f2-3e4d-4c5b-9a8f-7e6d5c4b3a21', Fleet::MACHINE), Fleet::facts());
     }
 

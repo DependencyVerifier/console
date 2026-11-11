@@ -20,6 +20,11 @@ interface AgentRepository
     public function findLiveByFingerprint(string $fingerprint): ?Agent;
 
     /**
+     * The agent holding this key fingerprint: the live one, else the last revoked one (to answer agent_revoked).
+     */
+    public function findByFingerprint(string $fingerprint): ?Agent;
+
+    /**
      * The agent enrolled with this token and key (an idempotent retry of the enrollment), whatever its status.
      */
     public function findEnrolled(EnrollmentTokenId $tokenId, string $fingerprint): ?Agent;
@@ -44,4 +49,9 @@ interface AgentRepository
      * @return list<Agent>
      */
     public function approvedSilentSince(\DateTimeImmutable $before, int $limit): array;
+
+    /**
+     * Every row of the team (DeleteTeam cascade).
+     */
+    public function deleteOfTeam(Uuid $teamId): void;
 }

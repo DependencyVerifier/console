@@ -33,6 +33,12 @@ final readonly class DoctrineAgentRepository implements AgentRepository
             ->setMaxResults(1)->getQuery()->getOneOrNullResult();
     }
 
+    public function findByFingerprint(string $fingerprint): ?Agent
+    {
+        return $this->findLiveByFingerprint($fingerprint)
+            ?? $this->manager->get()->getRepository(Agent::class)->findOneBy(['fingerprint' => $fingerprint], ['enrolledAt' => 'DESC']);
+    }
+
     public function findEnrolled(EnrollmentTokenId $tokenId, string $fingerprint): ?Agent
     {
         return $this->manager->get()->getRepository(Agent::class)->findOneBy(['enrollmentTokenId' => $tokenId->value, 'fingerprint' => $fingerprint]);
@@ -71,5 +77,11 @@ final readonly class DoctrineAgentRepository implements AgentRepository
             ->where('a.status = :approved')->andWhere('a.lastSeenAt <= :before')
             ->setParameter('approved', AgentStatus::Approved)->setParameter('before', $before)
             ->orderBy('a.lastSeenAt')->setMaxResults($limit)->getQuery()->getResult();
+    }
+
+    public function deleteOfTeam(Uuid $teamId): void
+    {
+        $this->manager->get()->createQueryBuilder()->delete(Agent::class, 'x')->where('x.teamId = :team')
+            ->setParameter('team', $teamId, 'uuid')->getQuery()->execute();
     }
 }

@@ -141,9 +141,9 @@ class EnrollmentToken implements RecordsEvents
     }
 
     /**
-     * One more enrollment (checked and counted under the team lock).
+     * Says why a token cannot enroll (protocol: token_invalid, then token_expired).
      */
-    public function consume(\DateTimeImmutable $now): void
+    public function assertUsableAt(\DateTimeImmutable $now): void
     {
         if (EnrollmentTokenStatus::Revoked === $this->status || $this->uses >= $this->maxUses) {
             throw new EnrollmentTokenInvalid();
@@ -152,7 +152,14 @@ class EnrollmentToken implements RecordsEvents
         if ($now >= $this->expiresAt) {
             throw new EnrollmentTokenExpired();
         }
+    }
 
+    /**
+     * One more enrollment (checked and counted under the team lock).
+     */
+    public function consume(\DateTimeImmutable $now): void
+    {
+        $this->assertUsableAt($now);
         ++$this->uses;
     }
 

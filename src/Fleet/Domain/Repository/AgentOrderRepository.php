@@ -8,6 +8,7 @@ use Fleet\Domain\Model\AgentId;
 use Fleet\Domain\Model\AgentOrder;
 use Fleet\Domain\Model\AgentOrderId;
 use Fleet\Domain\Model\OrderType;
+use Symfony\Component\Uid\Uuid;
 
 interface AgentOrderRepository
 {
@@ -33,4 +34,9 @@ interface AgentOrderRepository
      * @return list<AgentOrder>
      */
     public function deliveredExpiredBefore(\DateTimeImmutable $before, int $limit): array;
+
+    /**
+     * Every row of the team (DeleteTeam cascade).
+     */
+    public function deleteOfTeam(Uuid $teamId): void;
 }

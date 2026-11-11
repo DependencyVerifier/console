@@ -37,4 +37,10 @@ final readonly class DoctrineHostRepository implements HostRepository
     {
         $this->manager->get()->remove($host);
     }
+
+    public function deleteOfTeam(Uuid $teamId): void
+    {
+        $this->manager->get()->createQueryBuilder()->delete(Host::class, 'x')->where('x.teamId = :team')
+            ->setParameter('team', $teamId, 'uuid')->getQuery()->execute();
+    }
 }

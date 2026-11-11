@@ -12,6 +12,11 @@ interface EnrollmentTokenRepository
 {
     public function find(EnrollmentTokenId $id): ?EnrollmentToken;
 
+    /**
+     * Always read from the database (never a stale copy of the identity map): read again after the team lock.
+     *
+     * @phpstan-impure
+     */
     public function findByHash(string $tokenHash): ?EnrollmentToken;
 
     public function add(EnrollmentToken $token): void;
@@ -25,4 +30,9 @@ interface EnrollmentTokenRepository
      * Does a usable token default to this environment? (it then cannot be deleted).
      */
     public function hasActiveForEnvironment(Uuid $environmentId, \DateTimeImmutable $now): bool;
+
+    /**
+     * Every row of the team (DeleteTeam cascade).
+     */
+    public function deleteOfTeam(Uuid $teamId): void;
 }

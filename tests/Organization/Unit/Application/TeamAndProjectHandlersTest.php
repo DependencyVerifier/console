@@ -59,6 +59,7 @@ use Tests\Organization\Support\FixedPermissions;
 use Tests\Organization\Support\FixedQueries;
 use Tests\Organization\Support\FixedSlugs;
 use Tests\Organization\Support\RecordingContentProbe;
+use Tests\Organization\Support\RecordingEraser;
 use Tests\Organization\Support\Teams;
 use Tests\Organization\Support\World;
 
@@ -193,8 +194,10 @@ final class TeamAndProjectHandlersTest extends TestCase
         $otherInvitation = $issue('019a6b2c-5f00-7a11-8b22-3c44d55e6f03', InvitationTarget::team(TeamId::fromString(Teams::OTHER_TEAM), TeamRole::Member));
         array_map($world->invitations->add(...), [$teamInvitation, $projectInvitation, $otherInvitation]);
 
-        $this->deleteTeam($world)(new DeleteTeam(Teams::TEAM));
+        $fleet = new RecordingEraser();
+        $this->deleteTeam($world, $fleet)(new DeleteTeam(Teams::TEAM));
 
+        self::assertSame([Teams::TEAM], $fleet->erased, 'The other contexts erase what they hold for the team.');
         self::assertSame([Teams::OTHER_TEAM], array_keys($world->teams->teams));
         self::assertSame([Teams::TEAM], $world->teams->locked);
         self::assertSame([$kept], array_values($world->projects->projects), 'Every project of the team goes, never another team\'s.');
@@ -208,11 +211,13 @@ final class TeamAndProjectHandlersTest extends TestCase
     {
         $world = new World()->as(Teams::ADMIN, TeamRole::Admin);
         $world->teams->add(Teams::withAdmin());
+        $fleet = new RecordingEraser();
         try {
-            $this->deleteTeam($world)(new DeleteTeam(Teams::TEAM));
+            $this->deleteTeam($world, $fleet)(new DeleteTeam(Teams::TEAM));
             self::fail('Super admin only.');
         } catch (PermissionDenied) {
         }
+        self::assertSame([], $fleet->erased);
         self::assertCount(1, $world->teams->teams);
         self::assertSame([], $world->teams->locked);
 
@@ -411,9 +416,9 @@ final class TeamAndProjectHandlersTest extends TestCase
         }
     }
 
-    private function deleteTeam(World $world): DeleteTeamHandler
+    private function deleteTeam(World $world, RecordingEraser $eraser = new RecordingEraser()): DeleteTeamHandler
     {
-        return new DeleteTeamHandler($world->access(), $world->teams, $world->projects, $world->invitations);
+        return new DeleteTeamHandler($world->access(), $world->teams, $world->projects, $world->invitations, [$eraser]);
     }
 
     private function createTeam(World $world, FixedAccounts $accounts): CreateTeamHandler
