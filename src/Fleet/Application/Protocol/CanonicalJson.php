@@ -22,6 +22,11 @@ final class CanonicalJson
             throw new \InvalidArgumentException('A signed value never holds a float.');
         }
 
+        if ($value instanceof \stdClass) {
+            // An explicit map, `{}` when empty (the SCAN_NOW payload).
+            return self::map(get_object_vars($value));
+        }
+
         if (!\is_array($value)) {
             return $value;
         }
@@ -30,6 +35,14 @@ final class CanonicalJson
             return array_map(self::sorted(...), $value);
         }
 
+        return self::map($value);
+    }
+
+    /**
+     * @param array<array-key, mixed> $value
+     */
+    private static function map(array $value): object
+    {
         // Keys are ASCII in the protocol: byte order is the UTF-16 code unit order RFC 8785 asks for.
         ksort($value, \SORT_STRING);
 

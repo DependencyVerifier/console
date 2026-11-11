@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Fleet\Domain\Repository;
+
+use Fleet\Domain\Model\Agent;
+use Fleet\Domain\Model\AgentId;
+use Fleet\Domain\Model\EnrollmentTokenId;
+use Fleet\Domain\Model\HostId;
+use Symfony\Component\Uid\Uuid;
+
+interface AgentRepository
+{
+    public function find(AgentId $id): ?Agent;
+
+    /**
+     * The agent not revoked holding this key fingerprint (`keyid` of the signed requests).
+     */
+    public function findLiveByFingerprint(string $fingerprint): ?Agent;
+
+    /**
+     * The agent enrolled with this token and key (an idempotent retry of the enrollment), whatever its status.
+     */
+    public function findEnrolled(EnrollmentTokenId $tokenId, string $fingerprint): ?Agent;
+
+    public function add(Agent $agent): void;
+
+    public function remove(Agent $agent): void;
+
+    /**
+     * Pending and approved agents of the team (maxAgents).
+     */
+    public function countInQuota(Uuid $teamId): int;
+
+    /**
+     * @return list<Agent>
+     */
+    public function ofHost(HostId $hostId): array;
+
+    /**
+     * Approved agents silent since $before (candidates to inactive).
+     *
+     * @return list<Agent>
+     */
+    public function approvedSilentSince(\DateTimeImmutable $before, int $limit): array;
+}

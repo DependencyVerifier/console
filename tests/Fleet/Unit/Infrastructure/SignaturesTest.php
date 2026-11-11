@@ -57,6 +57,7 @@ final class SignaturesTest extends TestCase
     {
         self::assertSame('{"a":"/x","b":[{"c":1,"d":"é"}],"z":null}', CanonicalJson::encode(['z' => null, 'b' => [['d' => 'é', 'c' => 1]], 'a' => '/x']));
         self::assertSame('[]', CanonicalJson::encode([]));
+        self::assertSame('{"p":{},"q":{"a":1,"b":2}}', CanonicalJson::encode(['q' => (object) ['b' => 2, 'a' => 1], 'p' => new \stdClass()]), 'An explicit map, sorted, `{}` when empty.');
         self::assertSame('{"0":"a","1":"b"}', CanonicalJson::encode([1 => 'b', 0 => 'a']), 'A map stays a map once sorted.');
 
         $this->expectException(\InvalidArgumentException::class);
