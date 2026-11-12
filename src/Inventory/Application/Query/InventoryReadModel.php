@@ -10,6 +10,7 @@ use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Domain\Model\SnapshotSubject;
+use Shared\Application\Contract\Inventory\TeamSubject;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
@@ -53,11 +54,24 @@ interface InventoryReadModel
     public function host(string $hostId): ?HostView;
 
     /**
-     * The package URLs of the current SBOMs of a team (its hosts, its applications still found, its images), each once.
+     * The packages of the current SBOMs of a team (its hosts, its applications still found, its images), each package
+     * URL once, direct when one SBOM says so.
      *
-     * @return list<string>
+     * @return list<array{purl: string, direct: bool}>
      */
-    public function teamPackageUrls(string $teamId): array;
+    public function teamPackages(string $teamId): array;
+
+    /**
+     * The applications still found and the inventoried hosts of a team, with what they run.
+     *
+     * @return list<TeamSubject>
+     */
+    public function teamSubjects(string $teamId): array;
+
+    /**
+     * @return list<string> the teams with an inventoried host
+     */
+    public function inventoriedTeams(): array;
 
     public function image(string $imageRecordId): ?ImageView;
 

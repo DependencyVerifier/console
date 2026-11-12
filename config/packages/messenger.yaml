@@ -80,6 +80,9 @@ framework:
             Vulnerability\Application\Command\Sync\SyncPackages: feeds
             Vulnerability\Application\Command\Sync\SyncKnownExploited: feeds
             Vulnerability\Application\Command\Sync\SyncExploitProbabilities: feeds
+            Vulnerability\Application\Command\Sync\SyncEndOfLife: feeds
+            Vulnerability\Application\Command\Sync\SyncLatestReleases: feeds
+            Exposure\Application\Command\Refresh\RefreshFindings: matching
 
 when@test:
     framework:

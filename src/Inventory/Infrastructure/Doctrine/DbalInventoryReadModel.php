@@ -15,6 +15,7 @@ use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Domain\Model\SnapshotSubject;
+use Shared\Application\Contract\Inventory\TeamSubject;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 use Shared\Infrastructure\Doctrine\Row;
@@ -140,18 +141,72 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
         );
     }
 
-    public function teamPackageUrls(string $teamId): array
+    public function teamPackages(string $teamId): array
     {
-        /** @var list<string> */
-        return $this->connection->fetchFirstColumn(
-            'SELECT DISTINCT p.purl FROM inventory_package p JOIN inventory_blob b ON b.id = p.blob_id
+        $rows = $this->connection->fetchAllAssociative(
+            "SELECT p.purl, bool_or(p.dependency = 'direct') AS direct FROM inventory_package p JOIN inventory_blob b ON b.id = p.blob_id
              WHERE b.team_id = :team AND b.digest IN (
                 SELECT h.packages_digest FROM inventory_host h WHERE h.team_id = :team AND h.packages_digest IS NOT NULL
                 UNION SELECT a.sbom_digest FROM inventory_app_instance a WHERE a.team_id = :team AND a.present
                 UNION SELECT i.sbom_digest FROM inventory_container_image i WHERE i.team_id = :team
-             ) ORDER BY p.purl',
+             ) GROUP BY p.purl ORDER BY p.purl",
             ['team' => $teamId],
         );
+
+        return array_map(static fn (array $row): array => ['purl' => Row::string($row['purl']), 'direct' => true === $row['direct']], $rows);
+    }
+
+    public function teamSubjects(string $teamId): array
+    {
+        $apps = $this->connection->fetchAllAssociative(
+            'SELECT a.id, a.fields, a.sbom_digest, i.sbom_digest AS image_digest FROM inventory_app_instance a
+             LEFT JOIN inventory_container_image i ON i.team_id = a.team_id AND i.image_id = a.image_id
+             WHERE a.team_id = :team AND a.present ORDER BY a.id',
+            ['team' => $teamId],
+        );
+        $hosts = $this->connection->fetchAllAssociative('SELECT h.host_id, h.facts, h.packages_digest FROM inventory_host h WHERE h.team_id = :team ORDER BY h.host_id', ['team' => $teamId]);
+        $digests = array_values(array_unique(array_filter([
+            ...array_map(static fn (array $a): ?string => Row::nullableString($a['sbom_digest']), $apps),
+            ...array_map(static fn (array $a): ?string => Row::nullableString($a['image_digest']), $apps),
+            ...array_map(static fn (array $h): ?string => Row::nullableString($h['packages_digest']), $hosts),
+        ])));
+        $packages = [];
+        foreach ([] === $digests ? [] : $this->connection->fetchAllAssociative(
+            'SELECT b.digest, p.purl, p.dependency FROM inventory_package p JOIN inventory_blob b ON b.id = p.blob_id WHERE b.team_id = :team AND b.digest IN (:digests) ORDER BY p.purl',
+            ['team' => $teamId, 'digests' => $digests],
+            ['digests' => ArrayParameterType::STRING],
+        ) as $row) {
+            $packages[Row::string($row['digest'])][] = ['purl' => Row::string($row['purl']), 'direct' => 'direct' === Row::nullableString($row['dependency'])];
+        }
+
+        $subjects = [];
+        foreach ($apps as $app) {
+            $runtime = self::json($app['fields'])['runtime'] ?? null;
+            $runtimes = \is_array($runtime) && \is_string($runtime['name'] ?? null) && \is_string($runtime['version'] ?? null) ? [['name' => $runtime['name'], 'version' => $runtime['version']]] : [];
+            $subjects[] = new TeamSubject(TeamSubject::APPLICATION, Row::string($app['id']), [...$packages[Row::string($app['sbom_digest'])] ?? [], ...$packages[Row::nullableString($app['image_digest']) ?? ''] ?? []], $runtimes, null);
+        }
+
+        foreach ($hosts as $host) {
+            $facts = self::json($host['facts']);
+            $runtimes = [];
+            foreach (\is_array($facts['runtimes'] ?? null) ? $facts['runtimes'] : [] as $runtime) {
+                if (\is_array($runtime) && \is_string($runtime['name'] ?? null) && \is_string($runtime['version'] ?? null)) {
+                    $runtimes[] = ['name' => $runtime['name'], 'version' => $runtime['version']];
+                }
+            }
+
+            $os = \is_array($facts['os'] ?? null) ? $facts['os'] : [];
+            $subjects[] = new TeamSubject(TeamSubject::HOST, Row::string($host['host_id']), $packages[Row::nullableString($host['packages_digest']) ?? ''] ?? [], $runtimes,
+                \is_string($os['id'] ?? null) && \is_string($os['version_id'] ?? null) ? ['id' => $os['id'], 'version' => $os['version_id']] : null);
+        }
+
+        return $subjects;
+    }
+
+    public function inventoriedTeams(): array
+    {
+        /** @var list<string> */
+        return $this->connection->fetchFirstColumn('SELECT DISTINCT team_id FROM inventory_host ORDER BY team_id');
     }
 
     public function image(string $imageRecordId): ?ImageView

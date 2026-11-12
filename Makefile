@@ -161,6 +161,14 @@ inventory-maintain: ## Inventory maintenance, stale inventories, history beyond 
 vuln-sync: ## Queue the sync of the advisories (osv.dev, by package name), CISA KEV and FIRST EPSS (cron: every 6 hours; the worker runs it)
 	@$(CONSOLE) app:vulnerability:sync
 
+.PHONY: eol-sync
+eol-sync: ## Queue the sync of the end of life cycles (endoflife.date) and of the latest releases of direct dependencies (Packagist, npm) (cron: daily)
+	@$(CONSOLE) app:vulnerability:sync-lifecycle
+
+.PHONY: findings-refresh
+findings-refresh: ## Queue the computation of the findings of every inventoried team (cron: daily, after eol-sync)
+	@$(CONSOLE) app:exposure:refresh
+
 .PHONY: fleet-maintain
 fleet-maintain: ## Fleet maintenance, inactive agents, late orders, request nonces (cron, every few minutes)
 	@$(CONSOLE) app:fleet:maintain

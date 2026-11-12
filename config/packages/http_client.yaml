@@ -31,11 +31,38 @@ framework:
                     max_retries: 3
                     delay: 2000
                     multiplier: 3
+            eol.client:
+                base_uri: '%env(default:eol_default_url:EOL_URL)%'
+                timeout: 30
+                max_duration: 120
+                retry_failed:
+                    max_retries: 3
+                    delay: 2000
+                    multiplier: 3
+            packagist.client:
+                base_uri: '%env(default:packagist_default_url:PACKAGIST_URL)%'
+                timeout: 30
+                max_duration: 120
+                retry_failed:
+                    max_retries: 3
+                    delay: 2000
+                    multiplier: 3
+            npm.client:
+                base_uri: '%env(default:npm_default_url:NPM_URL)%'
+                timeout: 30
+                max_duration: 120
+                retry_failed:
+                    max_retries: 3
+                    delay: 2000
+                    multiplier: 3
 
 parameters:
     osv_default_url: 'https://api.osv.dev'
     kev_default_url: 'https://www.cisa.gov'
     epss_default_url: 'https://api.first.org'
+    eol_default_url: 'https://endoflife.date'
+    packagist_default_url: 'https://repo.packagist.org'
+    npm_default_url: 'https://registry.npmjs.org'
 
 when@test:
     framework:

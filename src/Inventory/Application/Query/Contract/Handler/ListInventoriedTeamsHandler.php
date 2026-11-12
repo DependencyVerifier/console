@@ -6,9 +6,9 @@ namespace Inventory\Application\Query\Contract\Handler;
 
 use Inventory\Application\Query\InventoryReadModel;
 use Shared\Application\Bus\QueryHandler;
-use Shared\Application\Contract\Inventory\ListTeamPackageUrls;
+use Shared\Application\Contract\Inventory\ListInventoriedTeams;
 
-final readonly class ListTeamPackageUrlsHandler implements QueryHandler
+final readonly class ListInventoriedTeamsHandler implements QueryHandler
 {
     public function __construct(private InventoryReadModel $read)
     {
@@ -17,8 +17,8 @@ final readonly class ListTeamPackageUrlsHandler implements QueryHandler
     /**
      * @return list<string>
      */
-    public function __invoke(ListTeamPackageUrls $query): array
+    public function __invoke(ListInventoriedTeams $query): array
     {
-        return $this->read->teamPackageUrls($query->teamId);
+        return $this->read->inventoriedTeams();
     }
 }

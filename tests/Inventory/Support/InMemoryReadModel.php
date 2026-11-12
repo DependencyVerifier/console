@@ -11,6 +11,7 @@ use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Domain\Model\SnapshotSubject;
+use Shared\Application\Contract\Inventory\TeamSubject;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
@@ -85,12 +86,25 @@ final class InMemoryReadModel implements InventoryReadModel
         return array_find($this->hosts, static fn (HostView $h): bool => $h->hostId === $hostId);
     }
 
-    /** @var array<string, list<string>> team => package URLs */
-    public array $packageUrls = [];
+    /** @var array<string, list<array{purl: string, direct: bool}>> team => packages */
+    public array $teamPackages = [];
 
-    public function teamPackageUrls(string $teamId): array
+    public function teamPackages(string $teamId): array
     {
-        return $this->packageUrls[$teamId] ?? [];
+        return $this->teamPackages[$teamId] ?? [];
+    }
+
+    /** @var array<string, list<TeamSubject>> */
+    public array $teamSubjects = [];
+
+    public function teamSubjects(string $teamId): array
+    {
+        return $this->teamSubjects[$teamId] ?? [];
+    }
+
+    public function inventoriedTeams(): array
+    {
+        return array_keys($this->teamSubjects);
     }
 
     public function image(string $imageRecordId): ?ImageView
