@@ -230,7 +230,12 @@ final class FakeAgent
             'pkg:composer/symfony/http-kernel@6.4.3' => 'composer', 'pkg:composer/symfony/console@6.4.3' => 'composer',
             'pkg:composer/twig/twig@3.8.0' => 'composer', 'pkg:npm/lodash@4.17.20' => 'npm', 'pkg:npm/axios@1.6.0' => 'npm',
         ];
-        $os = ['pkg:deb/debian/openssl@3.0.11-1~deb12u2?arch=amd64' => 'dpkg', 'pkg:deb/debian/libc6@2.36-9+deb12u3?arch=amd64' => 'dpkg', 'pkg:deb/debian/curl@7.88.1-10+deb12u5?arch=amd64' => 'dpkg'];
+        // OS packages name their release (`distro`) and their source package when it differs (`upstream`), §8.5.
+        $os = [
+            'pkg:deb/debian/libssl3@3.0.11-1~deb12u2?arch=amd64&distro=debian-12&upstream=openssl' => 'dpkg',
+            'pkg:deb/debian/libc6@2.36-9+deb12u3?arch=amd64&distro=debian-12&upstream=glibc' => 'dpkg',
+            'pkg:deb/debian/curl@7.88.1-10+deb12u5?arch=amd64&distro=debian-12' => 'dpkg',
+        ];
         if ('container' !== $mode) {
             return [
                 [['subject_key' => 'host', 'kind' => 'host'], $os],
