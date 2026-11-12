@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Inventory\UI\Controller\Team;
 
 use Inventory\Application\Query\Team\GetHostInventory;
+use Inventory\Application\Query\Team\ListInventoryHistory;
 use Inventory\Application\Query\Team\ListPackages;
 use Inventory\UI\Controller\RouteCollection;
 use Inventory\UI\DataTable\ApplicationsTable;
+use Inventory\UI\DataTable\HistoryTable;
 use Inventory\UI\DataTable\PackagesTable;
 use Omines\DataTablesBundle\DataTableFactory;
 use Shared\Application\Bus\QueryBus;
@@ -34,6 +36,7 @@ final readonly class HostController
         return $this->page->render($teamId, 'host', 'team_hosts', [
             'applications' => $this->tables->createFromType(ApplicationsTable::class, ['teamId' => $teamId, 'hostId' => $hostId])->handleRequest($request),
             'packages' => $this->tables->createFromType(PackagesTable::class, ['teamId' => $teamId, 'of' => ListPackages::HOST, 'id' => $hostId])->handleRequest($request),
+            'history' => $this->tables->createFromType(HistoryTable::class, ['teamId' => $teamId, 'of' => ListInventoryHistory::HOST, 'id' => $hostId])->handleRequest($request),
         ], ['host' => $host]);
     }
 }

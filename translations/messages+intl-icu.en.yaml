@@ -633,6 +633,10 @@ inventory:
         runtimes: Runtimes
         image_id: Image ID
         references: Tags and digests
+        inventoried_at: Inventory
+        snapshot: Snapshot
+        trigger: Trigger
+        digest: Digest
     kind:
         path: Path
         compose_service: Compose service
@@ -663,6 +667,26 @@ inventory:
     packages:
         title: "{count, plural, one {# package} other {# packages}}"
         os_title: "{count, plural, one {# OS package} other {# OS packages}}"
+    history:
+        title: Inventory history
+        retention: Kept for the retention period of the team; the latest snapshot of each subject always.
+        changed: Changed
+        unchanged: Unchanged
+        subject:
+            host_facts: Host facts
+            host_packages: OS packages
+            application: Components
+            image: Components
+        trigger:
+            scheduled: Scheduled
+            scan_now: Scan now
+            image_change: Image change
+            startup: Agent start
+    counts:
+        title: Inventory
+        applications: Applications
+        unattached: Not attached
+        images: Container images
     hosts:
         not_inventoried: Not inventoried yet
     images:

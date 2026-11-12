@@ -5,7 +5,7 @@
 {% block tab %}
     <p class="text-sm text-muted-foreground">{{ 'inventory.applications.description'|trans }}</p>
     {%- if team.role != 'team_guest' %}
-        <twig:DataTable :table="tables.unattached" :title="'inventory.applications.to_attach'|trans" />
+        <div id="unattached" class="scroll-mt-4"><twig:DataTable :table="tables.unattached" :title="'inventory.applications.to_attach'|trans" /></div>
     {%- endif %}
     <twig:DataTable :table="tables.applications" :title="'inventory.applications.title'|trans" />
 {% endblock %}

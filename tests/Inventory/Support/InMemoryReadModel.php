@@ -6,9 +6,11 @@ namespace Tests\Inventory\Support;
 
 use Inventory\Application\Query\InventoryReadModel;
 use Inventory\Application\Query\View\AppRow;
+use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
 use Inventory\Application\Query\View\PackageRow;
+use Inventory\Domain\Model\SnapshotSubject;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
@@ -28,6 +30,9 @@ final class InMemoryReadModel implements InventoryReadModel
 
     /** @var array<string, list<PackageRow>> digest => packages */
     public array $packages = [];
+
+    /** @var array<string, list<HistoryRow>> subject id => records, the latest first */
+    public array $history = [];
 
     /** @var array<string, mixed> */
     public array $lastFilter = [];
@@ -49,9 +54,28 @@ final class InMemoryReadModel implements InventoryReadModel
         return array_find($this->apps, static fn (AppRow $r): bool => $r->id === $appId);
     }
 
+    public function counts(string $teamId, ?array $environmentIds): array
+    {
+        $present = array_filter($this->apps, static fn (AppRow $r): bool => $r->teamId === $teamId && $r->present);
+
+        return [
+            'applications' => \count(array_filter($present, static fn (AppRow $r): bool => null === $environmentIds || \in_array($r->environmentId, $environmentIds, true))),
+            'unattached' => \count(array_filter($present, static fn (AppRow $r): bool => null === $r->environmentId)),
+            'images' => \count(array_filter($this->images, static fn (ImageView $i): bool => $i->teamId === $teamId)),
+        ];
+    }
+
     public function packages(string $teamId, string $digest, PageRequest $page): Page
     {
         $rows = $this->packages[$teamId.' '.$digest] ?? [];
+
+        return new Page($rows, \count($rows), \count($rows));
+    }
+
+    public function history(array $subjects, string $subjectId, PageRequest $page): Page
+    {
+        $names = array_map(static fn (SnapshotSubject $s): string => $s->value, $subjects);
+        $rows = array_values(array_filter($this->history[$subjectId] ?? [], static fn (HistoryRow $r): bool => \in_array($r->subject, $names, true)));
 
         return new Page($rows, \count($rows), \count($rows));
     }

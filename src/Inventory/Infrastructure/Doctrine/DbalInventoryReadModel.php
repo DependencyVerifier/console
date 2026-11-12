@@ -6,12 +6,15 @@ namespace Inventory\Infrastructure\Doctrine;
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Inventory\Application\Query\InventoryReadModel;
 use Inventory\Application\Query\View\AppRow;
+use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
 use Inventory\Application\Query\View\PackageRow;
+use Inventory\Domain\Model\SnapshotSubject;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 use Shared\Infrastructure\Doctrine\Row;
@@ -20,6 +23,7 @@ use function Symfony\Component\String\u;
 
 final readonly class DbalInventoryReadModel implements InventoryReadModel
 {
+    private const string NO_ID = '00000000-0000-0000-0000-000000000000';
     private const string PACKAGES_OF = '(SELECT COUNT(*) FROM inventory_package p JOIN inventory_blob b ON b.id = p.blob_id WHERE b.team_id = %s AND b.digest = %s)';
 
     public function __construct(private Connection $connection)
@@ -34,7 +38,7 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
         if ($unattachedOnly) {
             $base->andWhere('a.environment_id IS NULL');
         } elseif (null !== $environmentIds) {
-            $base->andWhere('a.environment_id IN (:environments)')->setParameter('environments', [] === $environmentIds ? ['00000000-0000-0000-0000-000000000000'] : $environmentIds, ArrayParameterType::STRING);
+            $base->andWhere('a.environment_id IN (:environments)')->setParameter('environments', [] === $environmentIds ? [self::NO_ID] : $environmentIds, ArrayParameterType::STRING);
         }
 
         if (null !== $hostId) {
@@ -60,6 +64,29 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
         return false === $row ? null : self::app($row);
     }
 
+    public function counts(string $teamId, ?array $environmentIds): array
+    {
+        $parameters = ['team' => $teamId];
+        $types = [];
+        $visible = 'TRUE';
+        if (null !== $environmentIds) {
+            $visible = 'a.environment_id IN (:environments)';
+            $parameters['environments'] = [] === $environmentIds ? [self::NO_ID] : $environmentIds;
+            $types['environments'] = ArrayParameterType::STRING;
+        }
+
+        $row = $this->connection->fetchAssociative(
+            'SELECT COUNT(*) FILTER (WHERE a.present AND '.$visible.') AS applications, COUNT(*) FILTER (WHERE a.present AND a.environment_id IS NULL) AS unattached,
+                (SELECT COUNT(*) FROM inventory_container_image i WHERE i.team_id = :team) AS images
+             FROM inventory_app_instance a WHERE a.team_id = :team',
+            $parameters,
+            $types,
+        );
+        \assert(false !== $row);
+
+        return ['applications' => Row::int($row['applications']), 'unattached' => Row::int($row['unattached']), 'images' => Row::int($row['images'])];
+    }
+
     public function packages(string $teamId, string $digest, PageRequest $page): Page
     {
         $base = $this->connection->createQueryBuilder()->from('inventory_package', 'p')->innerJoin('p', 'inventory_blob', 'b', 'b.id = p.blob_id')
@@ -71,6 +98,28 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
             Row::string($row['purl']), Row::string($row['type']), Row::nullableString($row['namespace']), Row::string($row['name']),
             Row::nullableString($row['version']), Row::nullableString($row['dependency']), Row::nullableString($row['manager']),
         ), $rows['items']), $rows['filtered'], $rows['total']);
+    }
+
+    public function history(array $subjects, string $subjectId, PageRequest $page): Page
+    {
+        $parameters = ['subject' => $subjectId, 'types' => array_map(static fn (SnapshotSubject $s): string => $s->value, $subjects)];
+        $types = ['types' => ArrayParameterType::STRING];
+        $total = Row::int($this->connection->fetchOne('SELECT COUNT(*) FROM inventory_snapshot s WHERE s.subject_id = :subject AND s.subject_type IN (:types)', $parameters, $types));
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $this->connection->fetchAllAssociative(
+            "SELECT * FROM (
+                SELECT s.id, s.taken_at, s.subject_type, s.digest, r.manifest->>'trigger' AS trigger,
+                    LAG(s.digest) OVER (PARTITION BY s.subject_type ORDER BY s.taken_at, s.id) IS DISTINCT FROM s.digest AS changed
+                FROM inventory_snapshot s LEFT JOIN inventory_run r ON r.id = s.inventory_id
+                WHERE s.subject_id = :subject AND s.subject_type IN (:types)
+            ) h ORDER BY h.taken_at DESC, h.id DESC LIMIT :limit OFFSET :offset",
+            [...$parameters, 'limit' => $page->limit, 'offset' => $page->offset],
+            [...$types, 'limit' => ParameterType::INTEGER, 'offset' => ParameterType::INTEGER],
+        );
+
+        return new Page(array_map(static fn (array $row): HistoryRow => new HistoryRow(
+            new \DateTimeImmutable(Row::string($row['taken_at'])), Row::string($row['subject_type']), Row::string($row['digest']), (bool) $row['changed'], Row::nullableString($row['trigger']),
+        ), $rows), $total, $total);
     }
 
     public function host(string $hostId): ?HostView

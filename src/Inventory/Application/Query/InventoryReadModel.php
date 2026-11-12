@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Inventory\Application\Query;
 
 use Inventory\Application\Query\View\AppRow;
+use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
 use Inventory\Application\Query\View\PackageRow;
+use Inventory\Domain\Model\SnapshotSubject;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
@@ -26,9 +28,27 @@ interface InventoryReadModel
     public function application(string $appId): ?AppRow;
 
     /**
+     * Applications present (in the given environments, null: any), present ones not attached, images of the team.
+     *
+     * @param list<string>|null $environmentIds
+     *
+     * @return array{applications: int, unattached: int, images: int}
+     */
+    public function counts(string $teamId, ?array $environmentIds): array;
+
+    /**
      * @return Page<PackageRow>
      */
     public function packages(string $teamId, string $digest, PageRequest $page): Page;
+
+    /**
+     * The records of a subject, the latest first, with the trigger of their inventory.
+     *
+     * @param list<SnapshotSubject> $subjects
+     *
+     * @return Page<HistoryRow>
+     */
+    public function history(array $subjects, string $subjectId, PageRequest $page): Page;
 
     public function host(string $hostId): ?HostView;
 

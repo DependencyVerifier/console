@@ -9,20 +9,26 @@ use Inventory\Application\Command\Application\DetachApplication;
 use Inventory\Application\Command\Application\Handler\ApplicationAttachment;
 use Inventory\Application\Command\Application\Handler\AttachApplicationHandler;
 use Inventory\Application\Command\Application\Handler\DetachApplicationHandler;
+use Inventory\Application\Query\Team\CountInventory;
 use Inventory\Application\Query\Team\GetApplication;
 use Inventory\Application\Query\Team\GetHostInventory;
 use Inventory\Application\Query\Team\GetImage;
+use Inventory\Application\Query\Team\Handler\CountInventoryHandler;
 use Inventory\Application\Query\Team\Handler\GetApplicationHandler;
 use Inventory\Application\Query\Team\Handler\GetHostInventoryHandler;
 use Inventory\Application\Query\Team\Handler\GetImageHandler;
 use Inventory\Application\Query\Team\Handler\InventoryVisibility;
 use Inventory\Application\Query\Team\Handler\ListApplicationsHandler;
+use Inventory\Application\Query\Team\Handler\ListInventoryHistoryHandler;
 use Inventory\Application\Query\Team\Handler\ListPackagesHandler;
 use Inventory\Application\Query\Team\ListApplications;
+use Inventory\Application\Query\Team\ListInventoryHistory;
 use Inventory\Application\Query\Team\ListPackages;
 use Inventory\Application\Query\View\AppRow;
+use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
+use Inventory\Application\Query\View\InventoryCounts;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Application\Security\InventoryAccess;
 use Inventory\Application\Security\InventoryScope;
@@ -263,6 +269,49 @@ final class TeamViewsTest extends TestCase
         $this->assertNotFound(static fn () => $packages('other', Inv::APP));
         $this->read->apps[] = new AppRow('019a6b31-6e00-7f12-a3b4-c5d6e7f80904', Inv::OTHER_TEAM, Inv::HOST, 'x', 'k', 'path', [], null, null, 'none', true, Inv::now(), 'sha256:app', 1);
         $this->assertNotFound(static fn () => $packages(ListPackages::APPLICATION, Inv::APP, Inv::OTHER_TEAM));
+    }
+
+    #[Test]
+    public function it_should_count_the_inventory_the_actor_sees(): void
+    {
+        $count = fn (): InventoryCounts => (new CountInventoryHandler($this->access(), $this->read))(new CountInventory(Inv::TEAM));
+        $this->read->apps[] = new AppRow('019a6b31-6e00-7f12-a3b4-c5d6e7f80905', Inv::TEAM, Inv::HOST, 'web', 'k', 'path', [], null, null, 'none', false, Inv::now(), 'sha256:app', 1);
+        $this->read->apps[] = new AppRow('019a6b31-6e00-7f12-a3b4-c5d6e7f80906', Inv::OTHER_TEAM, Inv::HOST, 'web', 'k', 'path', [], null, Inv::ENVIRONMENT, 'auto', true, Inv::now(), 'sha256:app', 1);
+        $this->read->images[] = new ImageView('019a6b31-7e00-7f12-a3b4-c5d6e7f80905', Inv::OTHER_TEAM, Inv::IMAGE, [], [], null, null, Inv::now(), 'sha256:x', 0);
+
+        $member = $count();
+        self::assertSame([3, 1, 1], [$member->applications, $member->unattached, $member->images], 'Gone and other teams not counted.');
+
+        $this->guest = true;
+        $guest = $count();
+        self::assertSame([1, null, null], [$guest->applications, $guest->unattached, $guest->images], 'Shop only; neither the unattached nor the images.');
+        $this->assertNotFound(fn () => (new CountInventoryHandler($this->access(), $this->read))(new CountInventory(Inv::OTHER_TEAM)));
+    }
+
+    #[Test]
+    public function it_should_list_the_history_of_who_sees_the_host_or_the_application(): void
+    {
+        $at = Inv::now();
+        $this->read->history = [
+            Inv::HOST => [new HistoryRow($at, 'host_packages', 'sha256:os', false, 'scan_now'), new HistoryRow($at, 'host_facts', 'sha256:f', true, null), new HistoryRow($at, 'image', 'sha256:i', true, null)],
+            Inv::APP => [new HistoryRow($at, 'application', 'sha256:app', true, 'scheduled')],
+            self::BLOG_APP => [new HistoryRow($at, 'application', 'sha256:blog', true, 'scheduled')],
+        ];
+        $history = fn (string $of, string $id, string $team = Inv::TEAM): array => array_map(
+            static fn (HistoryRow $r): string => $r->subject.' '.$r->digest,
+            (new ListInventoryHistoryHandler($this->visibility(), new GetApplicationHandler($this->access(), $this->read), $this->read))(new ListInventoryHistory($team, $of, $id))->items,
+        );
+
+        self::assertSame(['host_packages sha256:os', 'host_facts sha256:f'], $history(ListInventoryHistory::HOST, Inv::HOST));
+        self::assertSame(['application sha256:app'], $history(ListInventoryHistory::APPLICATION, Inv::APP));
+        $this->assertNotFound(static fn () => $history('image', Inv::HOST));
+        $this->assertNotFound(static fn () => $history(ListInventoryHistory::APPLICATION, Inv::APP, Inv::OTHER_TEAM));
+        $this->assertNotFound(static fn () => $history(ListInventoryHistory::HOST, Inv::HOST, Inv::OTHER_TEAM));
+
+        $this->guest = true;
+        self::assertSame(['application sha256:app'], $history(ListInventoryHistory::APPLICATION, Inv::APP));
+        $this->assertNotFound(static fn () => $history(ListInventoryHistory::APPLICATION, self::BLOG_APP));
+        $this->assertNotFound(static fn () => $history(ListInventoryHistory::HOST, self::HOST2));
     }
 
     #[Test]

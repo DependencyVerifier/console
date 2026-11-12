@@ -37,4 +37,8 @@
     </section>
     <twig:DataTable :table="tables.applications" :title="'inventory.applications.title'|trans" />
     <twig:DataTable :table="tables.packages" :title="'inventory.packages.os_title'|trans({count: host.packages})" />
+    <section class="flex flex-col gap-2">
+        <twig:DataTable :table="tables.history" :title="'inventory.history.title'|trans" />
+        <p class="text-xs text-muted-foreground">{{ 'inventory.history.retention'|trans }}</p>
+    </section>
 {% endblock %}

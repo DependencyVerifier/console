@@ -1,0 +1,18 @@
+{#- The inventory figures of a team on its overview (variables: teamId, counts InventoryCounts: unattached and images
+    are null for a TEAM_GUEST). Each figure opens the Applications section. -#}
+{%- set applications_url = path('inventory_team_applications', {teamId: teamId}) -%}
+{%- set figures = [
+    {key: 'applications', value: counts.applications, href: applications_url},
+    {key: 'unattached', value: counts.unattached, href: applications_url ~ '#unattached'},
+    {key: 'images', value: counts.images, href: null},
+]|filter(f => f.value is not null) -%}
+<dl class="grid grid-cols-1 overflow-hidden rounded-lg border bg-card sm:grid-cols-3">
+    {%- for figure in figures %}
+        <div class="-mb-px -me-px border-e border-b px-4 py-3" data-inventory-count="{{ figure.key }}">
+            <dt class="text-xs text-muted-foreground">{{ ('inventory.counts.' ~ figure.key)|trans }}</dt>
+            <dd class="mt-1 text-2xl font-semibold tabular-nums">
+                {%- if figure.href %}<a href="{{ figure.href }}" class="underline-offset-4 hover:underline">{{ figure.value }}</a>{% else %}{{ figure.value }}{% endif -%}
+            </dd>
+        </div>
+    {%- endfor %}
+</dl>

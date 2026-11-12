@@ -18,6 +18,11 @@
         {label: 'organization.team.facts.id'|trans, value: team.id, mono: true},
     ]" />
 
+    <section class="flex flex-col gap-3" aria-labelledby="team-inventory-title">
+        <h2 id="team-inventory-title" class="text-base font-semibold">{{ 'inventory.counts.title'|trans }}</h2>
+        {{ include('shared/frame/lazy.html.twig', {id: 'team-inventory', src: path('inventory_team_inventory_frame', {teamId: team.id}), rows: 1}) }}
+    </section>
+
     {%- set show_quotas = team.can('team.edit') or team.can('team.members.manage') -%}
     {%- set shortcuts = team.can('project.create') or team.can('team.members.manage') -%}
     <div class="grid items-start gap-6 {{ shortcuts ? 'lg:grid-cols-[minmax(0,1fr)_16rem]' : '' }}">

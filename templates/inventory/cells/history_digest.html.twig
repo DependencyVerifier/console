@@ -1,0 +1,5 @@
+{#- The short digest of the snapshot, and whether it changed since the previous inventory (row: HistoryRow). -#}
+<span class="flex items-center gap-2">
+    <span class="font-mono text-xs" title="{{ value }}">{{ value|slice(7, 12) }}</span>
+    {%- if row.changed %}<twig:Badge variant="secondary" data-history="changed">{{ 'inventory.history.changed'|trans }}</twig:Badge>{% else %}<twig:Badge variant="outline" data-history="unchanged">{{ 'inventory.history.unchanged'|trans }}</twig:Badge>{% endif %}
+</span>

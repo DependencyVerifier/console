@@ -18,6 +18,7 @@ enum RouteCollection: string implements RouteCollectionInterface
     case APPLICATION_DETACH = 'application_detach';
     case HOST = 'host';
     case IMAGE = 'image';
+    case TEAM_INVENTORY_FRAME = 'team_inventory_frame';
 
     public function prefixed(): string
     {

@@ -37,13 +37,18 @@ final class InventoryUiTest extends IdentityWebTestCase
         $project = Seed::project(self::getContainer(), $team, 'Shop');
         $teamId = $team->id()->toString();
         $environmentId = $this->environment($project->id()->toString());
-        $this->inventory($teamId);
+        $agent = $this->inventory($teamId);
         $appId = $this->fetchString('SELECT id FROM inventory_app_instance');
         $hostId = $this->fetchString('SELECT host_id FROM inventory_app_instance');
         $this->logIn('alice@example.com');
 
+        $this->client->request('GET', '/teams/'.$teamId);
+        self::assertSelectorExists(\sprintf('turbo-frame#team-inventory[src="/teams/%s/frames/inventory"]', $teamId), 'The overview loads the inventory figures.');
+        self::assertSame(['applications' => '1', 'unattached' => '1', 'images' => '1'], $this->counts($teamId));
+
         $this->client->request('GET', '/teams/'.$teamId.'/applications');
         self::assertResponseIsSuccessful();
+        self::assertSelectorExists('#unattached [data-datatable-name-value="unattached"]', 'The anchor of the Not attached figure.');
         self::assertSelectorTextContains('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]', 'Applications');
         $unattached = DataTables::draw($this->client, '/teams/'.$teamId.'/applications', 'unattached')['data'];
         self::assertCount(1, $unattached, 'No label, no default environment: not attached.');
@@ -87,6 +92,15 @@ final class InventoryUiTest extends IdentityWebTestCase
         $hostRow = DataTables::draw($this->client, '/teams/'.$teamId.'/hosts', 'hosts')['data'][0];
         self::assertStringContainsString(\sprintf('/teams/%s/hosts/%s', $teamId, $hostId), (string) $hostRow['hostname']);
 
+        $this->send($agent, '019a6b31-5e00-7f12-a3b4-c5d6e7f80921');
+        $history = DataTables::draw($this->client, \sprintf('/teams/%s/applications/%s', $teamId, $appId), 'history')['data'];
+        self::assertCount(2, $history, 'Two inventories saw it.');
+        self::assertStringContainsString('Unchanged', (string) $history[0]['digest'], 'The latest first.');
+        self::assertStringContainsString('Changed', (string) $history[1]['digest']);
+        self::assertStringContainsString('Scan now', (string) $history[0]['trigger']);
+        $hostHistory = DataTables::draw($this->client, \sprintf('/teams/%s/hosts/%s', $teamId, $hostId), 'history')['data'];
+        self::assertSame(['Host facts', 'Host facts'], array_map(static fn (array $r): string => trim((string) $r['subject']), $hostHistory), 'No OS packages from a container agent.');
+
         $imageId = $this->fetchString('SELECT id FROM inventory_container_image');
         $image = $this->client->request('GET', \sprintf('/teams/%s/images/%s', $teamId, $imageId));
         self::assertResponseIsSuccessful();
@@ -111,6 +125,7 @@ final class InventoryUiTest extends IdentityWebTestCase
         $imageId = $this->fetchString('SELECT id FROM inventory_container_image');
         $this->logIn('guest@example.com');
 
+        self::assertSame(['applications' => '0'], $this->counts($teamId), 'Neither the unattached nor the images.');
         $this->client->request('GET', '/teams/'.$teamId.'/applications');
         self::assertResponseIsSuccessful();
         self::assertSame([], DataTables::draw($this->client, '/teams/'.$teamId.'/applications', 'applications')['data'], 'Not attached: in no project of the guest.');
@@ -122,8 +137,10 @@ final class InventoryUiTest extends IdentityWebTestCase
         $shopEnvironment = $this->environment($shop->id()->toString());
         $this->connection()->executeStatement("UPDATE inventory_app_instance SET environment_id = ?, assignment = 'manual'", [$shopEnvironment]);
         self::assertCount(1, DataTables::draw($this->client, '/teams/'.$teamId.'/applications', 'applications')['data']);
+        self::assertSame(['applications' => '1'], $this->counts($teamId));
         $page = $this->client->request('GET', \sprintf('/teams/%s/applications/%s', $teamId, $appId));
         self::assertResponseIsSuccessful();
+        self::assertCount(1, DataTables::draw($this->client, \sprintf('/teams/%s/applications/%s', $teamId, $appId), 'history')['data']);
         self::assertCount(0, $page->filter('form[action$="/detach"], [data-dialog-trigger-for="attach-application"]'), 'A viewer never attaches.');
         $this->client->request('GET', \sprintf('/teams/%s/hosts/%s', $teamId, $hostId));
         self::assertResponseIsSuccessful();
@@ -131,6 +148,20 @@ final class InventoryUiTest extends IdentityWebTestCase
         self::assertResponseStatusCodeSame(403);
         $this->client->request('GET', '/teams/'.$teamId.'/hosts');
         self::assertResponseStatusCodeSame(403, 'The fleet stays hidden.');
+    }
+
+    /**
+     * The figures of the overview frame, by key.
+     *
+     * @return array<string, string>
+     */
+    private function counts(string $teamId): array
+    {
+        $frame = $this->client->request('GET', \sprintf('/teams/%s/frames/inventory', $teamId), server: ['HTTP_TURBO_FRAME' => 'team-inventory']);
+        self::assertResponseIsSuccessful();
+        $keys = $frame->filter('[data-inventory-count]')->each(static fn ($n): string => (string) $n->attr('data-inventory-count'));
+
+        return array_combine($keys, $frame->filter('[data-inventory-count] dd')->each(static fn ($n): string => $n->text()));
     }
 
     private function environment(string $projectId, string $name = 'production'): string
@@ -144,7 +175,7 @@ final class InventoryUiTest extends IdentityWebTestCase
     /**
      * An approved agent of the team sends one inventory: host facts, a Compose service and its image.
      */
-    private function inventory(string $teamId): void
+    private function inventory(string $teamId): AgentClient
     {
         [, $plain] = FleetSeed::token(self::getContainer(), $teamId);
         $agent = AgentClient::generate();
@@ -154,22 +185,34 @@ final class InventoryUiTest extends IdentityWebTestCase
         self::assertNotNull($entity);
         $entity->approve(Uuid::v7(), new \DateTimeImmutable());
         $manager->flush();
+        $this->send($agent, self::INVENTORY);
 
+        return $agent;
+    }
+
+    /**
+     * The same inventory again under another id: only the missing snapshots are uploaded.
+     */
+    private function send(AgentClient $agent, string $inventoryId): void
+    {
         $facts = Documents::hostFacts();
         $app = Documents::sbom('compose:shop/php', ['pkg:composer/symfony/http-kernel@6.4.3', 'pkg:npm/lodash@4.17.21']);
         $image = Documents::sbom('image:'.self::IMAGE, ['pkg:deb/debian/openssl@3.0.15-1~deb12u1'], 'dpkg');
         $documents = [Documents::digest($facts) => [$facts, 'application/vnd.depverify.host-facts+json;version=1'], Documents::digest($app) => [$app, 'application/vnd.cyclonedx+json;version=1.6'], Documents::digest($image) => [$image, 'application/vnd.cyclonedx+json;version=1.6']];
-        $agent->post($this->client, '/agent/v1/inventories', Documents::manifest(self::INVENTORY, $facts, [
+        $agent->post($this->client, '/agent/v1/inventories', Documents::manifest($inventoryId, $facts, [
             Documents::subject('compose:shop/php', 'compose_service', $app, ['compose_project' => 'shop', 'service' => 'php', 'image_id' => self::IMAGE]),
             Documents::subject('image:'.self::IMAGE, 'container_image', $image, ['image_id' => self::IMAGE, 'provenance' => 'registry', 'base_image' => 'debian:12', 'tags' => ['shop/php:1.4']]),
         ]));
         self::assertResponseIsSuccessful((string) $this->client->getResponse()->getContent());
-        foreach ($documents as $digest => [$document, $mediaType]) {
-            $agent->putSnapshot($this->client, '/agent/v1/inventories/'.self::INVENTORY.'/snapshots/'.$digest, $document, $mediaType);
+        $answer = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertIsArray($answer);
+        self::assertIsArray($answer['missing'] ?? null);
+        foreach (array_intersect_key($documents, array_flip(array_filter($answer['missing'], \is_string(...)))) as $digest => [$document, $mediaType]) {
+            $agent->putSnapshot($this->client, '/agent/v1/inventories/'.$inventoryId.'/snapshots/'.$digest, $document, $mediaType);
             self::assertResponseStatusCodeSame(201, (string) $this->client->getResponse()->getContent());
         }
 
-        $agent->post($this->client, '/agent/v1/inventories/'.self::INVENTORY.'/complete', ['protocol_version' => 1]);
+        $agent->post($this->client, '/agent/v1/inventories/'.$inventoryId.'/complete', ['protocol_version' => 1]);
         self::assertResponseStatusCodeSame(202, (string) $this->client->getResponse()->getContent());
     }
 }
