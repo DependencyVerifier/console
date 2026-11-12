@@ -1,0 +1,90 @@
+{% extends 'inventory/team/_object.html.twig' %}
+{#- One finding (variables: view FindingView, finding FindingRow): what it is, where, since when, and the decisions
+    on its risk (Accept risk / Revoke when the actor may decide). -#}
+
+{% block title %}{{ finding.title }} · {{ team.name }} · DependencyVerifier{% endblock %}
+{% block section_link %}
+    {%- if finding.subjectType == 'application' -%}
+        <twig:Breadcrumb:Link href="{{ path('inventory_application', {teamId: team.id, appId: finding.subjectId}) }}">{{ 'exposure.subject.application'|trans }}</twig:Breadcrumb:Link>
+    {%- else -%}
+        <twig:Breadcrumb:Link href="{{ path('inventory_host', {teamId: team.id, hostId: finding.subjectId}) }}">{{ 'exposure.subject.host'|trans }}</twig:Breadcrumb:Link>
+    {%- endif -%}
+{% endblock %}
+{% block object_icon %}{{ finding.kind == 'vulnerability' ? 'lucide:shield-alert' : (finding.kind == 'eol' ? 'lucide:calendar-x' : 'lucide:clock') }}{% endblock %}
+{% block object_title %}{{ finding.title }}{% endblock %}
+{% block object_subtitle %}
+    <span>{{ ('exposure.kind.' ~ finding.kind)|trans }}</span>
+    <span aria-hidden="true">·</span>
+    <span class="font-mono">{{ finding.package }}</span>
+    <span aria-hidden="true">·</span>
+    {{ include('exposure/cells/finding_status.html.twig', {row: finding}) }}
+{% endblock %}
+{% block object_actions %}
+    {%- if view.mayDecide and finding.status == 'open' %}
+        {%- if view.runningAcceptance %}
+            <form method="post" action="{{ path('exposure_finding_revoke', {teamId: team.id, findingId: finding.id}) }}">
+                <input type="hidden" name="action[_token]" value="{{ csrf_token('finding_revoke:' ~ finding.id) }}">
+                <twig:Button type="submit" variant="outline">{{ 'exposure.risk.revoke'|trans }}</twig:Button>
+            </form>
+        {%- endif %}
+        <twig:FormDialog
+            id="accept-risk"
+            :title="'exposure.risk.accept_title'|trans"
+            :description="'exposure.risk.accept_description'|trans"
+            :trigger="(view.runningAcceptance ? 'exposure.risk.extend' : 'exposure.risk.accept')|trans"
+            :src="path('exposure_finding_accept', {teamId: team.id, findingId: finding.id})"
+        />
+    {%- endif %}
+{% endblock %}
+
+{% block tab %}
+    <section class="rounded-lg border p-4">
+        <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.field.severity'|trans }}</dt>
+                <dd>{{ include('exposure/cells/finding_severity.html.twig', {row: finding}) }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.field.versions'|trans }}</dt>
+                <dd>{{ include('exposure/cells/finding_versions.html.twig', {row: finding}) }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.field.first_seen'|trans }}</dt>
+                <dd>{{ include('fleet/cells/time.html.twig', {value: finding.firstSeenAt}) }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.field.last_seen'|trans }}</dt>
+                <dd>{{ include('fleet/cells/time.html.twig', {value: finding.lastSeenAt}) }}</dd>
+            </div>
+            {%- if finding.fixedAt %}
+                <div>
+                    <dt class="text-muted-foreground">{{ 'exposure.field.fixed_at'|trans }}</dt>
+                    <dd>{{ include('fleet/cells/time.html.twig', {value: finding.fixedAt}) }}</dd>
+                </div>
+            {%- endif %}
+            {%- if finding.aliases is not empty %}
+                <div class="sm:col-span-2 lg:col-span-3">
+                    <dt class="text-muted-foreground">{{ 'exposure.field.aliases'|trans }}</dt>
+                    <dd class="flex flex-wrap gap-2">
+                        {%- for alias in finding.aliases %}<a class="font-mono text-xs underline-offset-4 hover:underline" href="https://osv.dev/vulnerability/{{ alias|url_encode }}" rel="noreferrer noopener" target="_blank">{{ alias }}</a>{% endfor %}
+                    </dd>
+                </div>
+            {%- endif %}
+        </dl>
+    </section>
+
+    <section class="flex flex-col gap-3" aria-labelledby="risk-title">
+        <h2 id="risk-title" class="text-base font-semibold">{{ 'exposure.risk.history'|trans }}</h2>
+        {%- for acceptance in view.acceptances %}
+            <div class="rounded-lg border p-4 text-sm{{ acceptance.active ? '' : ' text-muted-foreground' }}" data-acceptance="{{ acceptance.active ? 'active' : 'inactive' }}">
+                <p class="whitespace-pre-line">{{ acceptance.justification }}</p>
+                <p class="mt-2 text-xs text-muted-foreground">
+                    {{- 'exposure.risk.accepted_by'|trans({email: acceptance.acceptedBy, date: acceptance.acceptedAt|date('Y-m-d'), until: acceptance.expiresOn|date('Y-m-d')}) -}}
+                    {%- if acceptance.revokedAt %} · {{ 'exposure.risk.revoked_on'|trans({date: acceptance.revokedAt|date('Y-m-d')}) }}{% elseif not acceptance.active %} · {{ 'exposure.risk.expired'|trans }}{% endif %}
+                </p>
+            </div>
+        {%- else %}
+            <p class="text-sm text-muted-foreground">{{ 'exposure.risk.none'|trans }}</p>
+        {%- endfor %}
+    </section>
+{% endblock %}

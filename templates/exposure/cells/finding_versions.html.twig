@@ -1,0 +1,3 @@
+{#- Installed → fixed (vulnerability) or latest (end of life, outdated) (row: FindingRow). -#}
+{%- set target = row.kind == 'vulnerability' ? row.fixed : row.latest -%}
+<span class="font-mono text-xs">{{ row.installed ?? '—' }}{% if target %} → {{ target }}{% elseif row.kind == 'vulnerability' %} <span class="text-muted-foreground">({{ 'exposure.no_fix'|trans }})</span>{% endif %}</span>

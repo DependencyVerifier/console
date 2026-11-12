@@ -56,6 +56,7 @@ refusal:
     unavailable: The service is temporarily unavailable. Try again in a moment.
     error: Something went wrong. Try again.
 rule:
+    invalid_risk_acceptance: "A justification (2000 characters at most) and a date after today, within a year."
     invalid_email_address: This email address is not valid.
     password_policy: "The password needs 12 to 4096 characters and must not contain your email address."
     email_already_registered: An account already uses this email address.
@@ -693,3 +694,54 @@ inventory:
         untagged: Untagged image
         from: "from {base}"
         applications: Applications running it
+exposure:
+    findings:
+        title: Findings
+    subject:
+        application: Application
+        host: Host
+    field:
+        finding: Finding
+        severity: Severity
+        versions: Installed → target
+        status: Status
+        first_seen: First detected
+        last_seen: Last detected
+        fixed_at: Fixed
+        aliases: Identifiers
+    kind:
+        vulnerability: Vulnerability
+        eol: End of life
+        outdated: Outdated dependency
+    eol_level:
+        upcoming: Within 6 months
+        soon: Within 3 months
+        imminent: Within 30 days
+        expired: Past its end of life
+    lag:
+        major: A major version behind
+        minor: A minor version behind
+    status:
+        open: Open
+        fixed: Fixed
+        accepted_until: "Accepted until {date}"
+    kev: Exploited
+    epss_help: Probability of exploitation within 30 days (FIRST EPSS)
+    no_fix: no fix yet
+    risk:
+        accept: Accept risk
+        extend: Extend or change
+        accept_title: Accept the risk
+        accept_description: "The finding stays visible but sends no notification until the date. Notifications start again once it expires."
+        justification: Justification
+        justification_help: Why the risk is acceptable, for the people who will read it later.
+        expires_on: Until
+        expires_on_help: A date after today, within a year.
+        accepted: Risk accepted.
+        revoke: Revoke the acceptance
+        revoked: Acceptance revoked. The finding is open again.
+        history: Risk decisions
+        none: No risk accepted on this finding.
+        accepted_by: "Accepted by {email} on {date}, until {until}"
+        revoked_on: "revoked on {date}"
+        expired: expired

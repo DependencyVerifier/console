@@ -14,6 +14,7 @@ use Tests\Inventory\Support\Documents;
 use Tests\Organization\Support\Seed;
 use Tests\Support\Accounts;
 use Tests\Support\AuditLog;
+use Tests\Support\DataTables;
 use Tests\Support\IdentityWebTestCase;
 
 /**
@@ -23,6 +24,7 @@ use Tests\Support\IdentityWebTestCase;
  */
 final class FindingsChainTest extends IdentityWebTestCase
 {
+    private const string STREAM = 'text/vnd.turbo-stream.html';
     private const string IMAGE = 'sha256:4f1e2d3c4b5a69788796a5b4c3d2e1f00112233445566778899aabbccddeeff0';
 
     #[Test]
@@ -57,6 +59,63 @@ final class FindingsChainTest extends IdentityWebTestCase
             'application outdated Packagist symfony/http-kernel open',
             'application outdated npm lodash fixed',
         ], $this->findings(), 'Upgraded: fixed, never deleted.');
+    }
+
+    #[Test]
+    public function it_should_show_the_findings_and_accept_then_revoke_a_risk(): void
+    {
+        $alice = Accounts::create(self::getContainer(), 'alice@example.com');
+        $guest = Accounts::create(self::getContainer(), 'guest@example.com');
+        $team = Seed::team(self::getContainer(), 'Alpha', [[$alice, TeamRole::Admin], [$guest, TeamRole::Guest]]);
+        $teamId = $team->id()->toString();
+        $this->send($this->agent($teamId), '019a6b31-5e00-7f12-a3b4-c5d6e7f80932', 'pkg:npm/lodash@4.17.20');
+        $appId = $this->fetchString('SELECT id FROM inventory_app_instance');
+        $findingId = $this->fetchString("SELECT id FROM exposure_finding WHERE finding_key = 'GHSA-35jh-r3h4-6jhm lodash'");
+        $this->logIn('alice@example.com');
+
+        $appUrl = \sprintf('/teams/%s/applications/%s', $teamId, $appId);
+        $this->client->request('GET', $appUrl);
+        self::assertResponseIsSuccessful();
+        $rows = DataTables::draw($this->client, $appUrl, 'findings')['data'];
+        self::assertCount(4, $rows);
+        self::assertStringContainsString('Command Injection in lodash', (string) $rows[0]['title'], 'Vulnerabilities first, the most severe first (high before medium).');
+        self::assertStringContainsString('4.17.20 → 4.17.21', (string) $rows[0]['versions']);
+        self::assertStringContainsString('Open', (string) $rows[0]['status']);
+
+        $findingUrl = \sprintf('/teams/%s/findings/%s', $teamId, $findingId);
+        $page = $this->client->request('GET', $findingUrl);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Command Injection in lodash');
+        self::assertCount(1, $page->filter('a[href="https://osv.dev/vulnerability/CVE-2021-23337"]'));
+        self::assertSelectorExists('turbo-frame#accept-risk-form');
+
+        $frame = ['HTTP_TURBO_FRAME' => 'accept-risk-form'];
+        $acceptUrl = $findingUrl.'/accept';
+        $form = $this->client->request('GET', $acceptUrl, server: $frame)->filter('form')->form(['accept[justification]' => 'Only reachable from the VPN.', 'accept[expiresOn]' => '2020-01-01']);
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
+        self::assertResponseStatusCodeSame(422, 'A past date.');
+        $form = $this->client->request('GET', $acceptUrl, server: $frame)->filter('form')->form(['accept[justification]' => 'Only reachable from the VPN.', 'accept[expiresOn]' => new \DateTimeImmutable('+30 days')->format('Y-m-d')]);
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM, ...$frame]);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Accepted until', (string) DataTables::draw($this->client, $appUrl, 'findings')['data'][0]['status']);
+        self::assertSame(['success'], array_column(AuditLog::entries($this->connection(), 'exposure.accept_risk'), 'outcome'));
+
+        $page = $this->client->request('GET', $findingUrl);
+        self::assertSelectorTextContains('[data-acceptance="active"]', 'Only reachable from the VPN.');
+        $revoke = $page->filter('form[action$="/revoke"]')->form();
+        $this->client->request('POST', $revoke->getUri(), $revoke->getPhpValues(), server: ['HTTP_ACCEPT' => self::STREAM]);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Open', (string) DataTables::draw($this->client, $appUrl, 'findings')['data'][0]['status']);
+        $this->client->request('GET', $findingUrl);
+        self::assertSelectorExists('[data-acceptance="inactive"]');
+        self::assertSelectorNotExists('form[action$="/revoke"]', 'Nothing running to revoke.');
+
+        $this->client->getCookieJar()->clear();
+        $this->logIn('guest@example.com');
+        $this->client->request('GET', $findingUrl);
+        self::assertResponseStatusCodeSame(404, 'Not attached: in no project of the guest.');
+        $this->client->request('GET', $acceptUrl, server: $frame);
+        self::assertResponseStatusCodeSame(404);
     }
 
     /**

@@ -1,0 +1,3 @@
+{#- The finding (row: FindingRow): its title, a link to its page, then its kind and package. -#}
+<a href="{{ path('exposure_finding', {teamId: row.teamId, findingId: row.id}) }}" class="font-medium underline-offset-4 hover:underline{{ row.status == 'fixed' ? ' text-muted-foreground line-through' : '' }}">{{ row.title }}</a>
+<span class="block text-xs text-muted-foreground">{{ ('exposure.kind.' ~ row.kind)|trans }} · <span class="font-mono">{{ row.package }}</span>{% if row.aliases|length > 0 %} · <span class="font-mono">{{ row.aliases|first }}</span>{% endif %}</span>

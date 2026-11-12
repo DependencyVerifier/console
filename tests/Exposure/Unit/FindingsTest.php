@@ -17,6 +17,7 @@ use Exposure\Domain\Event\FindingOpened;
 use Exposure\Domain\Model\Finding;
 use Exposure\Domain\Model\FindingKind;
 use Exposure\Domain\Model\FindingStatus;
+use Exposure\Domain\Model\RiskAcceptance;
 use Exposure\Domain\Model\SubjectType;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -31,6 +32,7 @@ use Shared\Application\Contract\Vulnerability\Risk;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Uid\Uuid;
 use Tests\Exposure\Support\InMemoryFindings;
+use Tests\Exposure\Support\InMemoryRiskAcceptances;
 use Tests\Exposure\Support\InMemoryTeamExposures;
 use Tests\Organization\Support\FixedQueries;
 use Tests\Organization\Support\RecordingCommands;
@@ -154,7 +156,12 @@ final class FindingsTest extends TestCase
         $this->refresh(team: self::OTHER);
         self::assertCount(2, $this->findings->findings);
 
-        new ExposureTeamContent($this->findings, $this->exposures)->eraseTeam(self::TEAM);
+        $acceptances = new InMemoryRiskAcceptances();
+        foreach ($this->findings->findings as $finding) {
+            $acceptances->add(RiskAcceptance::accept(Uuid::v7(), $finding, 'Accepted.', $this->clock->now()->modify('+1 month'), Uuid::v7(), $this->clock->now()));
+        }
+        new ExposureTeamContent($this->findings, $this->exposures, $acceptances)->eraseTeam(self::TEAM);
+        self::assertSame([self::OTHER], array_map(static fn (RiskAcceptance $a): string => $a->teamId()->toRfc4122(), $acceptances->acceptances));
         self::assertSame([], $this->findings->ofTeam(Uuid::fromString(self::TEAM)));
         self::assertCount(1, $this->findings->ofTeam(Uuid::fromString(self::OTHER)));
         self::assertArrayNotHasKey(self::TEAM, $this->exposures->exposures);

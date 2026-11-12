@@ -19,6 +19,11 @@ final readonly class DoctrineFindingRepository implements FindingRepository
         return $this->manager->get()->getRepository(Finding::class)->findBy(['teamId' => $teamId]);
     }
 
+    public function find(Uuid $findingId): ?Finding
+    {
+        return $this->manager->get()->find(Finding::class, $findingId);
+    }
+
     public function add(Finding $finding): void
     {
         $this->manager->get()->persist($finding);

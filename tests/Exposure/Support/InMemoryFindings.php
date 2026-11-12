@@ -18,6 +18,11 @@ final class InMemoryFindings implements FindingRepository
         return array_values(array_filter($this->findings, static fn (Finding $f): bool => $f->teamId()->equals($teamId)));
     }
 
+    public function find(Uuid $findingId): ?Finding
+    {
+        return array_find($this->findings, static fn (Finding $f): bool => $f->id()->equals($findingId));
+    }
+
     public function add(Finding $finding): void
     {
         $this->findings[] = $finding;

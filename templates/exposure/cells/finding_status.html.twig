@@ -1,0 +1,4 @@
+{#- Open, accepted (until its expiry) or fixed (row: FindingRow). -#}
+{%- if row.status == 'fixed' %}<twig:Badge variant="secondary">{{ 'exposure.status.fixed'|trans }}</twig:Badge>
+{%- elseif row.accepted %}<twig:Badge variant="outline">{{ 'exposure.status.accepted_until'|trans({date: row.acceptedUntil|date('Y-m-d')}) }}</twig:Badge>
+{%- else %}<twig:Badge variant="default">{{ 'exposure.status.open'|trans }}</twig:Badge>{% endif -%}

@@ -14,6 +14,8 @@ interface FindingRepository
      */
     public function ofTeam(Uuid $teamId): array;
 
+    public function find(Uuid $findingId): ?Finding;
+
     public function add(Finding $finding): void;
 
     public function deleteTeam(Uuid $teamId): void;
