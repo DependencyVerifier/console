@@ -155,6 +155,8 @@ Decisions: `docs/cadrage.md` decisions 44–53; profile of the OS packages: `doc
 - `RiskAcceptance`: justification (≤ 2000) and an expiry after today and within a year; replaced by a new one, revoked, or expired on its own (the finding counts as open again, no task). `FindingAccess` decides: an application attached to a project follows it (`finding.accept_risk`); a host or an application not attached is the fleet (seen by whom sees every project, decided with `host.approve`).
 - UI: `FindingsTable` on Inventory's application and host pages, finding page `/teams/{t}/findings/{f}` (Accept risk dialog, Revoke), page refreshed after a decision (`ExposurePageRefresh`).
 - `ExposureTeamContent` erases the findings and acceptances of a deleted team.
+- Dashboards (decisions 54–57): a finding copies the **placement** of its subject at each computation (name, environment, project; `ApplicationPlacementChanged` from Inventory recomputes after a manual attach / detach), so `GetExposureSummary` and `ListTeamFindings` filter in SQL. `FindingAccess::filter()` turns a perimeter (`ExposureScope`: team, project, environment, host) into an `ExposureFilter` (a `TEAM_GUEST`: its projects, never the fleet). Pages: Findings sections of the team and of the project, environment page (`/teams/{t}/projects/{p}/environments/{e}`, linked from the Environments tab), summary frames on the overviews and the host page. List filters come from the query string (`FindingsFilters`, GET form, `auto_submit_controller.ts`).
+- Charts: `symfony/ux-chartjs`, built by `ExposureCharts` with colours written `var(--…)`, resolved by `chart_theme_controller.ts` on `chartjs:pre-connect` (no `style` attribute). Always write the figures next to a chart.
 
 ## FrankenPHP worker mode
 
