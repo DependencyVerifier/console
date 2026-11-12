@@ -25,8 +25,8 @@ src/<Context>/
 | `Organization\` | Teams, quotas, projects, environments, memberships, permissions (`PermissionResolver`, voters) |
 | `Fleet\` | Hosts, agents, enrollment tokens, signed agent API (`/agent/v1`), orders (cloud scopes later) |
 | `Inventory\` | Inventory sources, snapshots (CycloneDX SBOM), components, app instances, container images |
-| `Vulnerability\` | Advisories (OSV, KEV, EPSS), EOL cycles, sync of public data sources |
-| `Exposure\` | Matching, findings, risk acceptances, drift |
+| `Vulnerability\` | Advisories (OSV, KEV, EPSS), EOL cycles, latest releases, sync of public data sources, matching |
+| `Exposure\` | Findings, risk acceptances (drift later) |
 | `Notification\` | Channels, rules, digests, delivery |
 | `Audit\` | Append-only audit log |
 
@@ -139,6 +139,23 @@ Normative contract: `docs/protocol.md` §8 (manifest, snapshot upload, complete)
 - Dev demo: `make fleet-fake-agent a=inventory` sends a deterministic inventory (container mode: Compose service `demo/web` and its image; host mode: OS packages and `/srv/demo`); a `SCAN_NOW` received in a poll does the same. A second one without change uploads nothing.
 - Test doubles: `tests/Inventory/Support` (`InventoryWorld` in memory, `Inv` ids and subjects, `Documents` builds SBOMs and host facts, `InMemoryReadModel`); functional tests drive Fleet's `AgentClient` (`putSnapshot()` sends gzip).
 
+## Vulnerability (public sources, matching)
+
+Decisions: `docs/cadrage.md` decisions 44–53; profile of the OS packages: `docs/protocol.md` §8.5 (`distro`, `upstream`).
+- **Privacy**: osv.dev only ever receives (ecosystem, name) pairs, endoflife.date / Packagist / npm names, FIRST CVE ids; never a version, a host or a team. Versions are compared locally.
+- Domain: `PackageCoordinates::fromPurl()` (OSV ecosystem `Debian:12`, `Ubuntu:24.04:LTS`, `Alpine:v3.20`…, source package from `upstream`; an OS package without `distro` is not matched), one `VersionComparator` per ecosystem (`Version/`, Composer through `composer/semver`, the only vendor allowed in a Domain besides `u()`), `AffectedPackage` (OSV ranges), `CvssV3`, `Severity`, `EolProduct` / `EolCycle` / `EolLevel`, `ReleaseLag`. Regex groups through `Version\Pattern::groups()` ('' for an absent group: `u()->match()` gives null).
+- Entities: `Advisory` (package index `vulnerability_advisory_package`, raw SQL, rewritten with it), `WatchedPackage` (direct or not), `EolCycle`, `LatestRelease`; KEV and EPSS are raw tables keyed by CVE (`DbalExploitationSignals`). Dates of OSV are whole seconds (a fraction would make a stored record look older).
+- Sync (queue `feeds`): `InventoryChanged` (Inventory's integration event) → `WatchTeamPackages` (new packages synced at once, latest release of new direct ones); `make vuln-sync` (every 6 h: packages due, KEV, EPSS), `make eol-sync` (daily: cycles, latest releases). Records are fetched 50 at a time, concurrently. A changed advisory publishes `AdvisoriesChanged`.
+- Matching: the published query `AssessSubjects` (`RiskAssessor`) turns what subjects run into `Risk`s: vulnerable versions (with fix, KEV, EPSS), ends of life within 180 days or past (one per cycle), direct dependencies a major or a minor version behind.
+- Tests never reach the network: `framework.http_client.mock_response_factory` is `Tests\Vulnerability\Support\RecordedFeeds` (real answers recorded in `tests/Vulnerability/Fixtures/feeds`).
+
+## Exposure (findings, risk acceptance)
+
+- `Finding` (identity: team, subject `application` | `host`, kind `vulnerability` | `eol` | `outdated`, key): open while produced, fixed when not (never deleted), open again with its first detection. `RefreshFindings(teamId)` (queue `matching`) recomputes a team from Inventory's `ListTeamSubjects` and Vulnerability's `AssessSubjects`; requests go through `TeamExposure` so that a burst (inventory, hundreds of changed advisories) queues one refresh per team. `make findings-refresh` daily, after `eol-sync`.
+- `RiskAcceptance`: justification (≤ 2000) and an expiry after today and within a year; replaced by a new one, revoked, or expired on its own (the finding counts as open again, no task). `FindingAccess` decides: an application attached to a project follows it (`finding.accept_risk`); a host or an application not attached is the fleet (seen by whom sees every project, decided with `host.approve`).
+- UI: `FindingsTable` on Inventory's application and host pages, finding page `/teams/{t}/findings/{f}` (Accept risk dialog, Revoke), page refreshed after a decision (`ExposurePageRefresh`).
+- `ExposureTeamContent` erases the findings and acceptances of a deleted team.
+
 ## FrankenPHP worker mode
 
 The console runs as a long-lived FrankenPHP worker, in production too. **No mutable `static` property**; every stateful service implements `ResetInterface`; the EntityManager is reset after a failed command; connections outside the bus (rate limiter, sessions) get session-level timeouts at connect time.
@@ -151,7 +168,7 @@ Symfony 8.1, PHP 8.5, FrankenPHP + Caddy (`dunglas/symfony-docker`), PostgreSQL 
 
 ```bash
 make start            # submodules + build + up + vendors (first run)
-make up / make stop   # containers: php, worker (ingest queue), database, node (Vite dev server :5173)
+make up / make stop   # containers: php, worker (queues ingest, matching, feeds), database, node (Vite dev server :5173)
 make test             # PHPUnit (prepares the test DB); FILTER=… / COVERAGE=1
 make qa               # lint + typecheck + phpcs + phpstan (level max) + rector + test + infection (100% MSI): run before committing
 make typecheck        # strict tsc on assets/ + vite.config.ts, and no .js allowed in assets/
@@ -163,7 +180,8 @@ make ux r=dialog / make icon i=lucide:bell
 make db-diff / make db-migrate          # migrations are organized by year: migrations/<YYYY>/Version….php (namespace DoctrineMigrations)
 make db-dump DUMP=backup.sql / make db-import DUMP=backup.sql   # pg_dump / psql via .docker/database/scripts, files in var/
 make db-roles / make audit-partitions / make rate-limiter-prune / make fleet-maintain / make inventory-maintain
-make worker-restart / make worker-logs  # the ingest queue consumer (restart it after a code change)
+make vuln-sync / make eol-sync / make findings-refresh   # cron: every 6 h / daily / daily after eol-sync (they only queue the work)
+make worker-restart / make worker-logs  # the consumer of ingest, matching, feeds (restart after a code change; `docker compose up -d worker` after a change of compose.yaml)
 make fleet-fake-agent a='enroll --token=dvet_…'   # dev demo agent (then a=poll, a='run --polls=10', a=inventory; name=… for another one)
 make super-admin email=you@example.com / make mailpit
 make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, user depverify_app or depverify_owner, database app)
