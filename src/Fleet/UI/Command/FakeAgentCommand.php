@@ -22,7 +22,8 @@ use function Symfony\Component\String\u;
  * Rust agent. It calls the console over its own HTTPS name, resolved to the local Caddy (the local CA is not checked).
  *   make fleet-fake-agent a='enroll --token=dvet_…'      enrolls (state in var/fake-agent/<name>.json)
  *   make fleet-fake-agent a=poll                        one poll: status, orders checked and answered
- *   make fleet-fake-agent a='run --polls=10'            polls again and again, as told by next_poll_in (capped).
+ *   make fleet-fake-agent a='run --polls=10'            polls again and again, as told by next_poll_in (capped)
+ *   make fleet-fake-agent a=inventory                   sends an inventory now (a SCAN_NOW order does the same).
  */
 #[When(env: 'dev')]
 #[AsCommand(name: 'app:fleet:fake-agent', description: 'Play a fake agent against this console (dev only)')]
@@ -40,7 +41,7 @@ final readonly class FakeAgentCommand
 
     public function __invoke(
         SymfonyStyle $io,
-        #[Argument('enroll, poll or run')] string $action,
+        #[Argument('enroll, poll, run or inventory')] string $action,
         #[Option('Enrollment token (enroll)')] ?string $token = null,
         #[Option('Name of the fake agent (one state file each)')] string $name = 'demo',
         #[Option('Hostname it reports (enroll)')] ?string $hostname = null,
@@ -58,7 +59,8 @@ final readonly class FakeAgentCommand
                 'enroll' => $this->enroll($io, $http, $file, $url, $token, $hostname ?? 'fake-'.$name, $mode),
                 'poll' => $this->poll($io, $http, FakeAgent::load($file), $url),
                 'run' => $this->run($io, $http, FakeAgent::load($file), $url, $polls, $maxWait),
-                default => throw new \InvalidArgumentException('The action is enroll, poll or run.'),
+                'inventory' => $this->inventory($io, $http, FakeAgent::load($file), $url),
+                default => throw new \InvalidArgumentException('The action is enroll, poll, run or inventory.'),
             };
         } catch (\RuntimeException|\InvalidArgumentException $failure) {
             $io->error($failure->getMessage());
@@ -89,6 +91,13 @@ final readonly class FakeAgentCommand
         return Command::SUCCESS;
     }
 
+    private function inventory(SymfonyStyle $io, HttpClientInterface $http, FakeAgent $agent, string $url): int
+    {
+        $this->reportInventory($io, $agent->inventory($http, $url));
+
+        return Command::SUCCESS;
+    }
+
     private function run(SymfonyStyle $io, HttpClientInterface $http, FakeAgent $agent, string $url, int $polls, int $maxWait): int
     {
         for ($i = 1; $i <= $polls; ++$i) {
@@ -104,7 +113,7 @@ final readonly class FakeAgentCommand
     }
 
     /**
-     * @param array{answer: array<string, mixed>, handled: list<array<string, string>>} $poll
+     * @param array{answer: array<string, mixed>, handled: list<array<string, string>>, inventory: ?array{inventory_id: string, missing: int}} $poll
      */
     private function report(SymfonyStyle $io, array $poll): void
     {
@@ -112,5 +121,17 @@ final readonly class FakeAgentCommand
         foreach ($poll['handled'] as $result) {
             $io->writeln(\sprintf('  %s → %s%s', $result['order_id'], $result['status'], isset($result['reason']) ? ' ('.$result['reason'].')' : ''));
         }
+
+        if (null !== $poll['inventory']) {
+            $this->reportInventory($io, $poll['inventory']);
+        }
+    }
+
+    /**
+     * @param array{inventory_id: string, missing: int} $inventory
+     */
+    private function reportInventory(SymfonyStyle $io, array $inventory): void
+    {
+        $io->writeln(\sprintf('  inventory %s sent, %d snapshot(s) uploaded', $inventory['inventory_id'], $inventory['missing']));
     }
 }

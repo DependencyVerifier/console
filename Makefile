@@ -162,7 +162,7 @@ fleet-maintain: ## Fleet maintenance, inactive agents, late orders, request nonc
 	@$(CONSOLE) app:fleet:maintain
 
 .PHONY: fleet-fake-agent
-fleet-fake-agent: ## Dev demo agent: a='enroll --token=dvet_…', a=poll, a='run --polls=10' (name=… for another one)
+fleet-fake-agent: ## Dev demo agent: a='enroll --token=dvet_…', a=poll, a='run --polls=10', a=inventory (name=… for another one)
 	@$(CONSOLE) app:fleet:fake-agent $(a) $(if $(name),--name=$(name))
 
 .PHONY: db-dump

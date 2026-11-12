@@ -64,6 +64,30 @@ final class FakeAgentTest extends TestCase
             self::assertIsString($options['body'] ?? null);
             $sent[] = new SignedRequest($method, $url, $headers, $options['body']);
 
+            // The console's side of an inventory (§8): every snapshot missing, each upload stored, then accepted.
+            if (u($url)->endsWith('/agent/v1/inventories')) {
+                $manifest = json_decode($options['body'], true);
+                self::assertIsArray($manifest);
+                self::assertIsArray($manifest['subjects'] ?? null);
+                self::assertIsArray($manifest['host_facts'] ?? null);
+                $missing = [$manifest['host_facts']['digest'] ?? null];
+                foreach ($manifest['subjects'] as $subject) {
+                    self::assertIsArray($subject);
+                    self::assertIsArray($subject['sbom'] ?? null);
+                    $missing[] = $subject['sbom']['digest'] ?? null;
+                }
+
+                return new MockResponse((string) json_encode(['inventory_id' => $manifest['inventory_id'] ?? null, 'missing' => $missing, 'next_poll_in' => 300]));
+            }
+
+            if (u($url)->containsAny('/snapshots/')) {
+                return new MockResponse('', ['http_code' => 201]);
+            }
+
+            if (u($url)->endsWith('/complete')) {
+                return new MockResponse('{"server_time":"2026-11-11T08:00:00Z"}', ['http_code' => 202]);
+            }
+
             return $answers->isEmpty() ? new MockResponse('{}', ['http_code' => 500]) : $answers->dequeue();
         });
 
@@ -87,9 +111,30 @@ final class FakeAgentTest extends TestCase
         self::assertSame([['executed', null], ['rejected', 'bad_signature'], ['rejected', 'wrong_agent']], array_map(static fn (array $r): array => [$r['status'], $r['reason'] ?? null], $poll['handled']));
         self::assertSame($key->fingerprint(), $world->verifier()->verify($sent[1], static fn (string $k): AgentPublicKey => $key)->keyId);
 
+        // The executed SCAN_NOW sends an inventory right after the poll: manifest, three gzip uploads, complete.
+        self::assertSame(['POST', 'PUT', 'PUT', 'PUT', 'POST'], array_map(static fn (SignedRequest $r): string => $r->method, \array_slice($sent, 2, 5)));
+        self::assertNotNull($poll['inventory']);
+        self::assertSame(3, $poll['inventory']['missing']);
+        $manifest = json_decode($sent[2]->body, true);
+        self::assertIsArray($manifest);
+        self::assertSame(['scan_now', $poll['inventory']['inventory_id']], [$manifest['trigger'] ?? null, $manifest['inventory_id'] ?? null]);
+        self::assertIsArray($manifest['subjects'] ?? null);
+        self::assertSame(['compose:demo/web', 'image:sha256:'.hash('sha256', 'depverify-fake-agent/demo-web')], array_column($manifest['subjects'], 'subject_key'), 'Within its Compose project only.');
+        foreach (\array_slice($sent, 2, 5) as $request) {
+            self::assertSame($key->fingerprint(), $world->verifier()->verify($request, static fn (string $k): AgentPublicKey => $key)->keyId, $request->targetUri);
+        }
+
+        $upload = $sent[3];
+        $document = gzdecode($upload->body);
+        self::assertIsString($document);
+        self::assertStringEndsWith('/snapshots/sha256:'.hash('sha256', $document), $upload->targetUri, 'Named by the digest of the uncompressed document.');
+        self::assertSame(['gzip', 'application/vnd.depverify.host-facts+json;version=1'], [$upload->header('Content-Encoding'), $upload->header('Content-Type')]);
+        self::assertStringEndsWith('/complete', $sent[6]->targetUri);
+
         $answers->enqueue(new MockResponse((string) json_encode(['status' => 'approved', 'orders' => [$good], 'next_poll_in' => 300])));
         $poll = FakeAgent::load($this->file)->poll($http, self::URL);
-        $body = json_decode($sent[2]->body, true);
+        self::assertNull($poll['inventory'], 'A replayed SCAN_NOW runs nothing.');
+        $body = json_decode($sent[7]->body, true);
         self::assertIsArray($body);
         self::assertIsArray($body['order_results'] ?? null);
         self::assertCount(3, $body['order_results'], 'The results of the previous poll.');
