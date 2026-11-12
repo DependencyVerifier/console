@@ -28,6 +28,7 @@ final readonly class FindingFacts
         public ?\DateTimeImmutable $endOfLife,
         public ?string $latest,
         public array $aliases,
+        public ?string $suggested = null,
     ) {
     }
 }

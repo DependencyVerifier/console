@@ -23,6 +23,11 @@
         {{ include('shared/frame/lazy.html.twig', {id: 'team-inventory', src: path('inventory_team_inventory_frame', {teamId: team.id}), rows: 1}) }}
     </section>
 
+    <section class="flex flex-col gap-3" aria-labelledby="team-exposure-title">
+        <h2 id="team-exposure-title" class="text-base font-semibold">{{ 'exposure.findings.title'|trans }}</h2>
+        {{ include('shared/frame/lazy.html.twig', {id: 'team-exposure', src: path('exposure_team_summary_frame', {teamId: team.id}), rows: 2}) }}
+    </section>
+
     {%- set show_quotas = team.can('team.edit') or team.can('team.members.manage') -%}
     {%- set shortcuts = team.can('project.create') or team.can('team.members.manage') -%}
     <div class="grid items-start gap-6 {{ shortcuts ? 'lg:grid-cols-[minmax(0,1fr)_16rem]' : '' }}">

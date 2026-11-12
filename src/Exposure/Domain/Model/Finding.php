@@ -20,6 +20,8 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: 'exposure_finding')]
 #[ORM\UniqueConstraint(name: 'exposure_finding_identity', columns: ['team_id', 'subject_type', 'subject_id', 'kind', 'finding_key'])]
 #[ORM\Index(name: 'exposure_finding_team_status', columns: ['team_id', 'status'])]
+#[ORM\Index(name: 'exposure_finding_project', columns: ['team_id', 'project_id'])]
+#[ORM\Index(name: 'exposure_finding_environment', columns: ['team_id', 'environment_id'])]
 class Finding implements RecordsEvents
 {
     use EventRecording;
@@ -73,6 +75,14 @@ class Finding implements RecordsEvents
         private \DateTimeImmutable $lastSeenAt,
         #[ORM\Column(nullable: true)]
         private ?\DateTimeImmutable $fixedAt,
+        #[ORM\Column(length: 64, nullable: true)]
+        private ?string $suggested = null,
+        #[ORM\Column(type: 'text')]
+        private string $subjectName = '',
+        #[ORM\Column(type: 'uuid', nullable: true)]
+        private ?Uuid $environmentId = null,
+        #[ORM\Column(type: 'uuid', nullable: true)]
+        private ?Uuid $projectId = null,
     ) {
     }
 
@@ -155,7 +165,22 @@ class Finding implements RecordsEvents
 
     public function facts(): FindingFacts
     {
-        return new FindingFacts($this->kind, $this->key, $this->title, $this->package, $this->installed, $this->fixed, $this->severity, $this->cvss, $this->knownExploited, $this->epss, $this->eolLevel, $this->endOfLife, $this->latest, $this->aliases);
+        return new FindingFacts($this->kind, $this->key, $this->title, $this->package, $this->installed, $this->fixed, $this->severity, $this->cvss, $this->knownExploited, $this->epss, $this->eolLevel, $this->endOfLife, $this->latest, $this->aliases, $this->suggested);
+    }
+
+    /**
+     * Where its subject is now.
+     */
+    public function place(SubjectPlacement $placement): void
+    {
+        $this->subjectName = $placement->name;
+        $this->environmentId = $placement->environmentId;
+        $this->projectId = $placement->projectId;
+    }
+
+    public function placement(): SubjectPlacement
+    {
+        return new SubjectPlacement($this->subjectName, $this->environmentId, $this->projectId);
     }
 
     public function status(): FindingStatus
@@ -192,6 +217,7 @@ class Finding implements RecordsEvents
         $this->endOfLife = $facts->endOfLife;
         $this->latest = $facts->latest;
         $this->aliases = $facts->aliases;
+        $this->suggested = $facts->suggested;
         $this->lastSeenAt = $now;
     }
 }

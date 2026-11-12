@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Inventory\Unit\Application;
 
 use Inventory\Application\Command\Inventory\ProcessInventory;
+use Inventory\Application\EventHandler\PublishInventoryIntegrationEvents;
 use Inventory\Application\EventHandler\QueueInventoryProcessing;
 use Inventory\Application\Protocol\CycloneDxReader;
+use Inventory\Domain\Event\ApplicationPlaced;
 use Inventory\Domain\Event\InventoryCompleted;
 use Inventory\Domain\Event\InventoryProcessed;
 use Inventory\Domain\Model\AppInstance;
@@ -23,7 +25,10 @@ use Inventory\Domain\Model\SubjectKind;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Audit\Target;
+use Shared\Application\Contract\Inventory\ApplicationPlacementChanged;
+use Shared\Application\Contract\Inventory\InventoryChanged;
 use Symfony\Component\Uid\Uuid;
+use Tests\Identity\Support\RecordingEventBus;
 use Tests\Inventory\Support\Documents;
 use Tests\Inventory\Support\Inv;
 use Tests\Inventory\Support\InventoryWorld;
@@ -200,6 +205,12 @@ final class ProcessingTest extends TestCase
         $commands = new RecordingCommands();
         new QueueInventoryProcessing($commands)(new InventoryCompleted(Inv::RUN, Inv::TEAM));
         self::assertEquals([new ProcessInventory(Inv::RUN)], $commands->dispatched);
+
+        $events = new RecordingEventBus();
+        $publish = new PublishInventoryIntegrationEvents($events);
+        $publish(new InventoryProcessed(Inv::RUN, Inv::TEAM));
+        $publish(new ApplicationPlaced(Inv::APP, Inv::TEAM));
+        self::assertEquals([new InventoryChanged(Inv::TEAM), new ApplicationPlacementChanged(Inv::TEAM)], $events->published, 'In the published language.');
     }
 
     #[Test]

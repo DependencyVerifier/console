@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Inventory\Domain\Model;
 
 use Doctrine\ORM\Mapping as ORM;
+use Inventory\Domain\Event\ApplicationPlaced;
+use Shared\Domain\Model\EventRecording;
+use Shared\Domain\Model\RecordsEvents;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -20,8 +23,10 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\UniqueConstraint(name: 'inventory_app_instance_subject', columns: ['host_id', 'subject_key_hash'])]
 #[ORM\Index(name: 'inventory_app_instance_team', columns: ['team_id'])]
 #[ORM\Index(name: 'inventory_app_instance_environment', columns: ['environment_id'])]
-class AppInstance
+class AppInstance implements RecordsEvents
 {
+    use EventRecording;
+
     #[ORM\Column(type: 'uuid', nullable: true)]
     private ?Uuid $environmentId = null;
 
@@ -197,6 +202,7 @@ class AppInstance
     {
         $this->environmentId = $environmentId;
         $this->assignment = Assignment::Manual;
+        $this->recordThat(new ApplicationPlaced($this->id->toRfc4122(), $this->teamId->toRfc4122()));
     }
 
     /**
@@ -206,5 +212,6 @@ class AppInstance
     {
         $this->environmentId = null;
         $this->assignment = Assignment::Manual;
+        $this->recordThat(new ApplicationPlaced($this->id->toRfc4122(), $this->teamId->toRfc4122()));
     }
 }

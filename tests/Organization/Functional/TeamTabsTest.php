@@ -37,12 +37,12 @@ final class TeamTabsTest extends IdentityWebTestCase
             self::assertSelectorTextSame('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]', $label, 'The section is picked in the sidebar.');
             self::assertSame('/teams/'.$id.$suffix, $this->client->getCrawler()->filter('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]')->attr('href'));
         }
-        self::assertSame(['Overview', 'Projects', 'Applications', 'Team members', 'Hosts', 'Agents', 'Enrollment', 'Team settings', 'Audit log'], $this->sections());
+        self::assertSame(['Overview', 'Projects', 'Applications', 'Findings', 'Team members', 'Hosts', 'Agents', 'Enrollment', 'Team settings', 'Audit log'], $this->sections());
 
         $this->client->getCookieJar()->clear();
         $this->logIn('bob@example.com');
         $this->client->request('GET', '/teams/'.$id);
-        self::assertSame(['Overview', 'Projects', 'Applications', 'Team members', 'Hosts', 'Agents', 'Enrollment'], $this->sections(), 'A TEAM_MEMBER has no Settings section.');
+        self::assertSame(['Overview', 'Projects', 'Applications', 'Findings', 'Team members', 'Hosts', 'Agents', 'Enrollment'], $this->sections(), 'A TEAM_MEMBER has no Settings section.');
         $this->client->request('GET', '/teams/'.$id.'/settings');
         self::assertResponseStatusCodeSame(403);
         self::assertCount(1, AuditLog::entries($this->connection(), 'security.access_denied'), 'The refusal is audited once.');

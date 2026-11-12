@@ -33,14 +33,24 @@ final readonly class AppRow
      */
     public function name(): string
     {
-        $labels = \is_array($this->fields['labels'] ?? null) ? $this->fields['labels'] : [];
-        foreach ([$labels['name'] ?? null, isset($this->fields['service'], $this->fields['compose_project']) && \is_string($this->fields['service']) && \is_string($this->fields['compose_project']) ? $this->fields['compose_project'].' / '.$this->fields['service'] : null, $this->fields['path'] ?? null, $this->fields['container_name'] ?? null] as $name) {
+        return self::nameOf($this->fields, $this->subjectKey);
+    }
+
+    /**
+     * The `name` label, else `project / service`, else the path, else the container name, else the subject key.
+     *
+     * @param array<string, mixed> $fields
+     */
+    public static function nameOf(array $fields, string $subjectKey): string
+    {
+        $labels = \is_array($fields['labels'] ?? null) ? $fields['labels'] : [];
+        foreach ([$labels['name'] ?? null, isset($fields['service'], $fields['compose_project']) && \is_string($fields['service']) && \is_string($fields['compose_project']) ? $fields['compose_project'].' / '.$fields['service'] : null, $fields['path'] ?? null, $fields['container_name'] ?? null] as $name) {
             if (\is_string($name) && '' !== $name) {
                 return $name;
             }
         }
 
-        return $this->subjectKey;
+        return $subjectKey;
     }
 
     public function runtime(): ?string

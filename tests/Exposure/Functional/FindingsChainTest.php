@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Exposure\Functional;
 
 use Fleet\Domain\Model\Agent;
+use Organization\Domain\Model\ProjectRole;
 use Organization\Domain\Model\TeamRole;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\Uid\Uuid;
@@ -116,6 +117,76 @@ final class FindingsChainTest extends IdentityWebTestCase
         self::assertResponseStatusCodeSame(404, 'Not attached: in no project of the guest.');
         $this->client->request('GET', $acceptUrl, server: $frame);
         self::assertResponseStatusCodeSame(404);
+    }
+
+    #[Test]
+    public function it_should_show_the_dashboards_of_the_team_the_project_the_environment_and_the_host(): void
+    {
+        $alice = Accounts::create(self::getContainer(), 'alice@example.com');
+        $guest = Accounts::create(self::getContainer(), 'guest@example.com');
+        $team = Seed::team(self::getContainer(), 'Alpha', [[$alice, TeamRole::Admin], [$guest, TeamRole::Guest]]);
+        $project = Seed::project(self::getContainer(), $team, 'Shop', [[$guest, ProjectRole::Viewer]]);
+        $teamId = $team->id()->toString();
+        $projectId = $project->id()->toString();
+        $environmentId = Uuid::v7()->toRfc4122();
+        $this->connection()->executeStatement('INSERT INTO organization_environment (id, project_id, name, production) VALUES (?, ?, ?, true)', [$environmentId, $projectId, 'production']);
+        $this->send($this->agent($teamId), '019a6b31-5e00-7f12-a3b4-c5d6e7f80933', 'pkg:npm/lodash@4.17.20');
+        $appId = $this->fetchString('SELECT id FROM inventory_app_instance');
+        $hostId = $this->fetchString('SELECT host_id FROM inventory_app_instance');
+        self::assertSame(['shop / php', null], [$this->fetchString('SELECT DISTINCT subject_name FROM exposure_finding'), $this->connection()->fetchOne('SELECT MAX(CAST(project_id AS TEXT)) FROM exposure_finding')], 'Named, not attached yet.');
+        $this->logIn('alice@example.com');
+
+        $page = $this->client->request('GET', '/teams/'.$teamId.'/findings');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('[data-slot="sidebar"] [data-slot="sidebar-group"] a[aria-current="page"]', 'Findings');
+        self::assertSame(['0', '1', '1', '0', '0'], [$page->filter('[data-figure="critical"] dd')->text(), $page->filter('[data-figure="high"] dd')->text(), $page->filter('[data-figure="medium"] dd')->text(), $page->filter('[data-figure="low"] dd')->text(), $page->filter('[data-figure="kev"] dd')->text()]);
+        self::assertSame('shop / php', $page->filter('[data-dashboard="top"] a')->text());
+        $chart = $page->filter('[data-controller="chart-theme"] canvas')->first();
+        self::assertStringContainsString('var(--sev-high)', (string) $chart->attr('data-symfony--ux-chartjs--chart-view-value'), 'Colours from the theme, resolved in the browser.');
+        self::assertSame(4, \count(DataTables::draw($this->client, '/teams/'.$teamId.'/findings', 'findings')['data']));
+        $outdated = DataTables::draw($this->client, '/teams/'.$teamId.'/findings?kind=outdated', 'findings')['data'];
+        self::assertCount(2, $outdated, 'Filtered from the query string.');
+        self::assertStringContainsString('shop / php', (string) $outdated[0]['subject']);
+        self::assertSame([], DataTables::draw($this->client, '/teams/'.$teamId.'/findings?status=fixed', 'findings')['data']);
+        $this->client->request('GET', '/teams/'.$teamId.'/frames/exposure', server: ['HTTP_TURBO_FRAME' => 'team-exposure']);
+        self::assertSelectorTextContains('[data-figure="high"] dd', '1');
+
+        $dialog = $this->client->request('GET', \sprintf('/teams/%s/applications/%s/attach', $teamId, $appId), server: ['HTTP_TURBO_FRAME' => 'attach-application-form']);
+        $this->client->submit($dialog->filter('form')->form(), ['attach[environment]' => $environmentId], ['HTTP_ACCEPT' => self::STREAM]);
+        self::assertResponseIsSuccessful();
+        self::assertSame([$projectId, $environmentId], [$this->fetchString('SELECT DISTINCT CAST(project_id AS TEXT) FROM exposure_finding'), $this->fetchString('SELECT DISTINCT CAST(environment_id AS TEXT) FROM exposure_finding')], 'Placed again once attached.');
+
+        $projectUrl = \sprintf('/teams/%s/projects/%s/findings', $teamId, $projectId);
+        $this->client->request('GET', $projectUrl);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('[data-figure="high"] dd', '1');
+        self::assertCount(4, DataTables::draw($this->client, $projectUrl, 'findings')['data']);
+        $this->client->request('GET', \sprintf('/teams/%s/projects/%s/frames/exposure', $teamId, $projectId), server: ['HTTP_TURBO_FRAME' => 'project-exposure']);
+        self::assertSelectorExists(\sprintf('a[href="%s"]', $projectUrl));
+
+        $environmentUrl = \sprintf('/teams/%s/projects/%s/environments/%s', $teamId, $projectId, $environmentId);
+        $environments = $this->client->request('GET', \sprintf('/teams/%s/projects/%s/environments', $teamId, $projectId));
+        self::assertCount(1, DataTables::draw($this->client, \sprintf('/teams/%s/projects/%s/environments', $teamId, $projectId), 'environments')['data']);
+        self::assertStringContainsString($environmentUrl, (string) DataTables::draw($this->client, \sprintf('/teams/%s/projects/%s/environments', $teamId, $projectId), 'environments')['data'][0]['name']);
+        $this->client->request('GET', $environmentUrl);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h2[data-environment]', 'production');
+        self::assertCount(1, DataTables::draw($this->client, $environmentUrl, 'applications')['data']);
+        self::assertCount(2, DataTables::draw($this->client, $environmentUrl.'?kind=vulnerability', 'findings')['data']);
+        $this->client->request('GET', \sprintf('/teams/%s/projects/%s/environments/%s', $teamId, $projectId, Uuid::v7()->toRfc4122()));
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('GET', \sprintf('/teams/%s/hosts/%s/frames/exposure', $teamId, $hostId), server: ['HTTP_TURBO_FRAME' => 'host-exposure']);
+        self::assertResponseIsSuccessful();
+
+        $this->client->getCookieJar()->clear();
+        $this->logIn('guest@example.com');
+        $this->client->request('GET', '/teams/'.$teamId.'/findings');
+        self::assertResponseIsSuccessful();
+        self::assertCount(4, DataTables::draw($this->client, '/teams/'.$teamId.'/findings', 'findings')['data'], 'The findings of its project.');
+        $this->client->request('GET', $environmentUrl);
+        self::assertResponseIsSuccessful();
+        $this->client->request('GET', \sprintf('/teams/%s/hosts/%s/frames/exposure', $teamId, $hostId), server: ['HTTP_TURBO_FRAME' => 'host-exposure']);
+        self::assertStringNotContainsString('data-figure', (string) $this->client->getResponse()->getContent(), 'The fleet stays hidden.');
     }
 
     /**

@@ -36,6 +36,14 @@ final readonly class ListApplicationsHandler implements QueryHandler
             $environments = $scope->environmentsOf($query->projectId);
         }
 
+        if (null !== $query->environmentId) {
+            if (!isset($scope->environments[$query->environmentId]) || !$scope->seesEnvironment($query->environmentId)) {
+                throw ResourceNotFound::of('environment');
+            }
+
+            $environments = [$query->environmentId];
+        }
+
         $unattached = $query->unattachedOnly && $scope->seesAll();
         if ($query->unattachedOnly && !$unattached) {
             return new Page([], 0, 0);

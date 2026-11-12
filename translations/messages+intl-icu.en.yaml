@@ -8,6 +8,8 @@ nav:
     agents: Agents
     enrollment: Enrollment
     applications: Applications
+    findings: Findings
+    project_findings: Findings
     audit: Audit log
     project_group: "Project · {name}"
     project_overview: Overview
@@ -345,6 +347,7 @@ organization:
             agents: Agents
             enrollment: Enrollment
             applications: Applications
+            findings: Findings
         facts:
             members: Members
             projects: Projects
@@ -421,6 +424,7 @@ organization:
             overview: Overview
             environments: Environments
             applications: Applications
+            findings: Findings
             members: Members
             settings: Settings
         environment_limit: "{limit} per project, set by the team"
@@ -697,10 +701,49 @@ inventory:
 exposure:
     findings:
         title: Findings
+    severity:
+        critical: Critical
+        high: High
+        medium: Medium
+        low: Low
+        unknown: Not rated
+    dashboard:
+        title: Exposure
+        known_exploited: Exploited (KEV)
+        ends_of_life: Ends of life
+        outdated: Outdated
+        accepted: "{count, plural, =0 {} one {# accepted} other {# accepted}}"
+        by_severity: Open vulnerabilities by severity
+        trend: Opened and fixed, last 30 days
+        opened: Opened
+        fixed: Fixed
+        top: Most exposed applications
+        no_application: No open finding on an application.
+        findings_count: "{count, plural, one {# finding} other {# findings}}"
+        calendar: Ends of life
+        no_end_of_life: No end of life within 6 months.
+        subjects: "{count, plural, one {# application or host} other {# applications or hosts}}"
+        no_vulnerability: No open vulnerability.
+        see_all: See the findings
+    filters:
+        label: Filter the findings
+        kind: Kind
+        severity: Severity
+        status: Status
+        project: Project
+        environment: Environment
+        any_kind: Any kind
+        any_severity: Any severity
+        any_project: Any project
+        any_environment: Any environment
+        accepted: Accepted
+        all: All
+        apply: Apply
     subject:
         application: Application
         host: Host
     field:
+        subject: Application or host
         finding: Finding
         severity: Severity
         versions: Installed → target

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Exposure\Application\Security;
 
+use Exposure\Application\Query\ExposureFilter;
+use Exposure\Application\Query\ExposureScope;
 use Exposure\Domain\Model\SubjectType;
 use Shared\Application\Authorization\PermissionChecker;
 use Shared\Application\Authorization\PermissionDenied;
@@ -42,6 +44,25 @@ final readonly class FindingAccess
         return $project;
     }
 
+    /**
+     * What of the team's findings the actor reads in a perimeter (404 out of sight).
+     *
+     * @throws ResourceNotFound
+     */
+    public function filter(string $teamId, ExposureScope $scope, ?string $id): ExposureFilter
+    {
+        $visible = $this->queries->ask(new GetVisibleProjects($teamId));
+        $restricted = $visible->all ? null : $visible->projectIds;
+        $id ??= '';
+
+        return match ($scope) {
+            ExposureScope::Team => new ExposureFilter($teamId, $restricted),
+            ExposureScope::Project => $visible->sees($id) ? new ExposureFilter($teamId, $restricted, projectId: $id) : throw ResourceNotFound::of('project'),
+            ExposureScope::Environment => $this->environment($teamId, $id, $visible->all, $restricted),
+            ExposureScope::Host => $visible->all ? new ExposureFilter($teamId, hostId: $id) : throw ResourceNotFound::of('host'),
+        };
+    }
+
     public function mayAccept(string $teamId, ?string $projectId): bool
     {
         return null === $projectId
@@ -57,6 +78,20 @@ final readonly class FindingAccess
         if (!$this->mayAccept($teamId, $projectId)) {
             throw PermissionDenied::for((null === $projectId ? Permission::HostApprove : Permission::FindingAcceptRisk)->value);
         }
+    }
+
+    /**
+     * @param ?list<string> $restricted
+     */
+    private function environment(string $teamId, string $environmentId, bool $all, ?array $restricted): ExposureFilter
+    {
+        foreach ($this->queries->ask(new ListTeamEnvironments($teamId)) as $environment) {
+            if ($environment->environmentId === $environmentId && ($all || \in_array($environment->projectId, $restricted ?? [], true))) {
+                return new ExposureFilter($teamId, $restricted, environmentId: $environmentId);
+            }
+        }
+
+        throw ResourceNotFound::of('environment');
     }
 
     private function projectOf(string $teamId, string $applicationId): ?string

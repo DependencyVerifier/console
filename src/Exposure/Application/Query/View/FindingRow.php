@@ -35,6 +35,8 @@ final readonly class FindingRow
         public \DateTimeImmutable $lastSeenAt,
         public ?\DateTimeImmutable $fixedAt,
         public ?\DateTimeImmutable $acceptedUntil,
+        public string $subjectName = '',
+        public ?string $suggested = null,
     ) {
     }
 

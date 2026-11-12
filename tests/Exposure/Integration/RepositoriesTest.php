@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Tests\Exposure\Integration;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Exposure\Application\Query\ExposureFilter;
+use Exposure\Application\Query\FindingCriteria;
 use Exposure\Application\Query\View\FindingRow;
 use Exposure\Domain\Model\Finding;
 use Exposure\Domain\Model\FindingFacts;
 use Exposure\Domain\Model\FindingKind;
 use Exposure\Domain\Model\RiskAcceptance;
+use Exposure\Domain\Model\SubjectPlacement;
 use Exposure\Domain\Model\SubjectType;
 use Exposure\Domain\Model\TeamExposure;
 use Exposure\Infrastructure\Doctrine\DbalFindingReadModel;
@@ -18,6 +21,7 @@ use Exposure\Infrastructure\Doctrine\DoctrineRiskAcceptanceRepository;
 use Exposure\Infrastructure\Doctrine\DoctrineTeamExposureRepository;
 use Exposure\Infrastructure\Doctrine\ExposureManager;
 use PHPUnit\Framework\Attributes\Test;
+use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Uuid;
@@ -111,6 +115,78 @@ final class RepositoriesTest extends KernelTestCase
         $acceptances->deleteTeam($team);
         $this->flush();
         self::assertSame([], $acceptances->ofFinding($high->id()));
+    }
+
+    #[Test]
+    public function it_should_sum_up_and_list_a_perimeter(): void
+    {
+        $findings = new DoctrineFindingRepository($this->manager);
+        $acceptances = new DoctrineRiskAcceptanceRepository($this->manager);
+        $today = new \DateTimeImmutable('2026-11-12 08:00:00');
+        $team = Uuid::fromString(self::TEAM);
+        [$shop, $blog, $shopEnv, $blogEnv] = [Uuid::v7(), Uuid::v7(), Uuid::v7(), Uuid::v7()];
+        $add = static function (string $name, ?Uuid $env, ?Uuid $project, FindingFacts $facts, string $seen, SubjectType $type = SubjectType::Application, ?Uuid $subject = null) use ($findings, $team): Finding {
+            $finding = Finding::detect(Uuid::v7(), $team, $type, $subject ?? Uuid::v5(Uuid::fromString(self::TEAM), $name), $facts, new \DateTimeImmutable($seen));
+            $finding->place(new SubjectPlacement($name, $env, $project));
+            $findings->add($finding);
+
+            return $finding;
+        };
+        $vulnerability = static fn (string $key, ?string $severity, bool $kev = false): FindingFacts => new FindingFacts(FindingKind::Vulnerability, $key, 'Title '.$key, 'pkg', '1', '2', $severity, null, $kev, null, null, null, null, []);
+        $eol = static fn (string $cycle, string $end, string $level, ?string $suggested): FindingFacts => new FindingFacts(FindingKind::EndOfLife, $cycle, $cycle, 'php', '8', null, null, null, false, null, $level, new \DateTimeImmutable($end), null, [], $suggested);
+        $add('shop', $shopEnv, $shop, $vulnerability('a', 'critical', true), '2026-11-10');
+        $add('shop', $shopEnv, $shop, $vulnerability('b', 'high'), '2026-11-10');
+        $add('shop', $shopEnv, $shop, $eol('php 8.2', '2026-12-31', 'soon', '8.5'), '2026-10-01');
+        $add('blog', $blogEnv, $blog, $vulnerability('c', 'high'), '2026-11-12');
+        $add('blog', $blogEnv, $blog, $vulnerability('d', null), '2026-09-01');
+        $accepted = $add('blog', $blogEnv, $blog, $vulnerability('e', 'critical'), '2026-11-01');
+        $fixed = $add('blog', $blogEnv, $blog, $vulnerability('f', 'medium'), '2026-11-01');
+        $fixed->resolve(new \DateTimeImmutable('2026-11-11 10:00'));
+        $add('blog', $blogEnv, $blog, new FindingFacts(FindingKind::Outdated, 'npm x', 'minor', 'x', '1', null, null, null, false, null, null, null, '2', []), '2026-11-01');
+        $host = Uuid::v7();
+        $add('web-01', null, null, $eol('debian 11', '2026-08-31', 'expired', '13'), '2026-11-01', SubjectType::Host, $host);
+        $add('loose', null, null, $vulnerability('g', 'low'), '2026-11-01');
+        $acceptances->add(RiskAcceptance::accept(Uuid::v7(), $accepted, 'Accepted.', new \DateTimeImmutable('2027-01-01'), Uuid::v7(), $today));
+        $this->flush();
+
+        $read = new DbalFindingReadModel($this->manager->get()->getConnection());
+        $team = $read->summary(new ExposureFilter(self::TEAM), $today);
+        self::assertSame([['critical' => 1, 'high' => 2, 'medium' => 0, 'low' => 1, 'unknown' => 1], 1, ['upcoming' => 0, 'soon' => 1, 'imminent' => 0, 'expired' => 1], 1, 1], [$team->severities, $team->knownExploited, $team->eolLevels, $team->outdated, $team->accepted], 'Open and not accepted; the accepted counted apart; fixed ones nowhere.');
+        self::assertCount(30, $team->trend);
+        self::assertSame(['2026-10-14', '2026-11-12'], [$team->trend[0]['day'], $team->trend[29]['day']]);
+        $days = array_column($team->trend, null, 'day');
+        self::assertSame([['day' => '2026-11-10', 'opened' => 2, 'fixed' => 0], ['day' => '2026-11-11', 'opened' => 0, 'fixed' => 1], ['day' => '2026-11-12', 'opened' => 1, 'fixed' => 0]], [$days['2026-11-10'], $days['2026-11-11'], $days['2026-11-12']]);
+        self::assertSame([['shop', 1, 1, 1, 3], ['blog', 0, 0, 1, 3], ['loose', 0, 0, 0, 1]], array_map(static fn (array $a): array => [$a['name'], $a['knownExploited'], $a['critical'], $a['high'], $a['total']], $team->topApplications), 'Exploited first, then critical, high; hosts are not applications.');
+        self::assertSame([['debian 11', 'php', '2026-08-31', 'expired', '13', 1], ['php 8.2', 'php', '2026-12-31', 'soon', '8.5', 1]], array_map(static fn (array $c): array => [$c['title'], $c['product'], $c['endOfLife'], $c['level'], $c['suggested'], $c['subjects']], $team->calendar));
+
+        $guest = $read->summary(new ExposureFilter(self::TEAM, [$shop->toRfc4122()]), $today);
+        self::assertSame([['critical' => 1, 'high' => 1, 'medium' => 0, 'low' => 0, 'unknown' => 0], ['shop']], [$guest->severities, array_column($guest->topApplications, 'name')], 'Its projects only, never the fleet.');
+        self::assertSame(0, $read->summary(new ExposureFilter(self::TEAM, []), $today)->vulnerabilities());
+        self::assertSame(['high' => 1, 'unknown' => 1], array_filter($read->summary(new ExposureFilter(self::TEAM, environmentId: $blogEnv->toRfc4122()), $today)->severities));
+        self::assertSame(['expired' => 1], array_filter($read->summary(new ExposureFilter(self::TEAM, hostId: $host->toRfc4122()), $today)->eolLevels));
+        self::assertSame(2, $read->summary(new ExposureFilter(self::TEAM, projectId: $shop->toRfc4122()), $today)->vulnerabilities());
+
+        $titles = self::titles(...);
+        self::assertSame(['Title a', 'Title b', 'Title c', 'Title g', 'Title d', 'debian 11', 'php 8.2', 'minor'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(), $today, new PageRequest())));
+        self::assertSame(['Title e'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(status: 'accepted'), $today, new PageRequest())));
+        self::assertSame(['Title f'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(status: 'fixed'), $today, new PageRequest())));
+        self::assertCount(10, $read->list(new ExposureFilter(self::TEAM), new FindingCriteria(status: 'all'), $today, new PageRequest())->items);
+        self::assertSame(['Title b', 'Title c'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria('vulnerability', 'high'), $today, new PageRequest())));
+        self::assertSame(['debian 11', 'php 8.2'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria('eol'), $today, new PageRequest())));
+        self::assertSame(['Title c', 'Title d', 'minor'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(projectId: $blog->toRfc4122()), $today, new PageRequest())));
+        self::assertSame(['Title a', 'Title b', 'php 8.2'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(environmentId: $shopEnv->toRfc4122()), $today, new PageRequest())));
+        $searched = $read->list(new ExposureFilter(self::TEAM), new FindingCriteria(), $today, new PageRequest(search: 'web-01'));
+        self::assertSame([['debian 11'], 1, 8, 'web-01', '13'], [$titles($searched), $searched->filtered, $searched->total, $searched->items[0]->subjectName, $searched->items[0]->suggested], 'The subject is searched too.');
+    }
+
+    /**
+     * @param Page<FindingRow> $page
+     *
+     * @return list<string>
+     */
+    private static function titles(Page $page): array
+    {
+        return array_map(static fn (FindingRow $r): string => $r->title, $page->items);
     }
 
     private function flush(): void

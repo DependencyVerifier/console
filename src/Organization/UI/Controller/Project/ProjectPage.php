@@ -26,6 +26,8 @@ final readonly class ProjectPage
     public const string SETTINGS = 'settings';
     /** Rendered by Inventory (its own template), listed here so the sidebar shows it. */
     public const string APPLICATIONS = 'applications';
+    /** Rendered by Exposure (its own template), listed here so the sidebar shows it. */
+    public const string FINDINGS = 'findings';
 
     public function __construct(private QueryBus $queries, private Environment $twig)
     {
@@ -55,7 +57,7 @@ final readonly class ProjectPage
      */
     public static function tabsOf(ProjectView $project): array
     {
-        $tabs = [self::OVERVIEW, self::ENVIRONMENTS, self::APPLICATIONS, self::MEMBERS];
+        $tabs = [self::OVERVIEW, self::ENVIRONMENTS, self::APPLICATIONS, self::FINDINGS, self::MEMBERS];
         if ($project->can('project.edit') || $project->can('project.delete')) {
             $tabs[] = self::SETTINGS;
         }

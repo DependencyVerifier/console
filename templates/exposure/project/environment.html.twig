@@ -1,0 +1,16 @@
+{% extends 'organization/project/_layout.html.twig' %}
+{#- The page of an environment (variables: environment TeamEnvironment, summary, charts, criteria, tables.applications, tables.findings). -#}
+
+{% block title %}{{ environment.name }} · {{ project.name }} · DependencyVerifier{% endblock %}
+
+{% block tab %}
+    <div class="flex items-center gap-2">
+        <a href="{{ path('organization_project_environments', {teamId: project.teamId, projectId: project.id}) }}" class="text-sm text-muted-foreground underline-offset-4 hover:underline">{{ 'organization.project.tab.environments'|trans }}</a>
+        <span aria-hidden="true" class="text-muted-foreground">›</span>
+        <h2 class="text-lg font-semibold" data-environment>{{ environment.name }}</h2>
+    </div>
+    {{ include('exposure/_dashboard.html.twig', {teamId: project.teamId}) }}
+    <twig:DataTable :table="tables.applications" :title="'inventory.applications.title'|trans" />
+    {{ include('exposure/_filters.html.twig') }}
+    <twig:DataTable :table="tables.findings" :title="'exposure.findings.title'|trans" />
+{% endblock %}

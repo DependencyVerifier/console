@@ -18,6 +18,7 @@
     {key: 'team_overview', title: 'nav.overview'|trans, url: path('organization_team', {teamId: currentTeam}), icon: 'lucide:layout-dashboard'},
     {key: 'team_projects', title: 'nav.projects'|trans, url: path('organization_team_projects', {teamId: currentTeam}), icon: 'lucide:layers'},
     {key: 'team_applications', title: 'nav.applications'|trans, url: path('inventory_team_applications', {teamId: currentTeam}), icon: 'lucide:monitor'},
+    {key: 'team_findings', title: 'nav.findings'|trans, url: path('exposure_team_findings', {teamId: currentTeam}), icon: 'lucide:shield-alert'},
 ]|merge(roleKey != 'team_guest' ? [
     {key: 'team_members', title: 'nav.team_members'|trans, url: path('organization_team_members', {teamId: currentTeam}), icon: 'lucide:users'},
     {key: 'team_hosts', title: 'nav.hosts'|trans, url: path('fleet_team_hosts', {teamId: currentTeam}), icon: 'lucide:server'},
@@ -35,8 +36,8 @@
 {%- set projectNav = project ? project.tabs|map(t => {
     key: 'project_' ~ t,
     title: ('nav.project_' ~ t)|trans,
-    url: path({overview: 'organization_project', environments: 'organization_project_environments', applications: 'inventory_project_applications', members: 'organization_project_members', settings: 'organization_project_settings'}[t], {teamId: currentTeam, projectId: project.id}),
-    icon: {overview: 'lucide:layout-dashboard', environments: 'lucide:server', applications: 'lucide:monitor', members: 'lucide:users', settings: 'lucide:settings'}[t],
+    url: path({overview: 'organization_project', environments: 'organization_project_environments', applications: 'inventory_project_applications', findings: 'exposure_project_findings', members: 'organization_project_members', settings: 'organization_project_settings'}[t], {teamId: currentTeam, projectId: project.id}),
+    icon: {overview: 'lucide:layout-dashboard', environments: 'lucide:server', applications: 'lucide:monitor', findings: 'lucide:shield-alert', members: 'lucide:users', settings: 'lucide:settings'}[t],
 }) : [] -%}
 {%- set data = {
     user: {name: user ? user.label : '', email: user ? user.userIdentifier : ''},

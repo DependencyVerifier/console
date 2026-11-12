@@ -1,0 +1,10 @@
+{% extends 'organization/team/_layout.html.twig' %}
+{#- The Findings section of a team (variables: summary, severity_chart, trend_chart, criteria, projects, tables.findings). -#}
+
+{% block title %}{{ 'nav.findings'|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block tab %}
+    {{ include('exposure/_dashboard.html.twig') }}
+    {{ include('exposure/_filters.html.twig') }}
+    <twig:DataTable :table="tables.findings" :title="'exposure.findings.title'|trans" />
+{% endblock %}

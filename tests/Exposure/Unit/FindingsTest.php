@@ -18,14 +18,18 @@ use Exposure\Domain\Model\Finding;
 use Exposure\Domain\Model\FindingKind;
 use Exposure\Domain\Model\FindingStatus;
 use Exposure\Domain\Model\RiskAcceptance;
+use Exposure\Domain\Model\SubjectPlacement;
 use Exposure\Domain\Model\SubjectType;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Audit\Target;
+use Shared\Application\Contract\Inventory\ApplicationPlacementChanged;
 use Shared\Application\Contract\Inventory\InventoryChanged;
 use Shared\Application\Contract\Inventory\ListInventoriedTeams;
 use Shared\Application\Contract\Inventory\ListTeamSubjects;
 use Shared\Application\Contract\Inventory\TeamSubject;
+use Shared\Application\Contract\Organization\ListTeamEnvironments;
+use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Application\Contract\Vulnerability\AdvisoriesChanged;
 use Shared\Application\Contract\Vulnerability\AssessSubjects;
 use Shared\Application\Contract\Vulnerability\Risk;
@@ -47,6 +51,11 @@ final class FindingsTest extends TestCase
     private const string OTHER = '019a6b2c-1f00-7a11-8b22-3c44d55e6f02';
     private const string APP = '019a6b31-6e00-7f12-a3b4-c5d6e7f80901';
     private const string HOST = '019a6b2c-7f00-7a11-8b22-3c44d55e6f01';
+
+    private const string PROJECT = '019a6b2c-3f00-7a11-8b22-3c44d55e6f01';
+    private const string ENVIRONMENT = '019a6b2c-4f00-7a11-8b22-3c44d55e6f01';
+
+    private ?string $environment = self::ENVIRONMENT;
 
     private InMemoryFindings $findings;
     private InMemoryTeamExposures $exposures;
@@ -81,6 +90,7 @@ final class FindingsTest extends TestCase
             $vulnerability->facts()->installed, $vulnerability->facts()->fixed, $vulnerability->facts()->severity, $vulnerability->facts()->cvss, $vulnerability->facts()->knownExploited,
             $vulnerability->facts()->epss, $vulnerability->facts()->eolLevel, $vulnerability->facts()->endOfLife, $vulnerability->facts()->latest, $vulnerability->facts()->aliases, $vulnerability->facts()->package,
         ]);
+        self::assertEquals([new SubjectPlacement('shop / php', Uuid::fromString(self::ENVIRONMENT), Uuid::fromString(self::PROJECT)), new SubjectPlacement('web-01')], [$vulnerability->placement(), $this->findings->findings[1]->placement()]);
         self::assertSame(['soon', '2026-12-31', '8.2.35'], [$this->findings->findings[1]->facts()->eolLevel, $this->findings->findings[1]->facts()->endOfLife?->format('Y-m-d'), $this->findings->findings[1]->facts()->latest]);
         self::assertEquals([new FindingOpened($vulnerability->id()->toRfc4122(), self::TEAM, false)], $vulnerability->releaseEvents());
         self::assertCount(1, $this->findings->findings[1]->releaseEvents());
@@ -99,8 +109,11 @@ final class FindingsTest extends TestCase
         self::assertSame([], $this->findings->findings[1]->releaseEvents(), 'Still open: no event.');
 
         $this->clock->modify('+1 day');
+        $this->environment = '019a6b2c-4f00-7a11-8b22-3c44d55e6f09';
         $this->refresh();
         self::assertSame([], $vulnerability->releaseEvents(), 'Fixed once.');
+        self::assertEquals(new SubjectPlacement('web-01'), $this->findings->findings[1]->placement());
+        $this->environment = null;
 
         $this->clock->modify('+1 day');
         $this->risks = ['application:'.self::APP => [$lodash], 'host:'.self::HOST => []];
@@ -139,8 +152,9 @@ final class FindingsTest extends TestCase
         $commands = new RecordingCommands();
         new RequestRefreshOnChange($commands)(new InventoryChanged(self::TEAM));
         new RequestRefreshOnChange($commands)(new AdvisoriesChanged([['ecosystem' => 'npm', 'name' => 'lodash']]));
+        new RequestRefreshOnChange($commands)(new ApplicationPlacementChanged(self::OTHER));
         new QueueFindingsRefresh($commands)(new ExposureRefreshRequested(self::TEAM));
-        self::assertEquals([new RequestExposureRefresh(self::TEAM), new RequestExposureRefresh(), new RefreshFindings(self::TEAM)], $commands->dispatched);
+        self::assertEquals([new RequestExposureRefresh(self::TEAM), new RequestExposureRefresh(), new RequestExposureRefresh(self::OTHER), new RefreshFindings(self::TEAM)], $commands->dispatched);
 
         self::assertSame(['exposure.request_refresh', []], [new RequestExposureRefresh()->auditAction()->name, new RequestExposureRefresh()->auditContext()->values]);
         self::assertEquals([Target::none(), Target::of('team', self::TEAM)], [new RequestExposureRefresh()->auditTarget(), new RequestExposureRefresh(self::TEAM)->auditTarget()]);
@@ -171,7 +185,8 @@ final class FindingsTest extends TestCase
     private function refresh(bool $subjects = true, string $team = self::TEAM): void
     {
         $queries = new FixedQueries([
-            ListTeamSubjects::class => static fn (): array => $subjects ? [new TeamSubject(TeamSubject::APPLICATION, self::APP, [], [], null), new TeamSubject(TeamSubject::HOST, self::HOST, [], [], null)] : [],
+            ListTeamSubjects::class => fn (): array => $subjects ? [new TeamSubject(TeamSubject::APPLICATION, self::APP, [], [], null, 'shop / php', $this->environment), new TeamSubject(TeamSubject::HOST, self::HOST, [], [], null, 'web-01')] : [],
+            ListTeamEnvironments::class => static fn (): array => [new TeamEnvironment(self::ENVIRONMENT, 'production', self::PROJECT, 'Shop')],
             AssessSubjects::class => fn (object $q): array => $q instanceof AssessSubjects ? array_intersect_key($this->risks, array_flip(array_map(static fn (TeamSubject $s): string => $s->key(), $q->subjects))) : [],
         ]);
         new RefreshFindingsHandler($queries, $this->findings, $this->exposures, $this->clock)(new RefreshFindings($team));

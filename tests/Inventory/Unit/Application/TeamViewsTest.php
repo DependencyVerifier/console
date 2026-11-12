@@ -32,6 +32,7 @@ use Inventory\Application\Query\View\InventoryCounts;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Application\Security\InventoryAccess;
 use Inventory\Application\Security\InventoryScope;
+use Inventory\Domain\Event\ApplicationPlaced;
 use Inventory\Domain\Model\AppInstance;
 use Inventory\Domain\Model\Assignment;
 use Inventory\Domain\Model\EnvironmentOfAnotherTeam;
@@ -182,6 +183,11 @@ final class TeamViewsTest extends TestCase
         self::assertSame([Inv::APP.' Shop / production', self::LOOSE_APP.' '], $list(host: Inv::HOST));
         self::assertSame([Inv::APP.' Shop / production'], $list(image: Inv::IMAGE));
         self::assertSame(['environments' => null, 'unattached' => false, 'host' => null, 'image' => Inv::IMAGE], $this->read->lastFilter);
+        $byEnvironment = fn (string $environment): array => array_map(static fn (AppRow $r): string => $r->id, (new ListApplicationsHandler($this->access(), $this->read))(new ListApplications(Inv::TEAM, environmentId: $environment))->items);
+        self::assertSame([self::BLOG_APP], $byEnvironment(self::BLOG_ENV));
+        self::assertSame(['environments' => [self::BLOG_ENV], 'unattached' => false, 'host' => null, 'image' => null], $this->read->lastFilter);
+        $this->assertNotFound(static fn () => $byEnvironment('019a6b2c-4f00-7a11-8b22-3c44d55e6f09'), 'Not an environment of the team.');
+        self::assertNull(new ListApplications(Inv::TEAM)->environmentId);
 
         $this->guest = true;
         self::assertSame([Inv::APP.' Shop / production'], $list());
@@ -190,6 +196,7 @@ final class TeamViewsTest extends TestCase
         $none = (new ListApplicationsHandler($this->access(), $this->read))(new ListApplications(Inv::TEAM, unattachedOnly: true));
         self::assertSame([[], 0, 0], [$none->items, $none->filtered, $none->total]);
         self::assertSame([], $this->read->lastFilter, 'Never asked.');
+        $this->assertNotFound(static fn () => $byEnvironment(self::BLOG_ENV), 'An environment of a project it does not see.');
         $this->expectException(ResourceNotFound::class);
         $list(self::BLOG);
     }
@@ -337,6 +344,7 @@ final class TeamViewsTest extends TestCase
 
         $attach(self::BLOG_ENV);
         self::assertSame([self::BLOG_ENV, Assignment::Manual], $state());
+        self::assertEquals([new ApplicationPlaced(Inv::APP, Inv::TEAM)], $app->releaseEvents(), 'Its findings move with it.');
         $this->assignIn = [self::SHOP];
         $this->assertRefused(PermissionDenied::class, static fn () => $attach(Inv::ENVIRONMENT), 'Moving it out of Blog needs Blog too.');
         $this->assertRefused(PermissionDenied::class, $detach);
@@ -351,6 +359,7 @@ final class TeamViewsTest extends TestCase
         $this->assertRefused(EnvironmentOfAnotherTeam::class, static fn () => $attach(self::BLOG_ENV));
         $detach();
         self::assertSame([null, Assignment::Manual], $state());
+        self::assertCount(2, array_filter($app->releaseEvents(), static fn (object $e): bool => $e instanceof ApplicationPlaced), 'Moved to Shop, then detached.');
     }
 
     private function access(): InventoryAccess

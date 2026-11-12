@@ -11,6 +11,11 @@
         {label: 'organization.project.facts.id'|trans, value: project.id, mono: true},
     ]" />
 
+    <section class="flex flex-col gap-3" aria-labelledby="project-exposure-title">
+        <h2 id="project-exposure-title" class="text-base font-semibold">{{ 'exposure.findings.title'|trans }}</h2>
+        {{ include('shared/frame/lazy.html.twig', {id: 'project-exposure', src: path('exposure_project_summary_frame', {teamId: project.teamId, projectId: project.id}), rows: 2}) }}
+    </section>
+
     {%- if project.can('project.environments.manage') or project.can('project.members.manage') %}
         <section class="flex flex-col gap-3" aria-labelledby="project-shortcuts-title">
             <h2 id="project-shortcuts-title" class="text-base font-semibold">{{ 'organization.team.shortcuts'|trans }}</h2>

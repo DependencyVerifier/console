@@ -1,0 +1,83 @@
+{#- The dashboard of a perimeter (summary ExposureSummary, severity_chart ?Chart, trend_chart Chart, link_to: the
+    application page links need team): the figures in text first, the charts as an illustration, the most exposed
+    applications, the ends of life to come. Charts are coloured by chart_theme_controller.ts (no style attribute). -#}
+{%- set teamId = teamId ?? team.id -%}
+<section class="flex flex-col gap-4" aria-labelledby="dashboard-title">
+    <h2 id="dashboard-title" class="sr-only">{{ 'exposure.dashboard.title'|trans }}</h2>
+    <dl class="grid grid-cols-2 overflow-hidden rounded-lg border bg-card md:grid-cols-4 xl:grid-cols-7" data-dashboard="figures">
+        {%- for severity in ['critical', 'high', 'medium', 'low'] %}
+            <div class="-mb-px -me-px border-e border-b px-4 py-3" data-figure="{{ severity }}">
+                <dt class="text-xs text-muted-foreground">{{ ('exposure.severity.' ~ severity)|trans }}</dt>
+                <dd class="mt-1 text-2xl font-semibold tabular-nums">{{ summary.severities[severity] ?? 0 }}</dd>
+            </div>
+        {%- endfor %}
+        <div class="-mb-px -me-px border-e border-b px-4 py-3" data-figure="kev">
+            <dt class="text-xs text-muted-foreground">{{ 'exposure.dashboard.known_exploited'|trans }}</dt>
+            <dd class="mt-1 text-2xl font-semibold tabular-nums">{{ summary.knownExploited }}</dd>
+        </div>
+        <div class="-mb-px -me-px border-e border-b px-4 py-3" data-figure="eol">
+            <dt class="text-xs text-muted-foreground">{{ 'exposure.dashboard.ends_of_life'|trans }}</dt>
+            <dd class="mt-1 text-2xl font-semibold tabular-nums">{{ summary.endsOfLife }}</dd>
+        </div>
+        <div class="-mb-px -me-px border-e border-b px-4 py-3" data-figure="outdated">
+            <dt class="text-xs text-muted-foreground">{{ 'exposure.dashboard.outdated'|trans }}</dt>
+            <dd class="mt-1 text-2xl font-semibold tabular-nums">{{ summary.outdated }}<span class="ms-2 text-xs font-normal text-muted-foreground">{{ 'exposure.dashboard.accepted'|trans({count: summary.accepted}) }}</span></dd>
+        </div>
+    </dl>
+
+    <div class="grid gap-4 lg:grid-cols-2" data-controller="chart-theme" data-action="chartjs:pre-connect->chart-theme#theme">
+        <figure class="flex flex-col gap-2 rounded-lg border p-4">
+            <figcaption class="text-sm font-semibold">{{ 'exposure.dashboard.by_severity'|trans }}</figcaption>
+            {%- if severity_chart %}<div class="relative h-56">{{ render_chart(severity_chart, {'aria-label': 'exposure.dashboard.by_severity'|trans, role: 'img'}) }}</div>
+            {%- else %}<p class="text-sm text-muted-foreground">{{ 'exposure.dashboard.no_vulnerability'|trans }}</p>{% endif %}
+        </figure>
+        <figure class="flex flex-col gap-2 rounded-lg border p-4">
+            <figcaption class="text-sm font-semibold">{{ 'exposure.dashboard.trend'|trans }}</figcaption>
+            <div class="relative h-56">{{ render_chart(trend_chart, {'aria-label': 'exposure.dashboard.trend'|trans, role: 'img'}) }}</div>
+        </figure>
+    </div>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+        <section class="rounded-lg border p-4" aria-labelledby="top-title">
+            <h3 id="top-title" class="text-sm font-semibold">{{ 'exposure.dashboard.top'|trans }}</h3>
+            {%- if summary.topApplications is empty %}
+                <p class="mt-2 text-sm text-muted-foreground">{{ 'exposure.dashboard.no_application'|trans }}</p>
+            {%- else %}
+                <ol class="mt-2 divide-y text-sm" data-dashboard="top">
+                    {%- for application in summary.topApplications %}
+                        <li class="flex items-center justify-between gap-2 py-2">
+                            <a href="{{ path('inventory_application', {teamId: teamId, appId: application.id}) }}" class="truncate underline-offset-4 hover:underline">{{ application.name }}</a>
+                            <span class="flex shrink-0 items-center gap-1">
+                                {%- if application.knownExploited > 0 %}<twig:Badge variant="destructive">{{ 'exposure.kev'|trans }} {{ application.knownExploited }}</twig:Badge>{% endif %}
+                                {%- if application.critical > 0 %}<twig:SeverityBadge severity="critical" />{% endif %}
+                                <span class="tabular-nums text-muted-foreground">{{ 'exposure.dashboard.findings_count'|trans({count: application.total}) }}</span>
+                            </span>
+                        </li>
+                    {%- endfor %}
+                </ol>
+            {%- endif %}
+        </section>
+        <section class="rounded-lg border p-4" aria-labelledby="calendar-title">
+            <h3 id="calendar-title" class="text-sm font-semibold">{{ 'exposure.dashboard.calendar'|trans }}</h3>
+            {%- if summary.calendar is empty %}
+                <p class="mt-2 text-sm text-muted-foreground">{{ 'exposure.dashboard.no_end_of_life'|trans }}</p>
+            {%- else %}
+                <ul class="mt-2 divide-y text-sm" data-dashboard="calendar">
+                    {%- for cycle in summary.calendar %}
+                        <li class="flex items-center justify-between gap-2 py-2">
+                            <span class="min-w-0">
+                                <span class="font-medium">{{ cycle.title }}</span>
+                                {%- if cycle.suggested %}<span class="text-muted-foreground"> → {{ cycle.suggested }}</span>{% endif %}
+                                <span class="block text-xs text-muted-foreground">{{ 'exposure.dashboard.subjects'|trans({count: cycle.subjects}) }}</span>
+                            </span>
+                            <span class="flex shrink-0 items-center gap-2">
+                                <span class="tabular-nums text-xs">{{ cycle.endOfLife ? cycle.endOfLife|date('Y-m-d') : '—' }}</span>
+                                <twig:Badge variant="{{ cycle.level == 'expired' ? 'destructive' : 'outline' }}">{{ ('exposure.eol_level.' ~ (cycle.level ?? 'upcoming'))|trans }}</twig:Badge>
+                            </span>
+                        </li>
+                    {%- endfor %}
+                </ul>
+            {%- endif %}
+        </section>
+    </div>
+</section>

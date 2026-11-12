@@ -1,2 +1,3 @@
-<span class="font-medium">{{ row.name }}</span>
+{#- The name opens the page of the environment (Exposure), the ids coming from the route of the list. -#}
+<a href="{{ path('exposure_environment', {teamId: app.request.attributes.get('teamId'), projectId: app.request.attributes.get('projectId'), environmentId: row.id}) }}" class="font-medium underline-offset-4 hover:underline">{{ row.name }}</a>
 {%- if row.production %} <twig:Badge class="ms-1">{{ 'organization.field.production'|trans }}</twig:Badge>{% endif -%}
