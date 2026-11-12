@@ -1,0 +1,44 @@
+# Public sources of Vulnerability (docs/cadrage.md §8): one scoped client each, bounded in time, retried on network
+# errors and 5xx / 429. They only ever receive package names and CVE identifiers, never a version, a host or a team.
+# The User-Agent names the software, never the instance.
+framework:
+    http_client:
+        default_options:
+            headers:
+                User-Agent: 'DependencyVerifier-console (+https://github.com/DependencyVerifier)'
+        scoped_clients:
+            osv.client:
+                base_uri: '%env(default:osv_default_url:OSV_URL)%'
+                timeout: 30
+                max_duration: 120
+                retry_failed:
+                    max_retries: 3
+                    delay: 2000
+                    multiplier: 3
+            kev.client:
+                base_uri: '%env(default:kev_default_url:KEV_URL)%'
+                timeout: 30
+                max_duration: 120
+                retry_failed:
+                    max_retries: 3
+                    delay: 2000
+                    multiplier: 3
+            epss.client:
+                base_uri: '%env(default:epss_default_url:EPSS_URL)%'
+                timeout: 30
+                max_duration: 120
+                retry_failed:
+                    max_retries: 3
+                    delay: 2000
+                    multiplier: 3
+
+parameters:
+    osv_default_url: 'https://api.osv.dev'
+    kev_default_url: 'https://www.cisa.gov'
+    epss_default_url: 'https://api.first.org'
+
+when@test:
+    framework:
+        http_client:
+            # Never the network in the tests: the recorded answers of tests/Vulnerability/Fixtures/feeds.
+            mock_response_factory: Tests\Vulnerability\Support\RecordedFeeds

@@ -39,3 +39,6 @@ services:
     test.password_hasher_factory:
         alias: security.password_hasher_factory
         public: true
+
+    # The public sources of Vulnerability, recorded (framework.http_client.mock_response_factory).
+    Tests\Vulnerability\Support\RecordedFeeds: ~

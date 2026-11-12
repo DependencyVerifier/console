@@ -85,6 +85,14 @@ final class InMemoryReadModel implements InventoryReadModel
         return array_find($this->hosts, static fn (HostView $h): bool => $h->hostId === $hostId);
     }
 
+    /** @var array<string, list<string>> team => package URLs */
+    public array $packageUrls = [];
+
+    public function teamPackageUrls(string $teamId): array
+    {
+        return $this->packageUrls[$teamId] ?? [];
+    }
+
     public function image(string $imageRecordId): ?ImageView
     {
         return array_find($this->images, static fn (ImageView $i): bool => $i->id === $imageRecordId);

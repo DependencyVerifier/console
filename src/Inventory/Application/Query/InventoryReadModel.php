@@ -52,6 +52,13 @@ interface InventoryReadModel
 
     public function host(string $hostId): ?HostView;
 
+    /**
+     * The package URLs of the current SBOMs of a team (its hosts, its applications still found, its images), each once.
+     *
+     * @return list<string>
+     */
+    public function teamPackageUrls(string $teamId): array;
+
     public function image(string $imageRecordId): ?ImageView;
 
     public function imageByImageId(string $teamId, string $imageId): ?ImageView;

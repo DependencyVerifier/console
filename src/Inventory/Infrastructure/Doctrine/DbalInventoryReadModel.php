@@ -140,6 +140,20 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
         );
     }
 
+    public function teamPackageUrls(string $teamId): array
+    {
+        /** @var list<string> */
+        return $this->connection->fetchFirstColumn(
+            'SELECT DISTINCT p.purl FROM inventory_package p JOIN inventory_blob b ON b.id = p.blob_id
+             WHERE b.team_id = :team AND b.digest IN (
+                SELECT h.packages_digest FROM inventory_host h WHERE h.team_id = :team AND h.packages_digest IS NOT NULL
+                UNION SELECT a.sbom_digest FROM inventory_app_instance a WHERE a.team_id = :team AND a.present
+                UNION SELECT i.sbom_digest FROM inventory_container_image i WHERE i.team_id = :team
+             ) ORDER BY p.purl',
+            ['team' => $teamId],
+        );
+    }
+
     public function image(string $imageRecordId): ?ImageView
     {
         return $this->imageWhere('i.id = :value', $imageRecordId, null);

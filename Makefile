@@ -157,6 +157,10 @@ worker-logs: ## Follow the Messenger worker
 inventory-maintain: ## Inventory maintenance, stale inventories, history beyond retention, unreferenced snapshots (cron, hourly)
 	@$(CONSOLE) app:inventory:maintain
 
+.PHONY: vuln-sync
+vuln-sync: ## Queue the sync of the advisories (osv.dev, by package name), CISA KEV and FIRST EPSS (cron: every 6 hours; the worker runs it)
+	@$(CONSOLE) app:vulnerability:sync
+
 .PHONY: fleet-maintain
 fleet-maintain: ## Fleet maintenance, inactive agents, late orders, request nonces (cron, every few minutes)
 	@$(CONSOLE) app:fleet:maintain

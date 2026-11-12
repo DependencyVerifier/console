@@ -51,6 +51,24 @@ framework:
                     max_retries: 3
                     delay: 10000
                     multiplier: 3
+            # `matching`: the findings of a team computed again (Exposure). `feeds`: calls to the public sources
+            # (OSV, CISA KEV, FIRST EPSS, endoflife.date, Packagist, npm), slow and rate limited, kept apart.
+            matching:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    queue_name: matching
+                retry_strategy:
+                    max_retries: 3
+                    delay: 10000
+                    multiplier: 3
+            feeds:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    queue_name: feeds
+                retry_strategy:
+                    max_retries: 5
+                    delay: 60000
+                    multiplier: 3
             failed:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
@@ -58,6 +76,10 @@ framework:
 
         routing:
             Inventory\Application\Command\Inventory\ProcessInventory: ingest
+            Vulnerability\Application\Command\Sync\WatchTeamPackages: feeds
+            Vulnerability\Application\Command\Sync\SyncPackages: feeds
+            Vulnerability\Application\Command\Sync\SyncKnownExploited: feeds
+            Vulnerability\Application\Command\Sync\SyncExploitProbabilities: feeds
 
 when@test:
     framework:
@@ -65,3 +87,5 @@ when@test:
             transports:
                 # Processed right away in the tests (the integration test of the transport uses the real one).
                 ingest: 'sync://'
+                matching: 'sync://'
+                feeds: 'sync://'

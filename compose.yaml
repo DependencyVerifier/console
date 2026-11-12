@@ -41,7 +41,7 @@ services:
   # It stops every hour (or at 256 MB) and Compose restarts it, so a deploy or a leak never lasts.
   worker:
     restart: unless-stopped
-    command: ["php", "bin/console", "messenger:consume", "ingest", "--time-limit=3600", "--memory-limit=256M"]
+    command: ["php", "bin/console", "messenger:consume", "ingest", "matching", "feeds", "--time-limit=3600", "--memory-limit=256M"]
     environment:
       DATABASE_URL: postgresql://depverify_app:${DEPVERIFY_APP_PASSWORD:-!ChangeMeApp!}@database:5432/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-18}&charset=${POSTGRES_CHARSET:-utf8}
     depends_on:

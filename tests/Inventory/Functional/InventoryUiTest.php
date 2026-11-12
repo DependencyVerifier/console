@@ -40,6 +40,8 @@ final class InventoryUiTest extends IdentityWebTestCase
         $agent = $this->inventory($teamId);
         $appId = $this->fetchString('SELECT id FROM inventory_app_instance');
         $hostId = $this->fetchString('SELECT host_id FROM inventory_app_instance');
+        self::assertSame(['Packagist symfony/http-kernel', 'npm lodash'], $this->connection()->fetchFirstColumn("SELECT ecosystem || ' ' || name FROM vulnerability_watched_package ORDER BY 1"), 'Its packages are watched (the deb one names no release).');
+        self::assertSame(['GHSA-35jh-r3h4-6jhm', 'GHSA-h7vf-5wrv-9fhv'], $this->connection()->fetchFirstColumn('SELECT osv_id FROM vulnerability_advisory ORDER BY 1'), 'Their advisories fetched from osv.dev (recorded).');
         $this->logIn('alice@example.com');
 
         $this->client->request('GET', '/teams/'.$teamId);
