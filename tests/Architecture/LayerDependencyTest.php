@@ -23,8 +23,11 @@ final class LayerDependencyTest extends TestCase
 {
     private const array CONTEXTS = ['Shared', 'Identity', 'Organization', 'Fleet', 'Inventory', 'Vulnerability', 'Exposure', 'Notification', 'Audit'];
 
-    /** Vendor namespaces the Domain layer may use (mapping metadata, identifiers, pure string functions u() / b()). */
-    private const array DOMAIN_ALLOWED_VENDORS = ['Doctrine\ORM\Mapping', 'Doctrine\Common\Collections', Types::class, 'Symfony\Component\Uid', 'Symfony\Component\String\u', 'Symfony\Component\String\b'];
+    /**
+     * Vendor namespaces the Domain layer may use (mapping metadata, identifiers, pure string functions u() / b(), and
+     * Composer's version rules, pure functions too, for the matching of Packagist versions).
+     */
+    private const array DOMAIN_ALLOWED_VENDORS = ['Doctrine\ORM\Mapping', 'Doctrine\Common\Collections', Types::class, 'Symfony\Component\Uid', 'Symfony\Component\String\u', 'Symfony\Component\String\b', 'Composer\Semver'];
 
     /**
      * Vendor namespaces the Application layer may use (DI metadata, contracts, pure string functions). Everything
