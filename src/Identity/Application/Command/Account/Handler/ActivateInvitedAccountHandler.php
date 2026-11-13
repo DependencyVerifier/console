@@ -42,13 +42,16 @@ final readonly class ActivateInvitedAccountHandler implements CommandHandler
         $this->lock->acquire('identity.email:'.$email->value());
         $existing = $this->users->findByEmail($email);
         if (null !== $existing) {
-            if ($existing->status()->isActive()) {
-                $existing->promote();
-            }
+            // A notification-only account (active, never a password) is promoted, once every refusal is behind.
+            $promotable = $existing->status()->isActive() && $existing->isNotificationOnly() && $existing->awaitsPassword();
 
             // An account invited from /admin/users that never chose its password completes its activation here.
-            if (!$existing->awaitsPassword() || !$existing->maySetPassword()) {
+            if (!$existing->awaitsPassword() || !($promotable || $existing->maySetPassword())) {
                 throw new AccountAlreadyActive();
+            }
+
+            if ($promotable) {
+                $existing->promote();
             }
 
             $existing->choosePassword($this->hasher->hash($command->password));
