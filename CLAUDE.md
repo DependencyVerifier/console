@@ -158,6 +158,19 @@ Decisions: `docs/cadrage.md` decisions 44–53; profile of the OS packages: `doc
 - Dashboards (decisions 54–57): a finding copies the **placement** of its subject at each computation (name, environment, project; `ApplicationPlacementChanged` from Inventory recomputes after a manual attach / detach), so `GetExposureSummary` and `ListTeamFindings` filter in SQL. `FindingAccess::filter()` turns a perimeter (`ExposureScope`: team, project, environment, host) into an `ExposureFilter` (a `TEAM_GUEST`: its projects, never the fleet). Pages: Findings sections of the team and of the project, environment page (`/teams/{t}/projects/{p}/environments/{e}`, linked from the Environments tab), summary frames on the overviews and the host page. List filters come from the query string (`FindingsFilters`, GET form, `auto_submit_controller.ts`).
 - Charts: `symfony/ux-chartjs`, built by `ExposureCharts` with colours written `var(--…)`, resolved by `chart_theme_controller.ts` on `chartjs:pre-connect` (no `style` attribute). Always write the figures next to a chart.
 
+## Notification (rules, outbox, email, webhooks)
+
+Decisions: `docs/cadrage.md` decisions 58–66; webhook contract: `docs/webhook.md`.
+- Events in (never another context's tables): `FindingChanged` (Exposure), `AgentAwaitingApproval` (Fleet), queued by `QueueNotifications` to the `notifications` transport; details through `GetFindingDigests`, `ListSilentAgents`, `ListExpiringAcceptances`, `FilterRecipients`, `FindAccounts`, `FindTeamNames`.
+- Model: `NotificationRule` (a project, optionally an environment, or the fleet: no project; events, vulnerability thresholds, silence of an agent, webhooks, email the subscribers), `WebhookChannel` (HTTPS URL, secret encrypted with `SecretBox` bound by `WebhookSecretBinding`, last call), `Subscription` (one per account and scope, `off` kept; `addedBy` for an attached recipient), `RecipientInvitation` (an address invited by a manager, hashed 7-day link), and the outbox: `Notice` (unique per rule and occurrence) and `Delivery` (unique per notice, channel and target; attempts counted by the entity, never by Messenger).
+- `NoticeWriter` turns an `Occurrence` into notices and deliveries; `SendDeliveryHandler` judges the recipient again at sending and never throws on a failure (the ports `NotificationMailer` and `WebhookCaller` return the error). Emails go through `MailerInterface` directly (`DeferredMailQueue` empties on terminate, never in the worker); the recipient confirmation email does use the deferred queue (sent from a web request).
+- **A command handler never dispatches a command**: the cron commands ask a query (`ListDueDeliveries`, `ListDigests`) and dispatch `SendDelivery` / `SendDigest` themselves.
+- Cron: `make notifications-check` (every 5 minutes) and `make notifications-digest` (daily, 07:00; weekly digests on Monday).
+- Webhooks never reach a private network (`NoPrivateNetworkHttpClient`) unless `NOTIFICATION_WEBHOOK_ALLOW_PRIVATE=1` (`.env.local` in dev, `.env.test`, default `0` in `services.yaml`). In tests, `RecordedFeeds` answers `hooks.test` with 204 only for a request signed with `RecordedFeeds::WEBHOOK_SECRET`.
+- Notification-only recipients: `AttachRecipient` only creates a `RecipientInvitation` (same answer for any address); `ConfirmRecipient` (public `POST` on the link) asks Identity's `RecipientProvisioning` and Organization's `RecipientAdmission` (on behalf of the manager, who must still hold `project.notifications.manage`). An account that signs in is never attached that way. Identity promotes a notification-only account on an accepted invitation or as first team admin.
+- UI: `NotificationPage` renders the team section (`notification/team/notifications.html.twig`) and the project tab (through `ProjectPage::NOTIFICATIONS`); the `NotificationsView` of the page is the request attribute `_notifications`, read by the action cells. Every `notification.*` action refreshes the page (`NotificationPageRefresh`). Public pages: `/notifications/unsubscribe` (signed by `UriSigner`) and `/notifications/confirm/{token}`, both `GET` asks, `POST` acts.
+- Test doubles: `tests/Notification/Support` (in-memory repositories, `RecordingNotificationMailer`, `ScriptedWebhookCaller`, `BoundSecretBox`, `FixedRecipientAccounts`, `RecordingAdmission`).
+
 ## FrankenPHP worker mode
 
 The console runs as a long-lived FrankenPHP worker, in production too. **No mutable `static` property**; every stateful service implements `ResetInterface`; the EntityManager is reset after a failed command; connections outside the bus (rate limiter, sessions) get session-level timeouts at connect time.
@@ -170,7 +183,7 @@ Symfony 8.1, PHP 8.5, FrankenPHP + Caddy (`dunglas/symfony-docker`), PostgreSQL 
 
 ```bash
 make start            # submodules + build + up + vendors (first run)
-make up / make stop   # containers: php, worker (queues ingest, matching, feeds), database, node (Vite dev server :5173)
+make up / make stop   # containers: php, worker (queues ingest, matching, feeds, notifications), database, node (Vite dev server :5173)
 make test             # PHPUnit (prepares the test DB); FILTER=… / COVERAGE=1
 make qa               # lint + typecheck + phpcs + phpstan (level max) + rector + test + infection (100% MSI): run before committing
 make typecheck        # strict tsc on assets/ + vite.config.ts, and no .js allowed in assets/
@@ -183,7 +196,8 @@ make db-diff / make db-migrate          # migrations are organized by year: migr
 make db-dump DUMP=backup.sql / make db-import DUMP=backup.sql   # pg_dump / psql via .docker/database/scripts, files in var/
 make db-roles / make audit-partitions / make rate-limiter-prune / make fleet-maintain / make inventory-maintain
 make vuln-sync / make eol-sync / make findings-refresh   # cron: every 6 h / daily / daily after eol-sync (they only queue the work)
-make worker-restart / make worker-logs  # the consumer of ingest, matching, feeds (restart after a code change; `docker compose up -d worker` after a change of compose.yaml)
+make notifications-check / make notifications-digest     # cron: every 5 minutes / daily at 07:00
+make worker-restart / make worker-logs  # the consumer of ingest, matching, feeds, notifications (restart after a code change; `docker compose up -d worker` after a change of compose.yaml)
 make fleet-fake-agent a='enroll --token=dvet_…'   # dev demo agent (then a=poll, a='run --polls=10', a=inventory; name=… for another one)
 make super-admin email=you@example.com / make mailpit
 make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, user depverify_app or depverify_owner, database app)
@@ -206,7 +220,7 @@ Database: **PostgreSQL 18**, kept on purpose over MariaDB. The design relies on 
 
 - `config/bundles.php` registers `TalesFromADevTwigExtraTailwindBundle` by hand: no Flex recipe exists, and the shadcn kit needs its `tailwind_classes` filter.
 - The shadcn kit's Tailwind utilities are **vendored** in `assets/styles/vendor/shadcn-tailwind.css` (from `shadcn@4.23.0`, MIT). Do **not** install the `shadcn` npm package, even if `make ux` suggests `npm install shadcn`: it is a whole CLI whose dependencies carried vulnerabilities (deepmerge, minimatch) for a 16 KB stylesheet. Refresh the vendored file by hand when the kit needs it.
-- Not installed yet (add with the feature that needs them): Scheduler, Notifier, WebAuthn (passkeys, step 1b), ExpressionLanguage.
+- Not installed yet (add with the feature that needs them): Scheduler, Notifier, WebAuthn (passkeys, step 1b, in `docs/plans/backlog.md`), ExpressionLanguage.
 - The kit's `input-otp` is not used: scheb expects a single code field and backup codes are alphanumeric (one `one-time-code` input instead).
 - Infection runs with `--with-uncovered`: uncovered Domain / Application code counts as escaped. Doctrine mapping attributes are excluded (`global-ignoreSourceCodeByRegex`). Methods returning an outcome while changing state carry `@phpstan-impure`.
 - Identity test doubles live in `tests/Identity/Support` (in-memory repositories, scripted throttle…); functional tests of the flows extend `Tests\Support\IdentityWebTestCase` (HTTPS client, limiter states emptied, typed `fetchString()` / `fetchInt()`) and create accounts with `Tests\Support\Accounts`. The test kernel reboots between requests: change data through the client's container before the request, never on an entity loaded earlier.
