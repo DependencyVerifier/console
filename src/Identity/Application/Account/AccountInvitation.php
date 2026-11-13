@@ -16,8 +16,8 @@ use Shared\Application\Crypto\TokenHasher;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * An account created without password, with its single-use setup link (7 days, sent after the commit). The caller
- * holds the lock of the email and checked that it is free.
+ * An account created without password, or a notification-only one promoted, with its single-use setup link (7 days,
+ * sent after the commit). The caller holds the lock of the email.
  */
 final readonly class AccountInvitation
 {
@@ -32,12 +32,22 @@ final readonly class AccountInvitation
 
     public function invite(UserId $userId, EmailAddress $email, Uuid $requestId): User
     {
-        $now = $this->clock->now();
-        $user = User::invite($userId, $email, $now);
+        $user = User::invite($userId, $email, $this->clock->now());
         $this->users->add($user);
-        $token = $this->tokens->urlToken();
-        $this->requests->add(PasswordResetRequest::issueAccountSetup($requestId, $user->id(), $token, $this->hasher->hash($token), $now));
+        $this->setUp($user, $requestId);
 
         return $user;
+    }
+
+    public function promote(User $user, Uuid $requestId): void
+    {
+        $user->promote();
+        $this->setUp($user, $requestId);
+    }
+
+    private function setUp(User $user, Uuid $requestId): void
+    {
+        $token = $this->tokens->urlToken();
+        $this->requests->add(PasswordResetRequest::issueAccountSetup($requestId, $user->id(), $token, $this->hasher->hash($token), $this->clock->now()));
     }
 }

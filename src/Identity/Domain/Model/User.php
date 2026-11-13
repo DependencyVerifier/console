@@ -218,6 +218,25 @@ class User implements RecordsEvents
         return $this->status->isActive() && $this->privileges->has(Permission::AccountLogin);
     }
 
+    /**
+     * Without `account.login` (and not a super admin): it receives notifications, never signs in.
+     */
+    public function isNotificationOnly(): bool
+    {
+        return !$this->privileges->has(Permission::AccountLogin) && !$this->isSuperAdmin();
+    }
+
+    /**
+     * A notification-only account becomes a full one (an invitation accepted, or made the first admin of a team):
+     * it may sign in once it chose a password through its link, keeping its memberships (decision 16).
+     */
+    public function promote(): void
+    {
+        if ($this->isNotificationOnly()) {
+            $this->privileges = $this->privileges->granting(Permission::AccountLogin);
+        }
+    }
+
     public function remainingBackupCodes(): int
     {
         return $this->backupCodes->filter(static fn (BackupCode $code): bool => !$code->isUsed())->count();

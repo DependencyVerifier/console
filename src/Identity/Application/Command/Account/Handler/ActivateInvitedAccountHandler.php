@@ -21,7 +21,7 @@ use Shared\Application\Locking\TransactionLock;
 /**
  * Bound to a pending invitation (its email), under an advisory lock on that email: two concurrent activations cannot
  * both create the account (the unique email index is the safety net). An existing account is refused: its holder
- * signs in and accepts. Notification-only accounts arrive with the Notification context.
+ * signs in and accepts; but a notification-only account (it cannot sign in) is promoted, keeping its memberships.
  */
 final readonly class ActivateInvitedAccountHandler implements CommandHandler
 {
@@ -42,6 +42,10 @@ final readonly class ActivateInvitedAccountHandler implements CommandHandler
         $this->lock->acquire('identity.email:'.$email->value());
         $existing = $this->users->findByEmail($email);
         if (null !== $existing) {
+            if ($existing->status()->isActive()) {
+                $existing->promote();
+            }
+
             // An account invited from /admin/users that never chose its password completes its activation here.
             if (!$existing->awaitsPassword() || !$existing->maySetPassword()) {
                 throw new AccountAlreadyActive();

@@ -6,15 +6,13 @@ namespace Identity\Application\Account;
 
 use Identity\Domain\Model\AccountNotAssignable;
 use Identity\Domain\Model\EmailAddress;
-use Identity\Domain\Model\RecipientSignsIn;
 use Identity\Domain\Model\User;
 use Identity\Domain\Model\UserId;
 use Identity\Domain\Repository\UserRepository;
 use Psr\Clock\ClockInterface;
-use Shared\Application\Contract\Identity\ProvisionedAccount;
+use Shared\Application\Contract\Identity\RecipientAccount;
 use Shared\Application\Contract\Identity\RecipientProvisioning;
 use Shared\Application\Locking\TransactionLock;
-use Shared\Domain\Authorization\Permission;
 
 final readonly class RecipientProvisioner implements RecipientProvisioning
 {
@@ -22,7 +20,7 @@ final readonly class RecipientProvisioner implements RecipientProvisioning
     {
     }
 
-    public function notificationAccount(string $email, string $newUserId): ProvisionedAccount
+    public function recipientAccount(string $email, string $newUserId): RecipientAccount
     {
         $address = EmailAddress::of($email);
         $this->lock->acquire('identity.email:'.$address->value());
@@ -33,16 +31,12 @@ final readonly class RecipientProvisioner implements RecipientProvisioning
                 throw new AccountNotAssignable();
             }
 
-            if ($existing->privileges()->has(Permission::AccountLogin)) {
-                throw new RecipientSignsIn();
-            }
-
-            return new ProvisionedAccount($existing->id()->toString(), $address->value(), false);
+            return new RecipientAccount($existing->id()->toString(), !$existing->isNotificationOnly());
         }
 
         $user = User::notificationOnly(UserId::fromString($newUserId), $address, $this->clock->now());
         $this->users->add($user);
 
-        return new ProvisionedAccount($user->id()->toString(), $address->value(), true);
+        return new RecipientAccount($user->id()->toString(), false);
     }
 }

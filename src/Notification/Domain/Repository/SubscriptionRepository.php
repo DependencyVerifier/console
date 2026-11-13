@@ -23,11 +23,9 @@ interface SubscriptionRepository
      */
     public function ofScope(Uuid $teamId, ?Uuid $projectId): array;
 
-    public function findByConfirmationHash(string $hash): ?Subscription;
-
     /**
-     * The recipients attached by a manager to the projects of the team (each account once): what
-     * `maxNotificationOnlyAccounts` counts.
+     * The recipients attached by a manager to the projects of the team (each account once): with the addresses still
+     * invited, what `maxNotificationOnlyAccounts` counts.
      *
      * @return list<string> account ids
      */

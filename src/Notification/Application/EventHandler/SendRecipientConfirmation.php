@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Notification\Application\EventHandler;
 
 use Notification\Application\Port\RecipientConfirmationSender;
-use Notification\Domain\Event\RecipientAttached;
+use Notification\Domain\Event\RecipientInvited;
 use Shared\Application\Bus\EventHandler;
 use Shared\Application\Bus\QueryBus;
-use Shared\Application\Contract\Identity\FindAccounts;
 use Shared\Application\Contract\Organization\FindTeamNames;
 
 /**
- * After the commit: the link leaves only for a recipient really attached, to an account still active.
+ * After the commit: the link leaves only for an invitation really stored.
  */
 final readonly class SendRecipientConfirmation implements EventHandler
 {
@@ -20,13 +19,8 @@ final readonly class SendRecipientConfirmation implements EventHandler
     {
     }
 
-    public function __invoke(RecipientAttached $event): void
+    public function __invoke(RecipientInvited $event): void
     {
-        $account = $this->queries->ask(new FindAccounts([$event->userId]))[$event->userId] ?? null;
-        if (true !== $account?->active) {
-            return;
-        }
-
-        $this->sender->send($account->email, $this->queries->ask(new FindTeamNames([$event->teamId]))[$event->teamId] ?? '', $event->plainToken);
+        $this->sender->send($event->email, $this->queries->ask(new FindTeamNames([$event->teamId]))[$event->teamId] ?? '', $event->plainToken);
     }
 }

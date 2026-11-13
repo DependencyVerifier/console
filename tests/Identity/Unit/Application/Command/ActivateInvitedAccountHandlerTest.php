@@ -9,6 +9,8 @@ use Identity\Application\Command\Account\Handler\ActivateInvitedAccountHandler;
 use Identity\Domain\Model\AccountAlreadyActive;
 use Identity\Domain\Model\EmailAddress;
 use Identity\Domain\Model\PasswordRejected;
+use Identity\Domain\Model\User;
+use Identity\Domain\Model\UserId;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Contract\Organization\FindPendingInvitation;
@@ -54,6 +56,33 @@ final class ActivateInvitedAccountHandlerTest extends TestCase
         }
 
         self::assertCount(1, $users->users);
+    }
+
+    #[Test]
+    public function it_should_promote_a_notification_only_account_keeping_its_id(): void
+    {
+        $recipient = User::notificationOnly(UserId::fromString(Users::OTHER_ID), EmailAddress::of('jane@example.com'), new \DateTimeImmutable());
+        $users = new InMemoryUsers($recipient);
+
+        $this->handler($users, new RecordingLock())(new ActivateInvitedAccount(Users::uuid()->toRfc4122(), self::INVITATION, self::PASSWORD));
+
+        self::assertCount(1, $users->users);
+        self::assertFalse($recipient->isNotificationOnly());
+        self::assertTrue($recipient->canLogIn(), 'Promoted, with its password: it signs in and accepts.');
+    }
+
+    #[Test]
+    public function it_should_not_promote_a_deactivated_notification_only_account(): void
+    {
+        $recipient = User::notificationOnly(UserId::fromString(Users::OTHER_ID), EmailAddress::of('jane@example.com'), new \DateTimeImmutable());
+        $recipient->deactivate(new \DateTimeImmutable());
+
+        try {
+            $this->handler(new InMemoryUsers($recipient), new RecordingLock())(new ActivateInvitedAccount(Users::uuid()->toRfc4122(), self::INVITATION, self::PASSWORD));
+            self::fail('Deactivated.');
+        } catch (AccountAlreadyActive) {
+            self::assertTrue($recipient->isNotificationOnly());
+        }
     }
 
     #[Test]

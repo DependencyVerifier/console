@@ -9,6 +9,7 @@ use Fleet\Domain\Model\Agent;
 use Notification\Domain\Model\Frequency;
 use Notification\Domain\Model\NotificationEvent;
 use Notification\Domain\Model\NotificationRule;
+use Notification\Domain\Model\RecipientInvitation;
 use Notification\Domain\Model\RuleThresholds;
 use Notification\Domain\Model\Subscription;
 use Notification\Domain\Model\WebhookChannel;
@@ -126,26 +127,33 @@ final class NotificationsChainTest extends IdentityWebTestCase
     }
 
     #[Test]
-    public function it_should_confirm_a_recipient_from_its_link_only_with_a_post(): void
+    public function it_should_invite_then_attach_a_recipient_once_it_confirms_with_a_post(): void
     {
-        $team = Seed::team(self::getContainer(), 'Alpha', []);
+        $alice = Accounts::create(self::getContainer(), 'alice@example.com');
+        $team = Seed::team(self::getContainer(), 'Alpha', [[$alice, TeamRole::Admin]]);
+        $project = Seed::project(self::getContainer(), $team, 'Shop');
         $token = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ';
         $hasher = self::getContainer()->get(TokenHasher::class);
-        $subscription = Subscription::attach(Uuid::v7(), Uuid::fromString($team->id()->toString()), Uuid::v7(), Uuid::v7(), Frequency::Daily, Uuid::v7(), $token, $hasher->hash($token), new \DateTimeImmutable());
+        $invitation = RecipientInvitation::issue(Uuid::v7(), Uuid::fromString($team->id()->toString()), Uuid::fromString($project->id()->toString()), 'ops@example.com', Frequency::Daily, Uuid::fromString($alice->id()->toString()), $token, $hasher->hash($token), new \DateTimeImmutable());
         $manager = $this->manager();
-        $manager->persist($subscription);
+        $manager->persist($invitation);
         $manager->flush();
-        $id = $subscription->id()->toRfc4122();
+        $id = $invitation->id()->toRfc4122();
 
         $this->client->request('GET', '/notifications/confirm/'.$token);
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('form[method="post"] button[type="submit"]');
-        self::assertNull($this->connection()->fetchOne('SELECT confirmed_at FROM notification_subscription WHERE id = ?', [$id]), 'Opening the link confirms nothing.');
+        self::assertSame('pending', $this->fetchString('SELECT status FROM notification_recipient_invitation WHERE id = ?', [$id]), 'Opening the link confirms nothing.');
+        self::assertSame(0, $this->fetchInt("SELECT COUNT(*) FROM identity_user WHERE email = 'ops@example.com'"), 'No account before the confirmation.');
 
         $this->client->request('POST', '/notifications/confirm/'.$token);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('main', 'Confirmed');
-        self::assertNotNull($this->connection()->fetchOne('SELECT confirmed_at FROM notification_subscription WHERE id = ?', [$id]));
+        self::assertSame('confirmed', $this->fetchString('SELECT status FROM notification_recipient_invitation WHERE id = ?', [$id]));
+        $user = $this->fetchString("SELECT id FROM identity_user WHERE email = 'ops@example.com'");
+        self::assertSame(['project_viewer'], $this->connection()->fetchFirstColumn('SELECT role FROM organization_project_membership WHERE user_id = ?', [$user]));
+        self::assertSame(['team_guest'], $this->connection()->fetchFirstColumn('SELECT role FROM organization_team_membership WHERE user_id = ?', [$user]));
+        self::assertSame('daily', $this->fetchString('SELECT frequency FROM notification_subscription WHERE user_id = ?', [$user]));
         self::assertSame(['success'], array_column(AuditLog::entries($this->connection(), 'notification.confirm_recipient'), 'outcome'));
 
         $this->client->request('POST', '/notifications/confirm/'.$token);

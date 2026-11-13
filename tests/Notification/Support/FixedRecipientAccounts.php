@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Notification\Support;
 
-use Shared\Application\Contract\Identity\ProvisionedAccount;
+use Shared\Application\Contract\Identity\RecipientAccount;
 use Shared\Application\Contract\Identity\RecipientProvisioning;
 
 /**
- * Identity's port as Notification sees it: a known email returns its account, an unknown one is created with the id
- * given, a refused one throws.
+ * Identity's port as Notification sees it: a known email returns its account (signing in or not), an unknown one is
+ * created with the id given, a refused one throws.
  */
 final class FixedRecipientAccounts implements RecipientProvisioning
 {
@@ -17,21 +17,21 @@ final class FixedRecipientAccounts implements RecipientProvisioning
     public array $asked = [];
 
     /**
-     * @param array<string, string> $known email => user id
+     * @param array<string, array{string, bool}> $known email => [user id, signs in]
      */
     public function __construct(private readonly array $known = [], public ?\Throwable $refusal = null)
     {
     }
 
-    public function notificationAccount(string $email, string $newUserId): ProvisionedAccount
+    public function recipientAccount(string $email, string $newUserId): RecipientAccount
     {
         $this->asked[] = $email;
         if (null !== $this->refusal) {
             throw $this->refusal;
         }
 
-        $known = $this->known[$email] ?? null;
+        [$id, $signsIn] = $this->known[$email] ?? [$newUserId, false];
 
-        return null === $known ? new ProvisionedAccount($newUserId, $email, true) : new ProvisionedAccount($known, $email, false);
+        return new RecipientAccount($id, $signsIn);
     }
 }

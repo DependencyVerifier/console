@@ -11,7 +11,9 @@ use Identity\Application\Query\User\UserDirectory;
 use Identity\Application\Security\AccountAccess;
 use Identity\Domain\Event\AccountSetupRequested;
 use Identity\Domain\Model\AccountNotAssignable;
+use Identity\Domain\Model\EmailAddress;
 use Identity\Domain\Model\PasswordResetRequest;
+use Identity\Domain\Model\User;
 use Identity\Domain\Model\UserId;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -73,6 +75,22 @@ final class AccountProvisionerTest extends TestCase
         self::assertSame('h:url-token', new \ReflectionProperty(PasswordResetRequest::class, 'tokenHash')->getValue($request), 'Only the hash of the token is kept.');
         self::assertTrue($request->isUsableAt(new \DateTimeImmutable('2026-11-16 07:59:59')), 'A 7-day setup link.');
         self::assertEquals([new AccountSetupRequested(self::REQUEST, Users::THIRD_ID, 'url-token')], $request->releaseEvents());
+    }
+
+    #[Test]
+    public function it_should_promote_a_notification_only_account_with_a_setup_link(): void
+    {
+        $recipient = User::notificationOnly(UserId::fromString(Users::OTHER_ID), EmailAddress::of('ops@example.com'), new \DateTimeImmutable());
+        [$users, $requests] = [new InMemoryUsers($recipient), new InMemoryResetRequests()];
+
+        $account = $this->provisioner($users, $requests, new RecordingLock())->teamAdminAccount('ops@example.com', Users::THIRD_ID, self::REQUEST);
+
+        self::assertEquals(new ProvisionedAccount(Users::OTHER_ID, 'ops@example.com', true), $account, 'Promoted, not squatted: invited like a new account.');
+        self::assertCount(1, $users->users);
+        self::assertFalse($recipient->isNotificationOnly());
+        self::assertTrue($recipient->maySetPassword());
+        self::assertCount(1, $requests->requests);
+        self::assertEquals([new AccountSetupRequested(self::REQUEST, Users::OTHER_ID, 'url-token')], $requests->requests[self::REQUEST]->releaseEvents());
     }
 
     #[Test]

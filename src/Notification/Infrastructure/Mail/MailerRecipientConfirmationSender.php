@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Notification\Infrastructure\Mail;
 
 use Notification\Application\Port\RecipientConfirmationSender;
-use Notification\Domain\Model\Subscription;
+use Notification\Domain\Model\RecipientInvitation;
 use Notification\UI\Controller\RouteCollection;
 use Shared\Infrastructure\Mail\DeferredMailQueue;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
@@ -36,7 +36,7 @@ final readonly class MailerRecipientConfirmationSender implements RecipientConfi
             ->context([
                 'team' => $teamName,
                 'url' => $this->urls->generate(RouteCollection::CONFIRM_RECIPIENT->prefixed(), ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL),
-                'validity_days' => Subscription::CONFIRMATION_DAYS,
+                'validity_days' => RecipientInvitation::VALIDITY_DAYS,
             ]));
     }
 }

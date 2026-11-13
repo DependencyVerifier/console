@@ -33,6 +33,13 @@ final readonly class AccountProvisioner implements AccountProvisioning
 
         $existing = $this->users->findByEmail($address);
         if (null !== $existing) {
+            if ($existing->status()->isActive() && $existing->isNotificationOnly()) {
+                // A notification recipient made team admin: promoted, with the same setup link as a new account.
+                $this->invitation->promote($existing, Uuid::fromString($setupRequestId));
+
+                return new ProvisionedAccount($existing->id()->toString(), $address->value(), true);
+            }
+
             if (!$existing->maySetPassword()) {
                 throw new AccountNotAssignable();
             }

@@ -7,6 +7,7 @@ namespace Notification\Application\Content;
 use Notification\Domain\Repository\DeliveryRepository;
 use Notification\Domain\Repository\NoticeRepository;
 use Notification\Domain\Repository\NotificationRuleRepository;
+use Notification\Domain\Repository\RecipientInvitationRepository;
 use Notification\Domain\Repository\SubscriptionRepository;
 use Notification\Domain\Repository\WebhookChannelRepository;
 use Shared\Application\Content\ProjectContentProbe;
@@ -14,7 +15,7 @@ use Shared\Application\Content\TeamContentEraser;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * A deleted team takes its webhooks, rules, subscriptions and outbox. A project (or an environment) with rules cannot
+ * A deleted team takes its webhooks, rules, subscriptions, invitations of recipients and outbox. A project (or an environment) with rules cannot
  * be deleted: they are removed first, on purpose.
  */
 final readonly class NotificationContent implements TeamContentEraser, ProjectContentProbe
@@ -25,6 +26,7 @@ final readonly class NotificationContent implements TeamContentEraser, ProjectCo
         private SubscriptionRepository $subscriptions,
         private NoticeRepository $notices,
         private DeliveryRepository $deliveries,
+        private RecipientInvitationRepository $invitations,
     ) {
     }
 
@@ -34,6 +36,7 @@ final readonly class NotificationContent implements TeamContentEraser, ProjectCo
         $this->deliveries->deleteTeam($team);
         $this->notices->deleteTeam($team);
         $this->subscriptions->deleteTeam($team);
+        $this->invitations->deleteTeam($team);
         $this->rules->deleteTeam($team);
         $this->webhooks->deleteTeam($team);
     }

@@ -18,6 +18,7 @@ use Notification\Domain\Model\Frequency;
 use Notification\Domain\Model\Notice;
 use Notification\Domain\Model\NotificationEvent;
 use Notification\Domain\Model\NotificationRule;
+use Notification\Domain\Model\RecipientInvitation;
 use Notification\Domain\Model\RuleThresholds;
 use Notification\Domain\Model\Subscription;
 use Notification\Domain\Model\WebhookChannel;
@@ -39,6 +40,7 @@ use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Uid\Uuid;
 use Tests\Notification\Support\InMemoryDeliveries;
 use Tests\Notification\Support\InMemoryNotices;
+use Tests\Notification\Support\InMemoryRecipientInvitations;
 use Tests\Notification\Support\InMemoryRules;
 use Tests\Notification\Support\InMemorySubscriptions;
 use Tests\Notification\Support\InMemoryWebhooks;
@@ -346,7 +348,9 @@ final class NotifyTest extends TestCase
         $this->subscribe(self::ALICE, Frequency::Immediate);
         $this->digest = $this->digest();
         $this->findingChange(FindingChanged::OPENED);
-        $content = new NotificationContent($this->rules, $this->webhooks, $this->subscriptions, $this->notices, $this->deliveries);
+        $invitations = new InMemoryRecipientInvitations();
+        $invitations->add(RecipientInvitation::issue(Uuid::v7(), Uuid::fromString(self::TEAM), Uuid::fromString(self::PROJECT), 'ops@example.com', Frequency::Daily, Uuid::v7(), 't', 'h:t', $this->clock->now()));
+        $content = new NotificationContent($this->rules, $this->webhooks, $this->subscriptions, $this->notices, $this->deliveries, $invitations);
 
         self::assertTrue($content->projectHasContent(self::PROJECT));
         self::assertTrue($content->environmentHasContent(self::ENV));
@@ -359,6 +363,7 @@ final class NotifyTest extends TestCase
         self::assertSame([], $this->subscriptions->subscriptions);
         self::assertSame([], $this->notices->notices);
         self::assertSame([], $this->deliveries->deliveries);
+        self::assertSame([], $invitations->invitations);
     }
 
     private function findingChange(string $change, string $at = self::AT): void

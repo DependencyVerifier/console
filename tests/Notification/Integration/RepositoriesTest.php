@@ -11,12 +11,14 @@ use Notification\Domain\Model\Frequency;
 use Notification\Domain\Model\Notice;
 use Notification\Domain\Model\NotificationEvent;
 use Notification\Domain\Model\NotificationRule;
+use Notification\Domain\Model\RecipientInvitation;
 use Notification\Domain\Model\RuleThresholds;
 use Notification\Domain\Model\Subscription;
 use Notification\Domain\Model\WebhookChannel;
 use Notification\Infrastructure\Doctrine\DoctrineDeliveryRepository;
 use Notification\Infrastructure\Doctrine\DoctrineNoticeRepository;
 use Notification\Infrastructure\Doctrine\DoctrineNotificationRuleRepository;
+use Notification\Infrastructure\Doctrine\DoctrineRecipientInvitationRepository;
 use Notification\Infrastructure\Doctrine\DoctrineSubscriptionRepository;
 use Notification\Infrastructure\Doctrine\DoctrineWebhookChannelRepository;
 use Notification\Infrastructure\Doctrine\NotificationManager;
@@ -117,28 +119,39 @@ final class RepositoriesTest extends KernelTestCase
     }
 
     #[Test]
-    public function it_should_find_a_recipient_by_its_link_and_count_the_attached_accounts(): void
+    public function it_should_count_the_attached_accounts_and_the_invited_addresses(): void
     {
         $team = Uuid::fromString(self::TEAM);
         $ops = Uuid::v7();
-        $attach = fn (Uuid $user, string $project, string $hash): Subscription => Subscription::attach(Uuid::v7(), $team, Uuid::fromString($project), $user, Frequency::Daily, Uuid::v7(), 'token', $hash, $this->now);
-        $this->subscriptions->add($first = $attach($ops, self::PROJECT, 'h:1'));
-        $this->subscriptions->add($attach($ops, Uuid::v7()->toRfc4122(), 'h:2'));
+        $this->subscriptions->add(Subscription::attach(Uuid::v7(), $team, Uuid::fromString(self::PROJECT), $ops, Frequency::Daily, Uuid::v7(), $this->now));
+        $this->subscriptions->add(Subscription::attach(Uuid::v7(), $team, Uuid::v7(), $ops, Frequency::Daily, Uuid::v7(), $this->now));
         $this->subscriptions->add(Subscription::subscribe(Uuid::v7(), $team, null, Uuid::v7(), Frequency::Daily, $this->now));
-        $this->subscriptions->add(Subscription::attach(Uuid::v7(), Uuid::fromString(self::OTHER), Uuid::fromString(self::PROJECT), Uuid::v7(), Frequency::Daily, Uuid::v7(), 'token', 'h:3', $this->now));
+        $this->subscriptions->add(Subscription::attach(Uuid::v7(), Uuid::fromString(self::OTHER), Uuid::fromString(self::PROJECT), Uuid::v7(), Frequency::Daily, Uuid::v7(), $this->now));
+
+        $invitations = new DoctrineRecipientInvitationRepository($this->manager);
+        $invite = fn (string $team, string $project, string $email, string $hash): RecipientInvitation => RecipientInvitation::issue(Uuid::v7(), Uuid::fromString($team), Uuid::fromString($project), $email, Frequency::Daily, Uuid::v7(), 'token', $hash, $this->now);
+        $invitations->add($first = $invite(self::TEAM, self::PROJECT, 'ops@example.com', 'h:1'));
+        $invitations->add($invite(self::TEAM, Uuid::v7()->toRfc4122(), 'ops@example.com', 'h:2'));
+        $invitations->add($invite(self::OTHER, Uuid::v7()->toRfc4122(), 'other@example.com', 'h:3'));
+        $invitations->add($cancelled = $invite(self::TEAM, self::PROJECT, 'gone@example.com', 'h:4'));
+        $cancelled->cancel($this->now);
         $this->flush();
 
-        self::assertSame($first->id()->toRfc4122(), $this->subscriptions->findByConfirmationHash('h:1')?->id()->toRfc4122());
-        self::assertNull($this->subscriptions->findByConfirmationHash('h:9'));
         self::assertSame([$ops->toRfc4122()], $this->subscriptions->attachedRecipients($team), 'Each account once; not the self-subscribed; not another team.');
+        self::assertSame($first->id()->toRfc4122(), $invitations->findByTokenHash('h:1')?->id()->toRfc4122());
+        self::assertNull($invitations->findByTokenHash('h:9'));
+        self::assertSame($first->id()->toRfc4122(), $invitations->pending(Uuid::fromString(self::PROJECT), 'ops@example.com')?->id()->toRfc4122());
+        self::assertNull($invitations->pending(Uuid::fromString(self::PROJECT), 'gone@example.com'), 'Cancelled.');
+        self::assertSame($first->id()->toRfc4122(), $invitations->find($first->id())?->id()->toRfc4122());
+        self::assertSame(['ops@example.com'], $invitations->pendingEmailsOfTeam($team, $this->now));
+        self::assertSame([], $invitations->pendingEmailsOfTeam($team, $this->now->modify('+7 days')), 'Expired.');
+        self::assertSame([$first->id()->toRfc4122()], array_map(static fn (RecipientInvitation $i): string => $i->id()->toRfc4122(), $invitations->pendingOfProject(Uuid::fromString(self::PROJECT), $this->now)));
 
-        $found = $this->subscriptions->findByConfirmationHash('h:1');
-        $found?->confirm($this->now);
+        $invitations->deleteTeam(Uuid::fromString(self::OTHER));
         $this->flush();
-        self::assertNull($this->subscriptions->findByConfirmationHash('h:1'), 'Spent.');
-        self::assertTrue($this->subscriptions->find($first->id())?->isConfirmed());
+        self::assertNull($invitations->findByTokenHash('h:3'));
 
-        $this->subscriptions->add(Subscription::attach(Uuid::v7(), $team, Uuid::fromString(self::PROJECT), Uuid::v7(), Frequency::Daily, Uuid::v7(), 'token', 'h:2', $this->now));
+        $invitations->add($invite(self::TEAM, self::PROJECT, 'ops@example.com', 'h:5'));
         $this->expectException(UniqueConstraintViolationException::class);
         $this->flush();
     }

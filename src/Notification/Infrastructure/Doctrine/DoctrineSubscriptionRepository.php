@@ -29,11 +29,6 @@ final readonly class DoctrineSubscriptionRepository implements SubscriptionRepos
         return $this->manager->get()->getRepository(Subscription::class)->findBy(['teamId' => $teamId, 'scopeKey' => Subscription::scopeKey($projectId)], ['createdAt' => 'ASC', 'id' => 'ASC']);
     }
 
-    public function findByConfirmationHash(string $hash): ?Subscription
-    {
-        return $this->manager->get()->getRepository(Subscription::class)->findOneBy(['confirmationHash' => $hash]);
-    }
-
     public function attachedRecipients(Uuid $teamId): array
     {
         /** @var list<string> */

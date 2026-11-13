@@ -63,7 +63,6 @@ rule:
     password_policy: "The password needs 12 to 4096 characters and must not contain your email address."
     email_already_registered: An account already uses this email address.
     invalid_second_factor_transition: This change is not possible with the current second factor.
-    recipient_signs_in: "This address belongs to an account that signs in: invite it to the project instead, it can then subscribe itself."
     recipient_link_invalid: This link is expired or was already used.
     account_not_assignable: "This account cannot be given a role: it is deactivated, deleted or notification-only."
     super_admin_email_locked: "The email of a super admin cannot be changed. Revoke the super admin role first."

@@ -28,11 +28,6 @@ final class InMemorySubscriptions implements SubscriptionRepository
         return array_values(array_filter($this->subscriptions, static fn (Subscription $s): bool => $s->teamId()->equals($teamId) && $s->projectId()?->toRfc4122() === $projectId?->toRfc4122()));
     }
 
-    public function findByConfirmationHash(string $hash): ?Subscription
-    {
-        return array_find($this->subscriptions, static fn (Subscription $s): bool => $hash === $s->confirmationHash());
-    }
-
     public function attachedRecipients(Uuid $teamId): array
     {
         $users = array_map(static fn (Subscription $s): string => $s->userId()->toRfc4122(), array_filter($this->subscriptions, static fn (Subscription $s): bool => $s->teamId()->equals($teamId) && null !== $s->addedBy()));

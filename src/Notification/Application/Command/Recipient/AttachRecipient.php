@@ -10,9 +10,9 @@ use Shared\Application\Audit\AuditContext;
 use Shared\Application\Audit\Target;
 
 /**
- * A manager attaches an email to the notifications of a project (`project.notifications.manage`): a
- * notification-only account, admitted as viewer of the project, silent until it confirms its address. The email is
- * not audited (the account id is, through the grants of Organization).
+ * A manager invites an email to the notifications of a project (`project.notifications.manage`): nothing but an
+ * invitation exists until the holder of the address confirms it. The same answer whatever the address. The email is
+ * not audited.
  */
 final readonly class AttachRecipient implements AuditableCommand
 {
