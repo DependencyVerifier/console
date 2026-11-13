@@ -610,6 +610,7 @@ fleet:
         shown_once_description: It will never be shown again. Anyone holding it can enroll an agent into this team until it expires.
         token: Token
         token_file: "On the server, next to the Compose file, store it as the agent secret:"
+        install: "On a server (systemd), as root: installs the binary, verified by its SHA-256"
         compose: Compose snippet
         console_key: "Fingerprint of the console key the agent pins:"
         done: Done

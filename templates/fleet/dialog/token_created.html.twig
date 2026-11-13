@@ -16,6 +16,10 @@
             <code class="block rounded-md border bg-muted px-3 py-2 font-mono text-xs break-all select-all">echo '{{ token }}' &gt; .agent_token</code>
         </div>
         <div>
+            <p class="mb-1 text-muted-foreground">{{ 'fleet.tokens.install'|trans }}</p>
+            <code class="block rounded-md border bg-muted px-3 py-2 font-mono text-xs break-all select-all">curl --proto '=https' --tlsv1.2 -fsSL {{ console_url }}/install.sh | sudo AGENT_TOKEN='{{ token }}' sh</code>
+        </div>
+        <div>
             <p class="mb-1 text-muted-foreground">{{ 'fleet.tokens.compose'|trans }}</p>
             <pre class="max-h-72 overflow-y-auto rounded-md border bg-muted px-3 py-2 font-mono text-xs break-all whitespace-pre-wrap select-all">
 {{- "services:\n  depverify-agent:\n    image: ghcr.io/dependencyverifier/agent@sha256:<digest>\n    restart: unless-stopped\n    environment:\n      AGENT_MODE: container\n      AGENT_SCOPE: compose\n      AGENT_CONSOLE_URL: " ~ console_url ~ "\n      AGENT_CONSOLE_PUBKEY: \"" ~ fleet.consoleKey ~ "\"\n      AGENT_TOKEN_FILE: /run/secrets/agent_token\n      DOCKER_HOST: tcp://depverify-docker-proxy:2375\n    secrets: [agent_token]\n    volumes:\n      - depverify-agent-data:/var/lib/agent\n    networks: [depverify-internal, default]\n    read_only: true\n    cap_drop: [ALL]\n    security_opt: [\"no-new-privileges:true\"]\n\n  depverify-docker-proxy:\n    image: tecnativa/docker-socket-proxy:<version>\n    environment: {CONTAINERS: 1, IMAGES: 1, INFO: 1, VERSION: 1, POST: 0}\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock:ro\n    networks: [depverify-internal]\n    read_only: true\n\nnetworks:\n  depverify-internal:\n    internal: true\n\nvolumes:\n  depverify-agent-data:\n\nsecrets:\n  agent_token:\n    file: ./.agent_token" -}}

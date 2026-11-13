@@ -4,6 +4,11 @@
 # Domain models (entities, value objects) are never services.
 
 parameters:
+    agent_releases_default_dir: '%kernel.project_dir%/var/agent-releases'
+    agent_releases_default_url: 'https://api.github.com/repos/DependencyVerifier/agent/releases/latest'
+    # The minisign public key of the project's releases (cadrage §6, key id EBDDB456A4BF3356): a release of the agent is
+    # served only if its checksums carry its signature. An instance may override it (a fork), never empty it silently.
+    env(AGENT_RELEASE_PUBKEY): 'RWRWM7+kVrTd63TMnDIUOLjb78MC3QJTImbW3Gi/8ooaxK7iF2tC/ZSz'
     # A webhook never reaches a private network, unless set to 1 (dev, a local receiver; the tests).
     env(NOTIFICATION_WEBHOOK_ALLOW_PRIVATE): '0'
 
@@ -98,3 +103,7 @@ services:
                 invitation_resend_team: '@limiter.invitation_resend_team'
                 agent_requests: '@limiter.agent_requests'
                 agent_enrollment_ip: '@limiter.agent_enrollment_ip'
+
+when@test:
+    parameters:
+        agent_releases_default_dir: '%kernel.cache_dir%/agent-releases'

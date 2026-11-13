@@ -181,6 +181,15 @@ notifications-check: ## Notify the silent agents and the expiring risk acceptanc
 notifications-digest: ## Queue the daily notification digests, and on Monday the weekly ones (cron: daily, 07:00)
 	@$(CONSOLE) app:notification:digest
 
+.PHONY: agent-release-sync
+agent-release-sync: ## Download, verify (AGENT_RELEASE_PUBKEY) and store the latest release of the agent, served by install.sh (cron: daily)
+	@$(CONSOLE) app:fleet:sync-agent-release
+
+.PHONY: agent-release-import
+agent-release-import: ## Import a signed release of the agent from a folder (dir=…: SHA256SUMS, SHA256SUMS.minisig, binaries)
+	@:$(if $(dir),,$(error Usage: make agent-release-import dir=<folder>))
+	@$(CONSOLE) app:fleet:import-agent-release $(dir)
+
 .PHONY: fleet-fake-agent
 fleet-fake-agent: ## Dev demo agent: a='enroll --token=dvet_…', a=poll, a='run --polls=10', a=inventory (name=… for another one)
 	@$(CONSOLE) app:fleet:fake-agent $(a) $(if $(name),--name=$(name))

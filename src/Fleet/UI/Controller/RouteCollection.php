@@ -24,6 +24,8 @@ enum RouteCollection: string implements RouteCollectionInterface
     case AGENT_CONFIGURE = 'agent_configure';
     case HOST_DELETE = 'host_delete';
     case ADMIN_AGENTS = 'admin_agents';
+    case INSTALL_SCRIPT = 'install_script';
+    case AGENT_DOWNLOAD = 'agent_download';
 
     public function prefixed(): string
     {
