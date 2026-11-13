@@ -28,6 +28,8 @@ final readonly class ProjectPage
     public const string APPLICATIONS = 'applications';
     /** Rendered by Exposure (its own template), listed here so the sidebar shows it. */
     public const string FINDINGS = 'findings';
+    /** Rendered by Notification (its own template), listed here so the sidebar shows it. */
+    public const string NOTIFICATIONS = 'notifications';
 
     public function __construct(private QueryBus $queries, private Environment $twig)
     {
@@ -57,7 +59,7 @@ final readonly class ProjectPage
      */
     public static function tabsOf(ProjectView $project): array
     {
-        $tabs = [self::OVERVIEW, self::ENVIRONMENTS, self::APPLICATIONS, self::FINDINGS, self::MEMBERS];
+        $tabs = [self::OVERVIEW, self::ENVIRONMENTS, self::APPLICATIONS, self::FINDINGS, self::NOTIFICATIONS, self::MEMBERS];
         if ($project->can('project.edit') || $project->can('project.delete')) {
             $tabs[] = self::SETTINGS;
         }

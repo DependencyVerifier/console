@@ -24,6 +24,7 @@
     {key: 'team_hosts', title: 'nav.hosts'|trans, url: path('fleet_team_hosts', {teamId: currentTeam}), icon: 'lucide:server'},
     {key: 'team_agents', title: 'nav.agents'|trans, url: path('fleet_team_agents', {teamId: currentTeam}), icon: 'lucide:radio-tower'},
     {key: 'team_enrollment', title: 'nav.enrollment'|trans, url: path('fleet_team_enrollment', {teamId: currentTeam}), icon: 'lucide:key-round'},
+    {key: 'team_notifications', title: 'nav.notifications'|trans, url: path('notification_team_notifications', {teamId: currentTeam}), icon: 'lucide:bell'},
 ] : [])|merge(roleKey == 'team_admin' or superAdmin ? [
     {key: 'team_settings', title: 'nav.team_settings'|trans, url: path('organization_team_settings', {teamId: currentTeam}), icon: 'lucide:settings'},
 ] : [])|merge(roleKey == 'team_admin' or superAdmin ? [
@@ -36,8 +37,8 @@
 {%- set projectNav = project ? project.tabs|map(t => {
     key: 'project_' ~ t,
     title: ('nav.project_' ~ t)|trans,
-    url: path({overview: 'organization_project', environments: 'organization_project_environments', applications: 'inventory_project_applications', findings: 'exposure_project_findings', members: 'organization_project_members', settings: 'organization_project_settings'}[t], {teamId: currentTeam, projectId: project.id}),
-    icon: {overview: 'lucide:layout-dashboard', environments: 'lucide:server', applications: 'lucide:monitor', findings: 'lucide:shield-alert', members: 'lucide:users', settings: 'lucide:settings'}[t],
+    url: path({overview: 'organization_project', environments: 'organization_project_environments', applications: 'inventory_project_applications', findings: 'exposure_project_findings', notifications: 'notification_project_notifications', members: 'organization_project_members', settings: 'organization_project_settings'}[t], {teamId: currentTeam, projectId: project.id}),
+    icon: {overview: 'lucide:layout-dashboard', environments: 'lucide:server', applications: 'lucide:monitor', findings: 'lucide:shield-alert', notifications: 'lucide:bell', members: 'lucide:users', settings: 'lucide:settings'}[t],
 }) : [] -%}
 {%- set data = {
     user: {name: user ? user.label : '', email: user ? user.userIdentifier : ''},

@@ -1,0 +1,2 @@
+<span class="font-medium">{{ row.name }}</span>
+{%- if row.environment is not null %}<span class="block text-xs text-muted-foreground">{{ 'notification.rules.environment'|trans({name: row.environment}) }}</span>{% endif %}

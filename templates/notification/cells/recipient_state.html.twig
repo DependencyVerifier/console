@@ -1,0 +1,6 @@
+{%- if value == 'attached' %}
+    <twig:Badge variant="outline">{{ 'notification.recipients.attached'|trans }}</twig:Badge>
+{%- else %}
+    <twig:Badge variant="secondary">{{ 'notification.recipients.invited_state'|trans }}</twig:Badge>
+    <span class="block text-xs text-muted-foreground">{{ 'notification.recipients.invited_on'|trans({date: row.since|date('Y-m-d')}) }}</span>
+{%- endif %}

@@ -1,0 +1,11 @@
+{#- The "New rule" dialog of a scope. Variables: notifications (NotificationsView), src. -#}
+{%- if notifications.manages %}
+    <twig:FormDialog
+        id="create-rule"
+        :title="'notification.rules.new_title'|trans"
+        :description="'notification.rules.new_description'|trans"
+        :trigger="'notification.rules.new'|trans"
+        :src="src"
+        variant="outline"
+    />
+{%- endif %}

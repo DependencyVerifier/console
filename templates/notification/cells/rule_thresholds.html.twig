@@ -1,0 +1,8 @@
+{#- The thresholds of a rule (vulnerabilities), all required, and the silence of an agent (the fleet). -#}
+{%- set parts = [] -%}
+{%- if row.minSeverity %}{% set parts = parts|merge(['notification.rules.min_severity'|trans({severity: ('exposure.severity.' ~ row.minSeverity)|trans})]) %}{% endif -%}
+{%- if row.minCvss is not null %}{% set parts = parts|merge(['notification.rules.min_cvss'|trans({score: row.minCvss})]) %}{% endif -%}
+{%- if row.minEpss is not null %}{% set parts = parts|merge(['notification.rules.min_epss'|trans({percent: row.minEpss * 100})]) %}{% endif -%}
+{%- if row.knownExploitedOnly %}{% set parts = parts|merge(['notification.rules.kev_only'|trans]) %}{% endif -%}
+{%- if 'agent_silent' in row.events %}{% set parts = parts|merge(['notification.rules.silent_after'|trans({hours: row.silentHours})]) %}{% endif -%}
+<span class="text-sm">{{ parts ? parts|join(' · ') : 'notification.rules.no_threshold'|trans }}</span>

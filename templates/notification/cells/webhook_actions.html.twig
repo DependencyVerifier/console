@@ -1,0 +1,31 @@
+{%- set params = {teamId: app.request.attributes.get('_notifications').teamId, webhookId: row.id} -%}
+<div class="flex justify-end">
+    <twig:FormDialog
+        id="edit-webhook-{{ row.id }}"
+        :title="'notification.webhooks.edit_title'|trans({name: row.name})"
+        :trigger="'notification.webhooks.edit'|trans"
+        :src="path('notification_webhook_edit', params)"
+        :hiddenTrigger="true"
+    />
+    <twig:FormDialog
+        id="rotate-webhook-{{ row.id }}"
+        :title="'notification.webhooks.rotate_title'|trans({name: row.name})"
+        :description="'notification.webhooks.rotate_description'|trans"
+        :trigger="'notification.webhooks.rotate'|trans"
+        :src="path('notification_webhook_rotate', params)"
+        :hiddenTrigger="true"
+    />
+    <twig:DropdownMenu id="webhook-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+        <twig:DropdownMenu:Trigger>
+            <twig:Button variant="ghost" size="icon-sm" :aria-label="'notification.webhooks.actions_for'|trans({name: row.name})" :title="'notification.webhooks.actions_for'|trans({name: row.name})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+        </twig:DropdownMenu:Trigger>
+        <twig:DropdownMenu:Content class="w-max min-w-44">
+            {%- import 'shared/_row_menu.html.twig' as menu -%}
+            {{ menu.action(path('notification_webhook_test', params), 'action', 'webhook_test:' ~ row.id, 'notification.webhooks.test', 'default', 'lucide:radio-tower') }}
+            {{ menu.dialog('edit-webhook-' ~ row.id, 'notification.webhooks.edit') }}
+            {{ menu.dialog('rotate-webhook-' ~ row.id, 'notification.webhooks.rotate') }}
+            <twig:DropdownMenu:Separator />
+            {{ menu.action(path('notification_webhook_delete', params), 'action', 'webhook_delete:' ~ row.id, 'notification.webhooks.delete', 'destructive') }}
+        </twig:DropdownMenu:Content>
+    </twig:DropdownMenu>
+</div>

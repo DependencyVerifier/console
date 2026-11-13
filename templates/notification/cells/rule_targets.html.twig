@@ -1,0 +1,5 @@
+<div class="grid gap-0.5 text-sm">
+    {%- if row.emailSubscribers %}<span>{{ 'notification.rules.emails_subscribers'|trans }}</span>{% endif %}
+    {%- for webhook in row.webhooks %}<span>{{ 'notification.rules.calls'|trans({name: webhook}) }}</span>{% endfor %}
+    {%- if not row.emailSubscribers and row.webhooks is empty %}<span class="text-muted-foreground">{{ 'notification.rules.nobody'|trans }}</span>{% endif %}
+</div>

@@ -1,0 +1,24 @@
+{%- set notifications = app.request.attributes.get('_notifications') -%}
+{%- set params = {teamId: notifications.teamId, ruleId: row.id} -%}
+<div class="flex justify-end">
+    {%- if notifications.manages %}
+        <twig:FormDialog
+            id="edit-rule-{{ row.id }}"
+            :title="'notification.rules.edit_title'|trans({name: row.name})"
+            :trigger="'notification.rules.edit'|trans"
+            :src="path('notification_rule_edit', params)"
+            :hiddenTrigger="true"
+        />
+        <twig:DropdownMenu id="rule-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+            <twig:DropdownMenu:Trigger>
+                <twig:Button variant="ghost" size="icon-sm" :aria-label="'notification.rules.actions_for'|trans({name: row.name})" :title="'notification.rules.actions_for'|trans({name: row.name})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+            </twig:DropdownMenu:Trigger>
+            <twig:DropdownMenu:Content class="w-max min-w-44">
+            {%- import 'shared/_row_menu.html.twig' as menu -%}
+                {{ menu.dialog('edit-rule-' ~ row.id, 'notification.rules.edit') }}
+                <twig:DropdownMenu:Separator />
+                {{ menu.action(path('notification_rule_remove', params), 'action', 'rule_remove:' ~ row.id, 'notification.rules.remove', 'destructive') }}
+            </twig:DropdownMenu:Content>
+        </twig:DropdownMenu>
+    {%- endif %}
+</div>

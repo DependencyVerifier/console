@@ -1,0 +1,13 @@
+{#- One's own subscription to the scope, changed from its select (auto_submit_controller.ts; its button without script).
+    Variables: subscription_form (null when the actor may not subscribe). -#}
+{%- if subscription_form %}
+    {% form_theme subscription_form 'shared/form/theme.html.twig' %}
+    <section class="grid gap-2 rounded-lg border p-4">
+        <h2 class="text-base font-semibold">{{ 'notification.subscription.title'|trans }}</h2>
+        <p class="text-sm text-muted-foreground">{{ 'notification.subscription.description'|trans }}</p>
+        {{ form_start(subscription_form, {attr: {class: 'flex flex-wrap items-end gap-3', 'data-controller': 'auto-submit', 'data-action': 'change->auto-submit#submit'}}) }}
+            {{ form_row(subscription_form.frequency) }}
+            <twig:Button type="submit" variant="outline" size="sm">{{ 'action.save'|trans }}</twig:Button>
+        {{ form_end(subscription_form) }}
+    </section>
+{%- endif %}

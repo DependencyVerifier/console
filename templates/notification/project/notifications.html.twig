@@ -1,0 +1,28 @@
+{% extends 'organization/project/_layout.html.twig' %}
+{#- The Notifications tab of a project: its rules, its recipients (project.notifications.manage), one's own
+    subscription. Variables: notifications, tables, subscription_form. -#}
+
+{% block primary_action %}
+    {%- if notifications.manages %}
+        <twig:FormDialog
+            id="attach-recipient"
+            :title="'notification.recipients.new_title'|trans"
+            :description="'notification.recipients.new_description'|trans"
+            :trigger="'notification.recipients.new'|trans"
+            :src="path('notification_recipient_attach', {teamId: project.teamId, projectId: project.id})"
+        />
+    {%- endif %}
+{% endblock %}
+
+{% block tab %}
+    <p class="text-sm text-muted-foreground">{{ 'notification.project.description'|trans }}</p>
+    {{ include('notification/_subscription.html.twig') }}
+    <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-semibold">{{ 'notification.rules.title'|trans }}</h2>
+        {{ include('notification/_new_rule.html.twig', {src: path('notification_project_rule_create', {teamId: project.teamId, projectId: project.id})}) }}
+    </div>
+    <twig:DataTable :table="tables.rules" :title="'notification.rules.title'|trans" />
+    {%- if tables.recipients is defined %}
+        <twig:DataTable :table="tables.recipients" :title="'notification.recipients.title'|trans" />
+    {%- endif %}
+{% endblock %}

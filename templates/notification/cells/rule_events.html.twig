@@ -1,0 +1,3 @@
+<div class="flex flex-wrap gap-1">
+    {%- for event in row.events %}<twig:Badge variant="outline">{{ ('notification.event.' ~ event)|trans }}</twig:Badge>{% endfor %}
+</div>

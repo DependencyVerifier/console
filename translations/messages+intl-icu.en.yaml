@@ -10,6 +10,8 @@ nav:
     applications: Applications
     findings: Findings
     project_findings: Findings
+    notifications: Notifications
+    project_notifications: Notifications
     audit: Audit log
     project_group: "Project · {name}"
     project_overview: Overview
@@ -349,6 +351,7 @@ organization:
             enrollment: Enrollment
             applications: Applications
             findings: Findings
+            notifications: Notifications
         facts:
             members: Members
             projects: Projects
@@ -426,6 +429,7 @@ organization:
             environments: Environments
             applications: Applications
             findings: Findings
+            notifications: Notifications
             members: Members
             settings: Settings
         environment_limit: "{limit} per project, set by the team"
@@ -790,6 +794,118 @@ exposure:
         revoked_on: "revoked on {date}"
         expired: expired
 notification:
+    team:
+        title: Notifications
+        description: "The webhooks of the team, and the rules of its fleet: hosts, applications not attached to a project yet, agents. A project has its own rules, in its Notifications tab."
+    project:
+        description: "Who hears of what happens in this project: its rules (an email to its subscribers, a call of the team's webhooks), and the recipients without an account added by email."
+    subscription:
+        title: My notifications
+        description: "By email, at once, in a daily digest or in a weekly one (Monday). An email tells only what you can see."
+        saved: Your notifications are saved.
+    field:
+        name: Name
+        url: URL
+        last_call: Last call
+        events: Events
+        thresholds: Conditions
+        targets: Sent to
+        environment: Environment
+        min_severity: Minimum severity
+        min_cvss: Minimum CVSS score
+        min_epss: "Minimum EPSS probability (0 to 1)"
+        known_exploited_only: Known exploited only (CISA KEV)
+        silent_hours: "An agent is silent after (hours)"
+        webhooks: Webhooks to call
+        email_subscribers: Email the subscribers
+        email: Email
+        frequency: Frequency
+        my_frequency: Receive
+        state: State
+    frequency:
+        off: Nothing
+        immediate: At once
+        daily: Daily digest
+        weekly: Weekly digest
+    event:
+        vulnerability_opened: Vulnerability found
+        vulnerability_fixed: Vulnerability fixed
+        end_of_life: End of life
+        outdated: Outdated version
+        agent_silent: Silent agent
+        agent_pending: Agent to approve
+        acceptance_expiring: Risk acceptance expiring
+    webhooks:
+        title: Webhooks
+        new: New webhook
+        new_title: New webhook
+        new_description: "A URL of yours, called in HTTPS with a signed JSON at each event of the rules that name it. Never a private network."
+        url_help: "HTTPS only, without user nor password."
+        create: Create
+        created: Webhook created.
+        updated: Webhook updated.
+        deleted: Webhook deleted.
+        tested: "Test sent: its result is in the Last call column."
+        rotated: New secret saved.
+        edit: Edit
+        edit_title: "Edit {name}"
+        rotate: New secret
+        rotate_title: "New secret for {name}"
+        rotate_description: "The current secret stops signing at once: update your receiver with the new one."
+        rotate_confirm: Generate a new secret
+        test: Send a test
+        delete: Delete
+        actions_for: "Actions for {name}"
+        never_called: Never called
+        succeeded: Succeeded
+        shown_once: Copy this secret now
+        shown_once_description: "It is shown only once. Your receiver checks with it that a request comes from this console."
+        secret: Signing secret
+        signature_help: "Each request carries X-DepVerify-Timestamp and X-DepVerify-Signature: sha256=HMAC-SHA256(secret, timestamp + \".\" + body)."
+        done: Done
+    rules:
+        title: Rules
+        fleet_title: Rules of the fleet
+        new: New rule
+        new_title: New rule
+        new_description: "The events it tells, their conditions, and whom it tells. Several rules may tell the same event: each one once."
+        create: Create
+        created: Rule created.
+        updated: Rule updated.
+        removed: Rule removed.
+        edit: Edit
+        edit_title: "Edit {name}"
+        remove: Remove
+        actions_for: "Actions for {name}"
+        every_environment: Every environment
+        any: Any
+        thresholds_help: "For the vulnerabilities only; every condition set must hold."
+        epss_help: "The probability of an exploitation within 30 days, e.g. 0.1."
+        environment: "Environment {name}"
+        min_severity: "{severity} or more"
+        min_cvss: "CVSS ≥ {score}"
+        min_epss: "EPSS ≥ {percent}%"
+        kev_only: Known exploited
+        silent_after: "silent after {hours} h"
+        no_threshold: Every one
+        emails_subscribers: The subscribers, by email
+        calls: "Webhook {name}"
+        nobody: Nobody
+    recipients:
+        title: Recipients without an account
+        new: Add a recipient
+        new_title: Add a recipient
+        new_description: "An address that receives the notifications of this project without signing in. It receives a link to confirm; nothing is sent before."
+        invite: Send the link
+        invited: "Done: if the address confirms, it will receive the notifications."
+        detached: Recipient removed.
+        cancelled: Invitation withdrawn.
+        attached: Confirmed
+        invited_state: Waiting for confirmation
+        invited_on: "invited on {date}"
+        detach: Remove
+        cancel: Withdraw the invitation
+        actions_for: "Actions for {email}"
     unsubscribe:
         title: Unsubscribe
         ask: "Stop the notification emails of this subscription? You can subscribe again from the console."

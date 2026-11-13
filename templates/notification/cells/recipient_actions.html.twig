@@ -1,0 +1,16 @@
+{%- set notifications = app.request.attributes.get('_notifications') -%}
+<div class="flex justify-end">
+    <twig:DropdownMenu id="recipient-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
+        <twig:DropdownMenu:Trigger>
+            <twig:Button variant="ghost" size="icon-sm" :aria-label="'notification.recipients.actions_for'|trans({email: row.email})" :title="'notification.recipients.actions_for'|trans({email: row.email})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
+        </twig:DropdownMenu:Trigger>
+        <twig:DropdownMenu:Content class="w-max min-w-44">
+            {%- import 'shared/_row_menu.html.twig' as menu -%}
+            {%- if row.state == 'attached' %}
+                {{ menu.action(path('notification_recipient_detach', {teamId: notifications.teamId, projectId: notifications.projectId, subscriptionId: row.id}), 'action', 'recipient_detach:' ~ row.id, 'notification.recipients.detach', 'destructive') }}
+            {%- else %}
+                {{ menu.action(path('notification_recipient_cancel', {teamId: notifications.teamId, projectId: notifications.projectId, invitationId: row.id}), 'action', 'recipient_cancel:' ~ row.id, 'notification.recipients.cancel', 'destructive') }}
+            {%- endif %}
+        </twig:DropdownMenu:Content>
+    </twig:DropdownMenu>
+</div>

@@ -1,0 +1,7 @@
+{#- The last call of a webhook: never called, succeeded, or its error (the HTTP status or the kind of failure). -#}
+{%- if row.lastCalledAt is null %}
+    <span class="text-muted-foreground">{{ 'notification.webhooks.never_called'|trans }}</span>
+{%- else %}
+    <twig:StatusDot :status="row.lastSucceeded ? 'ok' : 'critical'">{{ row.lastSucceeded ? 'notification.webhooks.succeeded'|trans : row.lastError }}</twig:StatusDot>
+    <span class="block text-xs text-muted-foreground"><time datetime="{{ row.lastCalledAt|date('c') }}" class="tabular-nums">{{ row.lastCalledAt|date('Y-m-d H:i') }}</time></span>
+{%- endif %}

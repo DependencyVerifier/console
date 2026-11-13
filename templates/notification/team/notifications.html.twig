@@ -1,0 +1,31 @@
+{% extends 'organization/team/_layout.html.twig' %}
+{#- The Notifications section of a team: its webhooks (team.channels.manage), the rules of its fleet (hosts,
+    applications not attached, agents), one's own subscription to the fleet. Variables: notifications, tables,
+    subscription_form. -#}
+
+{% block title %}{{ 'notification.team.title'|trans }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block primary_action %}
+    {%- if notifications.managesChannels %}
+        <twig:FormDialog
+            id="create-webhook"
+            :title="'notification.webhooks.new_title'|trans"
+            :description="'notification.webhooks.new_description'|trans"
+            :trigger="'notification.webhooks.new'|trans"
+            :src="path('notification_webhook_create', {teamId: team.id})"
+        />
+    {%- endif %}
+{% endblock %}
+
+{% block tab %}
+    <p class="text-sm text-muted-foreground">{{ 'notification.team.description'|trans }}</p>
+    {{ include('notification/_subscription.html.twig') }}
+    {%- if tables.webhooks is defined %}
+        <twig:DataTable :table="tables.webhooks" :title="'notification.webhooks.title'|trans" />
+    {%- endif %}
+    <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-semibold">{{ 'notification.rules.fleet_title'|trans }}</h2>
+        {{ include('notification/_new_rule.html.twig', {src: path('notification_team_rule_create', {teamId: team.id})}) }}
+    </div>
+    <twig:DataTable :table="tables.rules" :title="'notification.rules.title'|trans" />
+{% endblock %}
