@@ -31,6 +31,7 @@ enum Permission: string
     case HostRevoke = 'host.revoke';
     case HostDelete = 'host.delete';
     case HostOrder = 'host.order';
+    case HostEdit = 'host.edit';
     case ProjectCreate = 'project.create';
 
     case HostView = 'host.view';
@@ -68,6 +69,7 @@ enum Permission: string
             self::HostRevoke,
             self::HostDelete,
             self::HostOrder,
+            self::HostEdit,
             self::ProjectCreate => PermissionScope::Team,
             default => PermissionScope::Project,
         };

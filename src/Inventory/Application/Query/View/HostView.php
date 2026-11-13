@@ -7,7 +7,8 @@ namespace Inventory\Application\Query\View;
 final readonly class HostView
 {
     /**
-     * @param array<string, mixed> $facts the last host facts (os, kernel, arch, runtimes, docker, agent)
+     * @param array<string, mixed> $facts     the last host facts (os, kernel, arch, runtimes, docker, agent)
+     * @param list<string>         $addresses the IP addresses a human gave it (Fleet's label)
      */
     public function __construct(
         public string $hostId,
@@ -17,7 +18,17 @@ final readonly class HostView
         public ?string $packagesDigest,
         public ?\DateTimeImmutable $inventoriedAt,
         public int $packages,
+        public ?string $displayName = null,
+        public array $addresses = [],
     ) {
+    }
+
+    /**
+     * Its display name, else its hostname.
+     */
+    public function name(): string
+    {
+        return $this->displayName ?? $this->hostname;
     }
 
     public function os(): ?string

@@ -15,6 +15,8 @@ use Shared\Application\Contract\Inventory\TeamSubject;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
+use function Symfony\Component\String\u;
+
 /**
  * The read model as lists, filtered like the DBAL one; it records the last applications() filter.
  */
@@ -28,6 +30,9 @@ final class InMemoryReadModel implements InventoryReadModel
 
     /** @var list<ImageView> */
     public array $images = [];
+
+    /** @var array<string, array{displayName: ?string, addresses: list<string>}> host id => label */
+    public array $labels = [];
 
     /** @var array<string, list<PackageRow>> digest => packages */
     public array $packages = [];
@@ -71,6 +76,28 @@ final class InMemoryReadModel implements InventoryReadModel
         $rows = $this->packages[$teamId.' '.$digest] ?? [];
 
         return new Page($rows, \count($rows), \count($rows));
+    }
+
+    public function hostLabel(string $hostId): ?array
+    {
+        return $this->labels[$hostId] ?? null;
+    }
+
+    public function packagesNamed(string $teamId, string $digest, array $names): array
+    {
+        return array_values(array_filter($this->packages[$teamId.' '.$digest] ?? [], static fn (PackageRow $p): bool => \in_array($p->type.':'.$p->fullName(), $names, true)));
+    }
+
+    public function distro(string $teamId, string $digest): ?string
+    {
+        foreach ($this->packages[$teamId.' '.$digest] ?? [] as $package) {
+            $match = u($package->purl)->match('/[?&]distro=([^&#]+)/');
+            if (\is_string($match[1] ?? null)) {
+                return $match[1];
+            }
+        }
+
+        return null;
     }
 
     public function history(array $subjects, string $subjectId, PageRequest $page): Page

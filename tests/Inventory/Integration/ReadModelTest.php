@@ -8,11 +8,14 @@ use Doctrine\DBAL\Connection;
 use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Domain\Model\AppInstance;
 use Inventory\Domain\Model\ContainerImage;
+use Inventory\Domain\Model\DocumentationLink;
+use Inventory\Domain\Model\HostLabel;
 use Inventory\Domain\Model\SnapshotRecord;
 use Inventory\Domain\Model\SnapshotSubject;
 use Inventory\Infrastructure\Doctrine\DbalInventoryReadModel;
 use Inventory\Infrastructure\Doctrine\DoctrineAppInstanceRepository;
 use Inventory\Infrastructure\Doctrine\DoctrineContainerImageRepository;
+use Inventory\Infrastructure\Doctrine\DoctrineHostLabelRepository;
 use Inventory\Infrastructure\Doctrine\DoctrineSnapshotRecordRepository;
 use Inventory\Infrastructure\Doctrine\InventoryManager;
 use Organization\Domain\Model\TeamRole;
@@ -106,6 +109,69 @@ final class ReadModelTest extends KernelTestCase
 
         $this->connection()->executeStatement('DELETE FROM inventory_run');
         self::assertNull($this->read->history([SnapshotSubject::Application], Inv::HOST, new PageRequest())->items[0]->trigger, 'Its inventory purged.');
+    }
+
+    #[Test]
+    public function it_should_find_the_key_packages_and_the_distro_of_a_snapshot(): void
+    {
+        $blob = function (string $team, string $digest, array $purls): void {
+            /** @var list<array{string, string, ?string, string}> $purls */
+            $id = Uuid::v7()->toRfc4122();
+            $this->connection()->executeStatement("INSERT INTO inventory_blob (id, team_id, digest, media_type, size, content, stored_at) VALUES (?, ?, ?, 'application/json', 0, '', NOW())", [$id, $team, $digest]);
+            foreach ($purls as [$purl, $type, $namespace, $name]) {
+                $this->connection()->executeStatement('INSERT INTO inventory_package (id, team_id, blob_id, purl, type, namespace, name, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [Uuid::v7()->toRfc4122(), $team, $id, $purl, $type, $namespace, $name, '1']);
+            }
+        };
+        $blob(Inv::TEAM, 'sha256:app', [
+            ['pkg:composer/symfony/framework-bundle@1', 'composer', 'symfony', 'framework-bundle'],
+            ['pkg:npm/%40angular/core@1', 'npm', '@angular', 'core'],
+            ['pkg:npm/react@1', 'npm', null, 'react'],
+            ['pkg:npm/vue@1', 'npm', null, 'vue'],
+        ]);
+        $blob(Inv::TEAM, 'sha256:image', [
+            ['pkg:npm/zz@1?distro=nope', 'npm', null, 'zz'],
+            ['pkg:deb/debian/b@1?arch=amd64', 'deb', 'debian', 'b'],
+            ['pkg:deb/debian/c@1?arch=amd64&distro=debian-12', 'deb', 'debian', 'c'],
+            ['pkg:deb/debian/d@1?distro=debian-13#x', 'deb', 'debian', 'd'],
+        ]);
+        $blob(Inv::OTHER_TEAM, 'sha256:app', [['pkg:npm/next@1', 'npm', null, 'next']]);
+        $blob(Inv::TEAM, 'sha256:rpm', [['pkg:rpm/rocky/e@1?distro=rocky%2D9', 'rpm', 'rocky', 'e']]);
+
+        $named = $this->read->packagesNamed(Inv::TEAM, 'sha256:app', ['composer:symfony/framework-bundle', 'npm:@angular/core', 'npm:react', 'npm:next']);
+        self::assertSame(['pkg:composer/symfony/framework-bundle@1', 'pkg:npm/%40angular/core@1', 'pkg:npm/react@1'], array_map(static fn ($p): string => $p->purl, $named), 'Of this team and snapshot, the names asked only.');
+        self::assertSame(['composer', 'symfony', 'framework-bundle', '1'], [$named[0]->type, $named[0]->namespace, $named[0]->name, $named[0]->version]);
+        self::assertSame([], $this->read->packagesNamed(Inv::TEAM, 'sha256:app', []));
+        self::assertSame('debian-12', $this->read->distro(Inv::TEAM, 'sha256:image'), 'OS packages only, the first with a distro.');
+        self::assertSame('rocky-9', $this->read->distro(Inv::TEAM, 'sha256:rpm'));
+        self::assertNull($this->read->distro(Inv::TEAM, 'sha256:app'));
+        self::assertNull($this->read->distro(Inv::OTHER_TEAM, 'sha256:image'));
+    }
+
+    #[Test]
+    public function it_should_show_a_host_under_its_label_and_an_application_with_its_links(): void
+    {
+        $team = Uuid::fromString(Inv::TEAM);
+        $apps = new DoctrineAppInstanceRepository($this->manager);
+        $app = AppInstance::discover(Uuid::v7(), $team, Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::compose(), Inv::now());
+        $app->document([new DocumentationLink('https://wiki.example.com/shop', 'Runbook')]);
+        $apps->add($app);
+        $this->connection()->executeStatement("INSERT INTO inventory_host (host_id, team_id, facts) VALUES (?, ?, '{\"hostname\": \"web-01\"}')", [Inv::HOST, Inv::TEAM]);
+        $this->manager->get()->flush();
+
+        $row = $this->read->application($app->id()->toRfc4122());
+        self::assertSame(['web-01', [['url' => 'https://wiki.example.com/shop', 'label' => 'Runbook']]], [$row?->hostname, $row?->links]);
+        self::assertNull($this->read->hostLabel(Inv::HOST));
+        self::assertSame([null, []], [$this->read->host(Inv::HOST)?->displayName, $this->read->host(Inv::HOST)?->addresses]);
+
+        $labels = new DoctrineHostLabelRepository($this->manager);
+        $labels->add(HostLabel::of(Uuid::fromString(Inv::HOST), $team, 'Shop front', ['10.0.0.1']));
+        $this->manager->get()->flush();
+        self::assertSame('Shop front', $this->read->application($app->id()->toRfc4122())?->hostname);
+        self::assertSame(['Shop front', 'web-01', ['10.0.0.1']], [$this->read->host(Inv::HOST)?->displayName, $this->read->host(Inv::HOST)?->hostname, $this->read->host(Inv::HOST)?->addresses]);
+        self::assertSame(['displayName' => 'Shop front', 'addresses' => ['10.0.0.1']], $this->read->hostLabel(Inv::HOST));
+        self::assertSame(['Shop front'], array_map(static fn ($r): string => $r->hostname, $this->read->applications(Inv::TEAM, null, false, null, null, new PageRequest(search: 'shop front'))->items), 'Searched by its display name.');
+        $hosts = array_values(array_filter($this->read->teamSubjects(Inv::TEAM), static fn ($s): bool => 'host' === $s->type));
+        self::assertSame(['Shop front'], array_map(static fn ($s): string => $s->name, $hosts));
     }
 
     private function inventory(string $trigger): Uuid

@@ -45,4 +45,17 @@ final readonly class InventoryAccess
     {
         return $this->permissions->isGranted(Permission::ProjectAppsAssign, $teamId, $projectId);
     }
+
+    /**
+     * Who documents an application: project.apps.assign on its project, host.edit on the team while it is not attached.
+     */
+    public function mayDocument(string $teamId, ?string $projectId): bool
+    {
+        return null === $projectId ? $this->mayEditHosts($teamId) : $this->mayAssignIn($teamId, $projectId);
+    }
+
+    public function mayEditHosts(string $teamId): bool
+    {
+        return $this->permissions->isGranted(Permission::HostEdit, $teamId);
+    }
 }

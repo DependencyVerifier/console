@@ -5,19 +5,31 @@ declare(strict_types=1);
 namespace Fleet\Domain\Model;
 
 use Doctrine\ORM\Mapping as ORM;
+use Fleet\Domain\Event\HostLabelled;
+use Shared\Domain\Model\EventRecording;
+use Shared\Domain\Model\RecordsEvents;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * A machine of a team, created or found at enrollment from its identity (HostFacts::identityFor()). Its agents point
- * to it; the facts are those of the last enrollment.
+ * to it; the facts are those of the last enrollment. A human may give it a display name and its IP addresses.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'fleet_host')]
 #[ORM\UniqueConstraint(name: 'fleet_host_identity', columns: ['team_id', 'identity_kind', 'identity_value'])]
-class Host
+class Host implements RecordsEvents
 {
+    use EventRecording;
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $lastSeenAt = null;
+
+    #[ORM\Column(length: HostLabel::MAX_NAME, nullable: true)]
+    private ?string $displayName = null;
+
+    /** @var list<string> */
+    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
+    private array $addresses = [];
 
     private function __construct(
         #[ORM\Id]
@@ -78,5 +90,29 @@ class Host
     public function seen(\DateTimeImmutable $now): void
     {
         $this->lastSeenAt = $now;
+    }
+
+    public function label(): HostLabel
+    {
+        return new HostLabel($this->displayName, $this->addresses);
+    }
+
+    /**
+     * Its display name, else its hostname.
+     */
+    public function name(): string
+    {
+        return $this->displayName ?? $this->facts->hostname;
+    }
+
+    public function relabel(HostLabel $label): void
+    {
+        if ($label->displayName === $this->displayName && $label->addresses === $this->addresses) {
+            return;
+        }
+
+        $this->displayName = $label->displayName;
+        $this->addresses = $label->addresses;
+        $this->recordThat(new HostLabelled($this->id->toRfc4122(), $this->teamId->toRfc4122(), $label->displayName, $label->addresses));
     }
 }

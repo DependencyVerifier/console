@@ -9,7 +9,9 @@ use Inventory\Domain\Event\InventoryProcessed;
 use Inventory\Domain\Model\AppInstance;
 use Inventory\Domain\Model\Assignment;
 use Inventory\Domain\Model\ContainerImage;
+use Inventory\Domain\Model\DocumentationLink;
 use Inventory\Domain\Model\HostInventory;
+use Inventory\Domain\Model\InvalidDocumentationLink;
 use Inventory\Domain\Model\InvalidInventory;
 use Inventory\Domain\Model\InventoryNotOpen;
 use Inventory\Domain\Model\InventoryRun;
@@ -26,6 +28,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use Tests\Inventory\Support\Inv;
+
+use function Symfony\Component\String\u;
 
 final class EntitiesTest extends TestCase
 {
@@ -208,5 +212,49 @@ final class EntitiesTest extends TestCase
         $record = SnapshotRecord::take($id, Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::RUN), SnapshotSubject::Application, Uuid::fromString(Inv::APP), Inv::digest(1), Inv::now());
         self::assertSame([$id, Inv::TEAM, Inv::RUN, SnapshotSubject::Application, Inv::APP, Inv::digest(1)->value], [$record->id(), $record->teamId()->toRfc4122(), $record->inventoryId()->toRfc4122(), $record->subjectType(), $record->subjectId()->toRfc4122(), $record->digest()->value]);
         self::assertEquals(Inv::now(), $record->takenAt());
+    }
+
+    #[Test]
+    public function it_should_keep_the_documentation_links_a_human_gives_an_application(): void
+    {
+        $app = AppInstance::discover(Uuid::fromString(Inv::APP), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::compose(), Inv::now());
+        self::assertSame([], $app->links());
+
+        $app->document([new DocumentationLink(' https://wiki.example.com/shop ', '  Runbook '), new DocumentationLink('http://grafana.local:3000/d/x?y=1#z'), new DocumentationLink('https://wiki.example.com/shop', 'Again')]);
+        self::assertEquals([new DocumentationLink('https://wiki.example.com/shop', 'Runbook'), new DocumentationLink('http://grafana.local:3000/d/x?y=1#z')], $app->links(), 'Trimmed, each URL once, the first label kept.');
+        self::assertSame(['url' => 'http://grafana.local:3000/d/x?y=1#z', 'label' => null], $app->links()[1]->toArray());
+        self::assertNull(new DocumentationLink('https://a.example', ' ')->label);
+
+        $ten = array_map(static fn (int $i): DocumentationLink => new DocumentationLink('https://example.com/'.$i), range(1, 10));
+        $app->document([...$ten, $ten[0]]);
+        self::assertCount(10, $app->links(), 'Ten at most, counted once each.');
+        $before = $app->links();
+        try {
+            $app->document([...$ten, new DocumentationLink('https://example.com/11')]);
+            self::fail('Eleven links.');
+        } catch (InvalidDocumentationLink $refused) {
+            self::assertSame('invalid_documentation_link', $refused->ruleKey());
+        }
+        self::assertEquals($before, $app->links(), 'Refused: unchanged.');
+        $app->document([]);
+        self::assertSame([], $app->links());
+
+        self::assertSame(DocumentationLink::MAX_URL, u(new DocumentationLink('https://e.com/'.u('a')->repeat(2048 - 14))->url)->length());
+        self::assertSame(u('a')->repeat(100)->toString(), new DocumentationLink('https://e.com', u('a')->repeat(100)->toString())->label);
+        foreach ([
+            ['https://e.com/'.u('a')->repeat(2048 - 13), null], ['ftp://e.com', null], ['javascript:alert(1)', null], ['//e.com', null], ['e.com', null],
+            ['https://user:secret@e.com', null], ['https://user@e.com', null], ['https://user@e.com/x', null], ['https://', null], ['https:///path', null], ['https://e.com/a b', null], ["https://e.com/\u{0007}", null],
+            ['https://e.com', u('a')->repeat(101)->toString()], ['https://e.com', "Run\u{0000}book"],
+        ] as [$url, $label]) {
+            try {
+                new DocumentationLink($url, $label);
+                self::fail($url);
+            } catch (InvalidDocumentationLink) {
+            }
+        }
+        self::assertSame('HTTPS://E.COM', new DocumentationLink('HTTPS://E.COM')->url);
+        foreach (['https://e.com:8443', 'https://e.com?q=1', 'https://e.com#top', 'https://e.com/a@b', 'https://[2001:db8::1]/x'] as $valid) {
+            self::assertSame($valid, new DocumentationLink($valid)->url);
+        }
     }
 }

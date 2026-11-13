@@ -79,8 +79,13 @@ final class ManifestReader
             $fields[$name] = self::strings($subject->listOrNull($name));
         }
 
-        if (SubjectKind::Path === $kind && null !== ($runtime = $subject->optionalObject('runtime'))) {
-            $fields['runtime'] = array_filter(['name' => $runtime->optionalString('name'), 'version' => $runtime->optionalString('version'), 'service' => $runtime->optionalString('service')], static fn (?string $v): bool => null !== $v);
+        $application = \in_array($kind, [SubjectKind::Path, SubjectKind::ComposeService, SubjectKind::Container], true);
+        if ($application && null !== ($runtime = $subject->optionalObject('runtime'))) {
+            $fields['runtime'] = self::bounded(['name' => $runtime->optionalString('name'), 'version' => $runtime->optionalString('version'), 'service' => $runtime->optionalString('service')]);
+        }
+
+        if ($application && null !== ($requires = $subject->optionalObject('requires'))) {
+            $fields['requires'] = self::bounded(['php' => $requires->optionalString('php'), 'node' => $requires->optionalString('node')]);
         }
 
         if (SubjectKind::ComposeService === $kind && null !== ($labels = $subject->optionalObject('labels'))) {
@@ -88,6 +93,16 @@ final class ManifestReader
         }
 
         return new Subject($subject->string('subject_key'), $kind, self::ref($subject->object('sbom')), $fields);
+    }
+
+    /**
+     * @param array<string, ?string> $values
+     *
+     * @return array<string, string> the values given, bounded
+     */
+    private static function bounded(array $values): array
+    {
+        return array_map(static fn (string $v): string => u($v)->truncate(self::MAX_TEXT)->toString(), array_filter($values, static fn (?string $v): bool => null !== $v));
     }
 
     private static function ref(AgentPayload $ref): SnapshotRef

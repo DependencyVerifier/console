@@ -7,6 +7,7 @@ namespace Inventory\Application\Content;
 use Inventory\Domain\Repository\AppInstanceRepository;
 use Inventory\Domain\Repository\ContainerImageRepository;
 use Inventory\Domain\Repository\HostInventoryRepository;
+use Inventory\Domain\Repository\HostLabelRepository;
 use Inventory\Domain\Repository\InventoryRunRepository;
 use Inventory\Domain\Repository\SnapshotBlobRepository;
 use Inventory\Domain\Repository\SnapshotRecordRepository;
@@ -16,7 +17,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * What Inventory holds for Organization's objects: a deleted team takes its inventories, applications, images,
- * hosts' facts, history and snapshots (their packages with them); an environment with applications cannot be deleted
+ * hosts' facts and labels, history and snapshots (their packages with them); an environment with applications cannot be deleted
  * (detach them first).
  */
 final readonly class InventoryTeamContent implements TeamContentEraser, ProjectContentProbe
@@ -28,6 +29,7 @@ final readonly class InventoryTeamContent implements TeamContentEraser, ProjectC
         private ContainerImageRepository $images,
         private HostInventoryRepository $hosts,
         private SnapshotBlobRepository $blobs,
+        private HostLabelRepository $labels,
     ) {
     }
 
@@ -40,6 +42,7 @@ final readonly class InventoryTeamContent implements TeamContentEraser, ProjectC
         $this->images->deleteOfTeam($team);
         $this->hosts->deleteOfTeam($team);
         $this->blobs->deleteOfTeam($team);
+        $this->labels->deleteOfTeam($team);
     }
 
     public function projectHasContent(string $projectId): bool

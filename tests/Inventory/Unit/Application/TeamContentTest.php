@@ -8,6 +8,7 @@ use Inventory\Application\Content\InventoryTeamContent;
 use Inventory\Domain\Model\AppInstance;
 use Inventory\Domain\Model\ContainerImage;
 use Inventory\Domain\Model\HostInventory;
+use Inventory\Domain\Model\HostLabel;
 use Inventory\Domain\Model\MediaType;
 use Inventory\Domain\Model\SnapshotBlob;
 use Inventory\Domain\Model\SnapshotRecord;
@@ -17,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use Tests\Inventory\Support\InMemoryApps;
 use Tests\Inventory\Support\InMemoryBlobs;
+use Tests\Inventory\Support\InMemoryHostLabels;
 use Tests\Inventory\Support\InMemoryHosts;
 use Tests\Inventory\Support\InMemoryImages;
 use Tests\Inventory\Support\InMemoryRecords;
@@ -28,7 +30,7 @@ final class TeamContentTest extends TestCase
     #[Test]
     public function it_should_erase_the_inventory_of_a_deleted_team_and_guard_environments_with_applications(): void
     {
-        [$runs, $records, $apps, $images, $hosts, $blobs] = [new InMemoryRuns(), new InMemoryRecords(), new InMemoryApps(), new InMemoryImages(), new InMemoryHosts(), new InMemoryBlobs()];
+        [$runs, $records, $apps, $images, $hosts, $blobs, $labels] = [new InMemoryRuns(), new InMemoryRecords(), new InMemoryApps(), new InMemoryImages(), new InMemoryHosts(), new InMemoryBlobs(), new InMemoryHostLabels()];
         $team = Uuid::fromString(Inv::TEAM);
         $other = Uuid::fromString(Inv::OTHER_TEAM);
         $runs->add(Inv::run());
@@ -41,7 +43,9 @@ final class TeamContentTest extends TestCase
         $hosts->add(HostInventory::of(Uuid::fromString(Inv::HOST), $team));
         $blobs->add(SnapshotBlob::store(Uuid::v7(), $team, Inv::digest(1), MediaType::CycloneDx, 1, 'gz', Inv::now()));
         $blobs->add(SnapshotBlob::store(Uuid::v7(), $other, Inv::digest(1), MediaType::CycloneDx, 1, 'gz', Inv::now()));
-        $content = new InventoryTeamContent($runs, $records, $apps, $images, $hosts, $blobs);
+        $labels->add(HostLabel::of(Uuid::fromString(Inv::HOST), $team, 'web', []));
+        $labels->add(HostLabel::of(Uuid::v7(), $other, null, ['10.0.0.1']));
+        $content = new InventoryTeamContent($runs, $records, $apps, $images, $hosts, $blobs, $labels);
 
         self::assertTrue($content->environmentHasContent(Inv::ENVIRONMENT));
         self::assertFalse($content->environmentHasContent(Inv::TEAM));
@@ -51,6 +55,8 @@ final class TeamContentTest extends TestCase
         $content->eraseTeam(Inv::TEAM);
         self::assertSame([[], [], [], [], ['019a6b31-5e00-7f12-a3b4-c5d6e7f80913']], [$records->records, $apps->apps, $images->images, $hosts->hosts, array_keys($runs->runs)]);
         self::assertCount(1, $blobs->blobs);
+        self::assertCount(1, $labels->labels);
+        self::assertTrue(array_first($labels->labels)->teamId()->equals($other));
         self::assertFalse($content->environmentHasContent(Inv::ENVIRONMENT));
     }
 }

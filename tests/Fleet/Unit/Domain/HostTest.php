@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Fleet\Unit\Domain;
 
+use Fleet\Domain\Event\HostLabelled;
 use Fleet\Domain\Model\AgentMode;
 use Fleet\Domain\Model\AgentRuntime;
 use Fleet\Domain\Model\AgentScope;
 use Fleet\Domain\Model\HostFacts;
 use Fleet\Domain\Model\HostIdentity;
+use Fleet\Domain\Model\HostLabel;
 use Fleet\Domain\Model\InvalidEnrollmentPayload;
+use Fleet\Domain\Model\InvalidHostLabel;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -53,6 +56,45 @@ final class HostTest extends TestCase
         self::assertEquals($later, $host->lastSeenAt());
         $host->seen($later->modify('+1 hour'));
         self::assertEquals($later->modify('+1 hour'), $host->lastSeenAt());
+    }
+
+    #[Test]
+    public function it_should_take_a_display_name_and_addresses_from_a_human(): void
+    {
+        $host = Fleet::host();
+        self::assertSame(['web-01', null, []], [$host->name(), $host->label()->displayName, $host->label()->addresses]);
+
+        $host->relabel(new HostLabel('  Shop front  ', [' 10.0.0.1 ', '2001:DB8:0:0:0:0:0:1', '10.0.0.1', '2001:db8::1']));
+        self::assertSame(['Shop front', ['10.0.0.1', '2001:db8::1']], [$host->name(), $host->label()->addresses], 'Trimmed, canonical, each once.');
+        self::assertEquals([new HostLabelled(Fleet::HOST, Fleet::TEAM, 'Shop front', ['10.0.0.1', '2001:db8::1'])], $host->releaseEvents());
+
+        $host->relabel(new HostLabel('Shop front', ['10.0.0.1', '2001:db8::1']));
+        self::assertSame([], $host->releaseEvents(), 'Unchanged: nothing published.');
+        self::assertSame(['10.0.0.1', '10.0.0.2'], new HostLabel(null, ['10.0.0.1', '10.0.0.1', '10.0.0.2'])->addresses, 'A list, without holes.');
+        $host->relabel(new HostLabel('Shop front', ['2001:db8::1', '10.0.0.1']));
+        self::assertCount(1, $host->releaseEvents(), 'Another order is a change.');
+        $host->relabel(new HostLabel('Shop', ['2001:db8::1', '10.0.0.1']));
+        self::assertCount(1, $host->releaseEvents(), 'Another name is a change.');
+
+        $host->relabel(new HostLabel(' ', []));
+        self::assertSame(['web-01', null, []], [$host->name(), $host->label()->displayName, $host->label()->addresses], 'Empty: its hostname again.');
+        self::assertEquals([new HostLabelled(Fleet::HOST, Fleet::TEAM, null, [])], $host->releaseEvents());
+        self::assertNull(new HostLabel(null, [])->displayName);
+
+        self::assertSame(u('a')->repeat(100)->toString(), new HostLabel(u('a')->repeat(100)->toString(), [])->displayName);
+        self::assertCount(16, new HostLabel(null, array_map(static fn (int $i): string => '10.0.0.'.$i, range(1, 16)))->addresses);
+        self::assertCount(16, new HostLabel(null, [...array_map(static fn (int $i): string => '10.0.0.'.$i, range(1, 16)), '10.0.0.1'])->addresses, 'Counted once unique.');
+        foreach ([
+            static fn () => new HostLabel(u('a')->repeat(101)->toString(), []),
+            static fn () => new HostLabel("shop\u{0007}", []),
+            static fn () => new HostLabel(null, ['10.0.0.256']),
+            static fn () => new HostLabel(null, ['web-01']),
+            static fn () => new HostLabel(null, ['']),
+            static fn () => new HostLabel(null, ['10.0.0.0/24']),
+            static fn () => new HostLabel(null, array_map(static fn (int $i): string => '10.0.0.'.$i, range(1, 17))),
+        ] as $label) {
+            $this->assertRefused(InvalidHostLabel::class, 'invalid_host_label', $label);
+        }
     }
 
     /**

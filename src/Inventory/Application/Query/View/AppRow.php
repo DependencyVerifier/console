@@ -7,7 +7,8 @@ namespace Inventory\Application\Query\View;
 final readonly class AppRow
 {
     /**
-     * @param array<string, mixed> $fields the subject's fields (path, runtime, service, labels…)
+     * @param array<string, mixed>                     $fields the subject's fields (path, runtime, service, labels…)
+     * @param list<array{url: string, label: ?string}> $links  the documentation links a human gave it
      */
     public function __construct(
         public string $id,
@@ -25,6 +26,7 @@ final readonly class AppRow
         public string $sbomDigest,
         public int $packages,
         public string $environment = '',
+        public array $links = [],
     ) {
     }
 
@@ -62,8 +64,20 @@ final readonly class AppRow
         return \is_string($name) && \is_string($version) ? $name.' '.$version : null;
     }
 
+    /**
+     * The runtime versions the project declares (`php` from composer.json, `node` from package.json).
+     *
+     * @return array<string, string>
+     */
+    public function requires(): array
+    {
+        $requires = \is_array($this->fields['requires'] ?? null) ? $this->fields['requires'] : [];
+
+        return array_filter(['php' => $requires['php'] ?? null, 'node' => $requires['node'] ?? null], \is_string(...));
+    }
+
     public function withEnvironment(string $environment): self
     {
-        return new self($this->id, $this->teamId, $this->hostId, $this->hostname, $this->subjectKey, $this->kind, $this->fields, $this->imageId, $this->environmentId, $this->assignment, $this->present, $this->lastSeenAt, $this->sbomDigest, $this->packages, $environment);
+        return new self($this->id, $this->teamId, $this->hostId, $this->hostname, $this->subjectKey, $this->kind, $this->fields, $this->imageId, $this->environmentId, $this->assignment, $this->present, $this->lastSeenAt, $this->sbomDigest, $this->packages, $environment, $this->links);
     }
 }

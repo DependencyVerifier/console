@@ -6,9 +6,15 @@ namespace Tests\Inventory\Unit\Application;
 
 use Inventory\Application\Command\Application\AttachApplication;
 use Inventory\Application\Command\Application\DetachApplication;
+use Inventory\Application\Command\Application\DocumentApplication;
 use Inventory\Application\Command\Application\Handler\ApplicationAttachment;
 use Inventory\Application\Command\Application\Handler\AttachApplicationHandler;
 use Inventory\Application\Command\Application\Handler\DetachApplicationHandler;
+use Inventory\Application\Command\Application\Handler\DocumentApplicationHandler;
+use Inventory\Application\Command\Host\Handler\RecordHostLabelHandler;
+use Inventory\Application\Command\Host\RecordHostLabel;
+use Inventory\Application\EventHandler\CopyHostLabel;
+use Inventory\Application\Query\OsName;
 use Inventory\Application\Query\Team\CountInventory;
 use Inventory\Application\Query\Team\GetApplication;
 use Inventory\Application\Query\Team\GetHostInventory;
@@ -24,24 +30,30 @@ use Inventory\Application\Query\Team\Handler\ListPackagesHandler;
 use Inventory\Application\Query\Team\ListApplications;
 use Inventory\Application\Query\Team\ListInventoryHistory;
 use Inventory\Application\Query\Team\ListPackages;
+use Inventory\Application\Query\View\ApplicationView;
 use Inventory\Application\Query\View\AppRow;
 use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
 use Inventory\Application\Query\View\InventoryCounts;
+use Inventory\Application\Query\View\KeyPackage;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Application\Security\InventoryAccess;
 use Inventory\Application\Security\InventoryScope;
 use Inventory\Domain\Event\ApplicationPlaced;
 use Inventory\Domain\Model\AppInstance;
 use Inventory\Domain\Model\Assignment;
+use Inventory\Domain\Model\DocumentationLink;
 use Inventory\Domain\Model\EnvironmentOfAnotherTeam;
+use Inventory\Domain\Model\InvalidDocumentationLink;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Shared\Application\Audit\Target;
 use Shared\Application\Authorization\PermissionChecker;
 use Shared\Application\Authorization\PermissionDenied;
 use Shared\Application\Authorization\ResourceNotFound;
 use Shared\Application\Contract\Fleet\FindTeamHost;
+use Shared\Application\Contract\Fleet\HostLabelled;
 use Shared\Application\Contract\Organization\GetVisibleProjects;
 use Shared\Application\Contract\Organization\ListTeamEnvironments;
 use Shared\Application\Contract\Organization\TeamEnvironment;
@@ -50,9 +62,11 @@ use Shared\Application\Query\PageRequest;
 use Shared\Domain\Authorization\Permission;
 use Symfony\Component\Uid\Uuid;
 use Tests\Inventory\Support\InMemoryApps;
+use Tests\Inventory\Support\InMemoryHostLabels;
 use Tests\Inventory\Support\InMemoryReadModel;
 use Tests\Inventory\Support\Inv;
 use Tests\Organization\Support\FixedQueries;
+use Tests\Organization\Support\RecordingCommands;
 
 /**
  * What the team pages show and who attaches: a member sees the whole inventory of its team, a TEAM_GUEST the
@@ -76,6 +90,9 @@ final class TeamViewsTest extends TestCase
     private array $assignIn = [self::SHOP, self::BLOG];
 
     private bool $guest = false;
+
+    /** Whether the actor holds host.edit on the team. */
+    public bool $editsHosts = false;
 
     protected function setUp(): void
     {
@@ -119,6 +136,10 @@ final class TeamViewsTest extends TestCase
         self::assertNull($row(['runtime' => ['name' => 'php']])->runtime());
         self::assertNull($row(['runtime' => ['version' => '8.4.1']])->runtime());
         self::assertNull($row(['runtime' => 'php'])->runtime());
+        self::assertSame(['php' => '^8.2', 'node' => '>=20'], $row(['requires' => ['node' => '>=20', 'ruby' => '3', 'php' => '^8.2']])->requires());
+        self::assertSame(['node' => '>=20'], $row(['requires' => ['php' => 8, 'node' => '>=20']])->requires());
+        self::assertSame([], $row(['requires' => 'php'])->requires());
+        self::assertSame([], $row([])->requires());
         $named = $row(['path' => '/srv/app'])->withEnvironment('Shop / production');
         self::assertSame(['Shop / production', '/srv/app', Inv::APP, 2, 'sha256:a', 'none', true, 'web-01'], [$named->environment, $named->name(), $named->id, $named->packages, $named->sbomDigest, $named->assignment, $named->present, $named->hostname]);
         self::assertSame([Inv::TEAM, Inv::HOST, 'compose:shop/php', 'compose_service', null, null, '2026-11-09 08:02'], [$named->teamId, $named->hostId, $named->subjectKey, $named->kind, $named->imageId, $named->environmentId, $named->lastSeenAt->format('Y-m-d H:i')]);
@@ -230,6 +251,44 @@ final class TeamViewsTest extends TestCase
     }
 
     #[Test]
+    public function it_should_tell_the_frameworks_and_the_os_of_an_application(): void
+    {
+        $get = fn (string $id): ApplicationView => (new GetApplicationHandler($this->access(), $this->read))(new GetApplication($id));
+        $this->read->packages[Inv::TEAM.' sha256:app'] = [
+            new PackageRow('pkg:npm/react@19.0.0', 'npm', null, 'react', '19.0.0', 'direct', 'npm'),
+            new PackageRow('pkg:composer/symfony/http-kernel@7.3.1', 'composer', 'symfony', 'http-kernel', '7.3.1', 'direct', 'composer'),
+            new PackageRow('pkg:composer/symfony/framework-bundle@7.3.1', 'composer', 'symfony', 'framework-bundle', '7.3.1', 'direct', 'composer'),
+            new PackageRow('pkg:npm/%40angular/core', 'npm', '@angular', 'core', null, null, 'npm'),
+            new PackageRow('pkg:npm/react@18.0.0', 'npm', null, 'react', '18.0.0', null, 'npm'),
+        ];
+        $this->read->packages[Inv::TEAM.' sha256:image'] = [new PackageRow('pkg:deb/debian/openssl@3?arch=amd64&distro=debian-12', 'deb', 'debian', 'openssl', '3', null, null)];
+
+        $view = $get(Inv::APP);
+        self::assertEquals([new KeyPackage('Symfony', '7.3.1'), new KeyPackage('Angular', null), new KeyPackage('React', '19.0.0')], $view->frameworks, 'In the order of the list, the first version found.');
+        self::assertSame('Debian 12', $view->os, 'The OS of its image.');
+
+        $this->read->packages[Inv::TEAM.' sha256:image'] = [];
+        $this->read->hosts[0] = new HostView(Inv::HOST, Inv::TEAM, 'web-01', ['os' => ['pretty_name' => 'Ubuntu 24.04 LTS']], 'sha256:os', null, 3);
+        self::assertNull($get(Inv::APP)->os, 'An image without OS packages: no OS, never that of its host.');
+        self::assertSame('Ubuntu 24.04 LTS', $get(self::LOOSE_APP)->os, 'No image: the OS of its host.');
+        $this->read->packages[Inv::TEAM.' sha256:app'] = [];
+        self::assertSame([], $get(self::LOOSE_APP)->frameworks);
+    }
+
+    #[Test]
+    public function it_should_name_the_os_of_a_distro(): void
+    {
+        foreach ([
+            'alpine-3.21' => 'Alpine 3.21', 'debian-12' => 'Debian 12', 'ubuntu-24.04' => 'Ubuntu 24.04', 'rhel-9.4' => 'RHEL 9.4', 'centos-7' => 'CentOS 7',
+            'rocky-9.5' => 'Rocky Linux 9.5', 'almalinux-9' => 'AlmaLinux 9', 'amzn-2023' => 'Amazon Linux 2023', 'fedora-41' => 'Fedora 41', 'ol-9' => 'Oracle Linux 9',
+            'opensuse-leap-15.6' => 'openSUSE Leap 15.6', 'sles-15.6' => 'SUSE Linux Enterprise 15.6', 'wolfi-20230201' => 'Wolfi 20230201',
+            'gentoo-2.17' => 'Gentoo 2.17', 'arch' => 'Arch', 'debian-' => 'Debian-', 'debian-x1' => 'Debian-x1', 'debian-12-slim' => 'Debian-12-slim',
+        ] as $distro => $name) {
+            self::assertSame($name, OsName::of($distro), $distro);
+        }
+    }
+
+    #[Test]
     public function it_should_show_a_host_or_an_image_to_who_sees_one_of_its_applications(): void
     {
         $host = fn (string $id, string $team = Inv::TEAM): HostView => (new GetHostInventoryHandler($this->visibility()))(new GetHostInventory($team, $id));
@@ -322,6 +381,73 @@ final class TeamViewsTest extends TestCase
     }
 
     #[Test]
+    public function it_should_document_an_application_with_the_permission_of_where_it_is(): void
+    {
+        $apps = new InMemoryApps();
+        $app = AppInstance::discover(Uuid::fromString(Inv::APP), Uuid::fromString(Inv::TEAM), Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::compose(), Inv::now());
+        $apps->add($app);
+        $urls = static fn (): array => array_map(static fn (DocumentationLink $l): string => $l->url, $app->links());
+        $runbook = [['url' => 'https://wiki.example.com/shop', 'label' => 'Runbook']];
+
+        $command = new DocumentApplication(Inv::APP, [...$runbook, ['url' => 'https://e.com', 'label' => null]]);
+        self::assertSame(['inventory.document_application', ['links'], ['links' => 2]], [$command->auditAction()->name, $command->auditAction()->allowedContextKeys, $command->auditContext()->values]);
+        self::assertEquals(Target::of('application', Inv::APP), $command->auditTarget());
+
+        $this->assertDenied('host.edit', fn () => $this->document($apps, $runbook), 'Not attached: host.edit on the team.');
+        $this->editsHosts = true;
+        $this->document($apps, $runbook);
+        self::assertSame(['https://wiki.example.com/shop'], $urls());
+        self::assertSame('Runbook', $app->links()[0]->label);
+
+        $app->assign(Uuid::fromString(Inv::ENVIRONMENT));
+        $this->assignIn = [self::BLOG];
+        $this->assertDenied('project.apps.assign', fn () => $this->document($apps, []), 'Attached: project.apps.assign on its project, host.edit is not enough.');
+        $this->assignIn = [self::SHOP];
+        $this->editsHosts = false;
+        $this->document($apps, []);
+        self::assertSame([], $urls());
+        $this->assertRefused(InvalidDocumentationLink::class, fn () => $this->document($apps, [['url' => 'ftp://e.com', 'label' => null]]));
+        $this->assertNotFound(fn () => $this->document($apps, [], 'nope'));
+
+        $view = fn (string $id): ApplicationView => (new GetApplicationHandler($this->access(), $this->read))(new GetApplication($id));
+        self::assertTrue($view(Inv::APP)->mayDocument, 'Attached to Shop, where it may assign.');
+        $this->assignIn = [self::BLOG];
+        $this->editsHosts = true;
+        self::assertFalse($view(Inv::APP)->mayDocument);
+        self::assertTrue($view(self::LOOSE_APP)->mayDocument, 'Not attached: host.edit.');
+        $this->editsHosts = false;
+        self::assertFalse($view(self::LOOSE_APP)->mayDocument);
+    }
+
+    #[Test]
+    public function it_should_copy_the_label_of_a_host_and_show_it(): void
+    {
+        $labels = new InMemoryHostLabels();
+        $commands = new RecordingCommands();
+        new CopyHostLabel($commands)(new HostLabelled(Inv::HOST, Inv::TEAM, 'Shop front', ['10.0.0.1']));
+        self::assertEquals([new RecordHostLabel(Inv::HOST, Inv::TEAM, 'Shop front', ['10.0.0.1'])], $commands->dispatched);
+
+        $record = new RecordHostLabelHandler($labels);
+        $record(new RecordHostLabel(Inv::HOST, Inv::TEAM, 'Shop front', ['10.0.0.1']));
+        $label = $labels->find(Uuid::fromString(Inv::HOST));
+        self::assertSame([Inv::TEAM, 'Shop front', ['10.0.0.1']], [$label?->teamId()->toRfc4122(), $label?->displayName(), $label?->addresses()]);
+        $record(new RecordHostLabel(Inv::HOST, Inv::TEAM, null, []));
+        self::assertCount(1, $labels->labels, 'Changed in place.');
+        self::assertSame([null, []], [$label?->displayName(), $label?->addresses()]);
+        $command = new RecordHostLabel(Inv::HOST, Inv::TEAM, null, []);
+        self::assertSame(['inventory.record_host_label', []], [$command->auditAction()->name, $command->auditContext()->values]);
+        self::assertEquals(Target::of('host', Inv::HOST), $command->auditTarget());
+
+        self::assertSame('web-01', new HostView(Inv::HOST, Inv::TEAM, 'web-01', [], null, null, 0)->name());
+        self::assertSame('Shop front', new HostView(Inv::HOST, Inv::TEAM, 'web-01', [], null, null, 0, 'Shop front')->name());
+
+        $host = fn (): HostView => (new GetHostInventoryHandler($this->visibility()))(new GetHostInventory(Inv::TEAM, '019a6b2c-7f00-7a11-8b22-3c44d55e6f03'));
+        self::assertSame(['web-03', null, []], [$host()->name(), $host()->displayName, $host()->addresses], 'Never inventoried, never labelled.');
+        $this->read->labels['019a6b2c-7f00-7a11-8b22-3c44d55e6f03'] = ['displayName' => 'Batch', 'addresses' => ['10.0.0.3']];
+        self::assertSame(['Batch', 'web-03', ['10.0.0.3']], [$host()->name(), $host()->hostname, $host()->addresses], 'Never inventoried: its label still.');
+    }
+
+    #[Test]
     public function it_should_attach_an_application_with_the_permission_on_both_projects(): void
     {
         $apps = new InMemoryApps();
@@ -371,6 +497,10 @@ final class TeamViewsTest extends TestCase
 
             public function isGranted(Permission $permission, ?string $teamId = null, ?string $projectId = null): bool
             {
+                if (Permission::HostEdit === $permission) {
+                    return $this->test->editsHosts && Inv::TEAM === $teamId && null === $projectId;
+                }
+
                 return Permission::ProjectAppsAssign === $permission && Inv::TEAM === $teamId && \in_array($projectId, $this->test->assignable(), true);
             }
         };
@@ -407,6 +537,27 @@ final class TeamViewsTest extends TestCase
     private function assertNotFound(\Closure $call, string $message = ''): void
     {
         $this->assertRefused(ResourceNotFound::class, $call, $message);
+    }
+
+    private function assertDenied(string $permission, \Closure $call, string $message = ''): void
+    {
+        try {
+            $call();
+        } catch (PermissionDenied $e) {
+            self::assertSame(\sprintf('Permission "%s" required.', $permission), $e->getMessage(), $message);
+
+            return;
+        }
+
+        self::fail('Expected a denial. '.$message);
+    }
+
+    /**
+     * @param list<array{url: string, label: ?string}> $links
+     */
+    private function document(InMemoryApps $apps, array $links, string $id = Inv::APP): void
+    {
+        (new DocumentApplicationHandler(new ApplicationAttachment($this->access(), $apps), $this->access()))(new DocumentApplication($id, $links));
     }
 
     /**

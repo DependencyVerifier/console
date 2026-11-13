@@ -36,6 +36,12 @@ class AppInstance implements RecordsEvents
     #[ORM\Column]
     private bool $present = true;
 
+    /** @var list<array{url: string, label: ?string}> the documentation links a human gave it */
+    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
+    private array $links = [];
+
+    public const int MAX_LINKS = 10;
+
     /**
      * @param array<string, mixed> $fields the subject's fields (path, runtime, service, containers…)
      */
@@ -171,6 +177,33 @@ class AppInstance implements RecordsEvents
     public function isReportedBy(Uuid $agentId): bool
     {
         return $this->agentId->equals($agentId);
+    }
+
+    /**
+     * @return list<DocumentationLink>
+     */
+    public function links(): array
+    {
+        return array_map(static fn (array $link): DocumentationLink => new DocumentationLink($link['url'], $link['label']), $this->links);
+    }
+
+    /**
+     * Replaces its documentation links (each URL once, the first label kept).
+     *
+     * @param list<DocumentationLink> $links
+     */
+    public function document(array $links): void
+    {
+        $unique = [];
+        foreach ($links as $link) {
+            $unique[$link->url] ??= $link->toArray();
+        }
+
+        if (\count($unique) > self::MAX_LINKS) {
+            throw new InvalidDocumentationLink('10 links at most.');
+        }
+
+        $this->links = array_values($unique);
     }
 
     public function markGone(): void

@@ -40,10 +40,11 @@ final class ProtocolTest extends TestCase
         self::assertSame([
             'compose_project' => 'shop', 'service' => 'php', 'image_id' => 'sha256:a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
             'container_ids' => ['9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a0'],
+            'runtime' => ['name' => 'php', 'version' => '8.4.14'], 'requires' => ['php' => '>=8.4'],
             'labels' => ['name' => 'Shop back-office', 'environment' => '019a6a00-0000-7000-8000-000000000001', 'paths' => ['/app']],
         ], $compose->fields);
         self::assertSame(['image_id' => 'sha256:a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90', 'provenance' => 'local-build', 'base_image' => 'dunglas/frankenphp:1-php8.4', 'repo_digests' => [], 'tags' => ['shop-php:latest']], $image->fields);
-        self::assertSame(['path' => '/opt/legacy-app', 'origin' => 'declared', 'runtime' => ['name' => 'php', 'version' => '8.2.26', 'service' => 'php8.2-fpm']], $path->fields);
+        self::assertSame(['path' => '/opt/legacy-app', 'origin' => 'declared', 'runtime' => ['name' => 'php', 'version' => '8.2.26', 'service' => 'php8.2-fpm'], 'requires' => ['php' => '^8.1']], $path->fields);
         self::assertSame(482113, $compose->sbom->size);
         self::assertSame(MediaType::HostFacts, $manifest->hostFacts->mediaType);
     }
@@ -56,10 +57,16 @@ final class ProtocolTest extends TestCase
             Documents::subject('image:sha256:x', 'container_image', '{}', ['image_id' => $long, 'tags' => [...array_fill(0, 150, 't'), 3], 'repo_digests' => null]),
             Documents::subject('compose:shop/php', 'compose_service', '{}', ['compose_project' => 'shop', 'labels' => ['paths' => []], 'unknown' => 'ignored']),
             Documents::subject('path:/a', 'path', '{}', ['path' => '/a']),
-            Documents::subject('path:/b', 'path', '{}', ['path' => '/b', 'runtime' => ['name' => 'node', 'version' => '22.1.0']]),
+            Documents::subject('path:/b', 'path', '{}', ['path' => '/b', 'runtime' => ['name' => 'node', 'version' => '22.1.0'], 'requires' => ['node' => '>=20', 'ruby' => '3']]),
+            Documents::subject('container:web', 'container', '{}', ['container_name' => 'web', 'runtime' => ['name' => 'php', 'version' => $long], 'requires' => ['php' => $long]]),
+            Documents::subject('image:sha256:y', 'container_image', '{}', ['image_id' => 'y', 'runtime' => ['name' => 'php', 'version' => '8.4'], 'requires' => ['php' => '^8']]),
         ])));
-        [$image, $compose, $path, $node] = ManifestReader::read($payload)->subjects;
+        [$image, $compose, $path, $node, $container, $other] = ManifestReader::read($payload)->subjects;
         self::assertSame(['name' => 'node', 'version' => '22.1.0'], $node->map('runtime'), 'No service: no empty key.');
+        self::assertSame(['node' => '>=20'], $node->map('requires'), 'Known runtimes only.');
+        $bounded = u('a')->repeat(1024)->toString();
+        self::assertSame([$bounded, $bounded], [$container->map('runtime')['version'] ?? null, $container->map('requires')['php'] ?? null]);
+        self::assertSame(['image_id' => 'y', 'repo_digests' => [], 'tags' => []], $other->fields, 'An image has no runtime.');
         self::assertSame(1024, u((string) $image->string('image_id'))->length());
         self::assertCount(100, $image->strings('tags'));
         self::assertSame([], $image->strings('repo_digests'));

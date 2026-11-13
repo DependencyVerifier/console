@@ -18,7 +18,7 @@ final class PermissionTest extends TestCase
     public static function provideScopes(): iterable
     {
         $instance = ['account.login', 'instance.settings', 'instance.users.manage', 'instance.audit.view', 'instance.super_admin.manage', 'instance.agents.view', 'instance.default_quotas.manage', 'team.create', 'team.delete', 'team.quotas.manage'];
-        $team = ['team.edit', 'team.members.manage', 'team.audit.view', 'team.channels.manage', 'host.enroll', 'host.approve', 'host.revoke', 'host.delete', 'host.order', 'project.create'];
+        $team = ['team.edit', 'team.members.manage', 'team.audit.view', 'team.channels.manage', 'host.enroll', 'host.approve', 'host.revoke', 'host.delete', 'host.order', 'host.edit', 'project.create'];
 
         foreach (Permission::cases() as $permission) {
             $scope = match (true) {

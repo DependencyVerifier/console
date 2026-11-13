@@ -29,7 +29,7 @@ final readonly class GetAgentHandler implements QueryHandler
         return new AgentRow(
             $agent->id()->toString(), $agent->teamId()->toRfc4122(), $agent->status()->value, $agent->fingerprint(), $runtime->mode->value,
             $runtime->scope?->value, $runtime->composeProject, $runtime->version, $agent->hostId()->toString(),
-            $this->hosts->find($agent->hostId())?->facts()->hostname ?? '', $agent->enrolledAt(), $agent->lastSeenAt(),
+            $this->hosts->find($agent->hostId())?->name() ?? '', $agent->enrolledAt(), $agent->lastSeenAt(),
             '', $agent->desiredConfig()?->toPayload(), $agent->appliedConfigVersion(),
         );
     }

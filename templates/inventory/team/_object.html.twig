@@ -1,5 +1,6 @@
 {#- Frame of one inventory object of a team (application, host, image): breadcrumb Team › section › object, object
-    header. Blocks: section_link, object_title, object_subtitle, object_icon, object_actions, tab. -#}
+    header. Blocks: section_link, object_title, object_subtitle, object_icon, object_actions, object_facts (badges under
+    the header), tab. -#}
 {% extends 'organization/team/_layout.html.twig' %}
 
 {% block breadcrumb %}
@@ -21,6 +22,8 @@
 
 {% block object_icon %}lucide:monitor{% endblock %}
 
+{% block object_facts %}{% endblock %}
+
 {% block header %}
     {%- set object_icon = block('object_icon')|trim %}
     <header class="flex flex-wrap items-center justify-between gap-4">
@@ -34,5 +37,9 @@
             </div>
         </div>
         <div class="flex items-center gap-2">{% block object_actions %}{% endblock %}</div>
+        {%- set object_facts = block('object_facts')|trim %}
+        {%- if object_facts is not empty %}
+            <ul class="flex basis-full flex-wrap items-center gap-2" aria-label="{{ 'inventory.facts.label'|trans }}">{{ object_facts|raw }}</ul>
+        {%- endif %}
     </header>
 {% endblock %}

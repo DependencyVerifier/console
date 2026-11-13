@@ -1,13 +1,27 @@
 {% extends 'inventory/team/_object.html.twig' %}
 {#- One host as its last inventory saw it (variables: host HostView, tables.applications, tables.packages). -#}
 
-{% block title %}{{ host.hostname }} · {{ team.name }} · DependencyVerifier{% endblock %}
+{% block title %}{{ host.name }} · {{ team.name }} · DependencyVerifier{% endblock %}
 {% block section_link %}<twig:Breadcrumb:Link href="{{ path('fleet_team_hosts', {teamId: team.id}) }}">{{ 'fleet.hosts.title'|trans }}</twig:Breadcrumb:Link>{% endblock %}
 {% block object_icon %}lucide:server{% endblock %}
-{% block object_title %}<span class="font-mono">{{ host.hostname }}</span>{% endblock %}
+{% block object_title %}{% if host.displayName %}{{ host.displayName }}{% else %}<span class="font-mono">{{ host.hostname }}</span>{% endif %}{% endblock %}
 {% block object_subtitle %}
+    {%- if host.displayName and host.hostname %}<span class="font-mono">{{ host.hostname }}</span><span aria-hidden="true">·</span>{% endif %}
     <span>{{ host.os ?? 'inventory.hosts.not_inventoried'|trans }}</span>
     {%- if host.fact('arch') %}<span aria-hidden="true">·</span><span class="font-mono">{{ host.fact('arch') }}</span>{% endif %}
+{% endblock %}
+
+{% block object_actions %}
+    {%- if team.can('host.edit') %}
+        <twig:FormDialog
+            id="label-host"
+            :title="'fleet.hosts.label_title'|trans({host: host.name})"
+            :description="'fleet.hosts.label_description'|trans"
+            :trigger="'fleet.hosts.edit'|trans"
+            variant="outline"
+            :src="path('fleet_host_label', {teamId: team.id, hostId: host.hostId})"
+        />
+    {%- endif %}
 {% endblock %}
 
 {% block tab %}
@@ -25,6 +39,14 @@
             <div>
                 <dt class="text-muted-foreground">{{ 'inventory.field.inventoried'|trans }}</dt>
                 <dd>{{ include('fleet/cells/time.html.twig', {value: host.inventoriedAt}) }}</dd>
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3">
+                <dt class="text-muted-foreground">{{ 'inventory.field.addresses'|trans }}</dt>
+                <dd class="flex flex-wrap gap-2">
+                    {%- for address in host.addresses %}
+                        <twig:Badge variant="outline" class="font-mono">{{ address }}</twig:Badge>
+                    {%- else %}<span class="text-muted-foreground">—</span>{% endfor %}
+                </dd>
             </div>
             <div class="sm:col-span-2 lg:col-span-3">
                 <dt class="text-muted-foreground">{{ 'inventory.field.runtimes'|trans }}</dt>

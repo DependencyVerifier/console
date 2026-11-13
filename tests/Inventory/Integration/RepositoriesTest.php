@@ -11,6 +11,7 @@ use Inventory\Application\Content\InventoryTeamContent;
 use Inventory\Domain\Model\AppInstance;
 use Inventory\Domain\Model\ContainerImage;
 use Inventory\Domain\Model\HostInventory;
+use Inventory\Domain\Model\HostLabel;
 use Inventory\Domain\Model\MediaType;
 use Inventory\Domain\Model\Package;
 use Inventory\Domain\Model\Purl;
@@ -21,6 +22,7 @@ use Inventory\Infrastructure\Doctrine\DbalPackageRepository;
 use Inventory\Infrastructure\Doctrine\DoctrineAppInstanceRepository;
 use Inventory\Infrastructure\Doctrine\DoctrineContainerImageRepository;
 use Inventory\Infrastructure\Doctrine\DoctrineHostInventoryRepository;
+use Inventory\Infrastructure\Doctrine\DoctrineHostLabelRepository;
 use Inventory\Infrastructure\Doctrine\DoctrineInventoryRunRepository;
 use Inventory\Infrastructure\Doctrine\DoctrineSnapshotBlobRepository;
 use Inventory\Infrastructure\Doctrine\DoctrineSnapshotRecordRepository;
@@ -158,13 +160,17 @@ final class RepositoriesTest extends KernelTestCase
         $records->add(SnapshotRecord::take(Uuid::v7(), $team, Uuid::fromString(Inv::RUN), SnapshotSubject::HostFacts, Uuid::fromString(Inv::HOST), Inv::digest(9), Inv::now()));
         $blobs = new DoctrineSnapshotBlobRepository($this->manager);
         $blobs->add(SnapshotBlob::store(Uuid::v7(), $team, Inv::digest(9), MediaType::HostFacts, 1, 'gz', Inv::now()));
+        $labels = new DoctrineHostLabelRepository($this->manager);
+        $labels->add(HostLabel::of(Uuid::fromString(Inv::HOST), $team, 'web', ['10.0.0.1']));
         $this->flush();
         self::assertNotNull($hosts->find(Uuid::fromString(Inv::HOST)));
+        $label = $labels->find(Uuid::fromString(Inv::HOST));
+        self::assertSame(['web', ['10.0.0.1']], [$label?->displayName(), $label?->addresses()]);
         self::assertCount(1, $runs->openReceivedBefore(Inv::now()->modify('+1 second'), 1));
         self::assertCount(0, $runs->openReceivedBefore(Inv::now(), 10));
 
-        new InventoryTeamContent($runs, $records, $apps, $images, $hosts, $blobs)->eraseTeam(Inv::TEAM);
-        foreach (['inventory_run', 'inventory_host', 'inventory_container_image', 'inventory_app_instance', 'inventory_snapshot', 'inventory_blob'] as $table) {
+        new InventoryTeamContent($runs, $records, $apps, $images, $hosts, $blobs, $labels)->eraseTeam(Inv::TEAM);
+        foreach (['inventory_run', 'inventory_host', 'inventory_container_image', 'inventory_app_instance', 'inventory_snapshot', 'inventory_blob', 'inventory_host_label'] as $table) {
             self::assertSame(0, $this->rows('SELECT COUNT(*) FROM '.$table.' WHERE team_id = ?', [Inv::TEAM]), $table);
         }
         self::assertNotNull($runs->find(Uuid::fromString('019a6b31-5e00-7f12-a3b4-c5d6e7f80913')), 'Another team keeps its inventory.');

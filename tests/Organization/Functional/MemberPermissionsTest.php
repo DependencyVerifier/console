@@ -49,7 +49,7 @@ final class MemberPermissionsTest extends IdentityWebTestCase
         $frame = ['HTTP_TURBO_FRAME' => \sprintf('member-permissions-%s-form', $bobId)];
         $crawler = $this->client->request('GET', $url, server: $frame);
         self::assertResponseIsSuccessful();
-        self::assertCount(12, $crawler->filter('input[type="checkbox"][name="extra[permissions][]"]'), 'The ○ of TEAM_MEMBER.');
+        self::assertCount(13, $crawler->filter('input[type="checkbox"][name="extra[permissions][]"]'), 'The ○ of TEAM_MEMBER.');
         self::assertSelectorTextContains('label[for="extra_permissions_0"]', 'View the team audit log');
 
         $form = $crawler->filter('turbo-frame form')->form();

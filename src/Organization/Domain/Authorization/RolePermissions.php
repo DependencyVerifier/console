@@ -23,7 +23,7 @@ final class RolePermissions
         return match ($role) {
             TeamRole::Admin => [
                 P::TeamEdit, P::TeamMembersManage, P::TeamAuditView, P::TeamChannelsManage,
-                P::HostEnroll, P::HostApprove, P::HostRevoke, P::HostDelete, P::HostOrder, P::ProjectCreate,
+                P::HostEnroll, P::HostApprove, P::HostRevoke, P::HostDelete, P::HostOrder, P::HostEdit, P::ProjectCreate,
                 ...self::PROJECT_ADMIN_LIKE,
                 P::ProjectDelete,
             ],
@@ -45,7 +45,7 @@ final class RolePermissions
             TeamRole::Admin => [],
             TeamRole::Member => [
                 P::TeamAuditView, P::TeamChannelsManage, P::HostEnroll, P::HostApprove, P::HostRevoke, P::HostDelete,
-                P::HostOrder, P::ProjectCreate, P::ProjectEdit, P::ProjectDelete, P::ProjectMembersManage, P::FindingAcceptRisk,
+                P::HostOrder, P::HostEdit, P::ProjectCreate, P::ProjectEdit, P::ProjectDelete, P::ProjectMembersManage, P::FindingAcceptRisk,
             ],
             TeamRole::Viewer => [P::TeamAuditView],
             TeamRole::Guest => [P::ProjectCreate],

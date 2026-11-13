@@ -64,6 +64,8 @@ final class RuleType extends AbstractType
             ->add('webhooks', ChoiceType::class, [
                 'label' => 'notification.field.webhooks',
                 'choices' => $options['webhooks'],
+                // An empty list would show a bare label: say where webhooks come from.
+                'help' => [] === $options['webhooks'] ? 'notification.field.webhooks_none' : null,
                 'choice_translation_domain' => false,
                 'multiple' => true,
                 'expanded' => true,

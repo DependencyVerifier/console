@@ -25,6 +25,9 @@ use function Symfony\Component\String\u;
 final readonly class DbalInventoryReadModel implements InventoryReadModel
 {
     private const string NO_ID = '00000000-0000-0000-0000-000000000000';
+    /** The name of a host: its display name (Fleet's label), else its hostname. */
+    private const string HOST_NAME = "COALESCE(l.display_name, h.facts->>'hostname', '')";
+
     private const string PACKAGES_OF = '(SELECT COUNT(*) FROM inventory_package p JOIN inventory_blob b ON b.id = p.blob_id WHERE b.team_id = %s AND b.digest = %s)';
 
     public function __construct(private Connection $connection)
@@ -34,7 +37,7 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
     public function applications(string $teamId, ?array $environmentIds, bool $unattachedOnly, ?string $hostId, ?string $imageId, PageRequest $page): Page
     {
         $base = $this->connection->createQueryBuilder()->from('inventory_app_instance', 'a')
-            ->leftJoin('a', 'inventory_host', 'h', 'h.host_id = a.host_id')
+            ->leftJoin('a', 'inventory_host', 'h', 'h.host_id = a.host_id')->leftJoin('a', 'inventory_host_label', 'l', 'l.host_id = a.host_id')
             ->where('a.team_id = :team')->setParameter('team', $teamId);
         if ($unattachedOnly) {
             $base->andWhere('a.environment_id IS NULL');
@@ -50,8 +53,8 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
             $base->andWhere('a.image_id = :image')->setParameter('image', $imageId);
         }
 
-        $rows = $this->page($base, $page, static fn (QueryBuilder $q) => $q->andWhere("(LOWER(a.subject_key) LIKE :search OR LOWER(COALESCE(h.facts->>'hostname', '')) LIKE :search)"),
-            ['name' => 'a.subject_key', 'host' => "h.facts->>'hostname'", 'last_seen' => 'a.last_seen_at'], 'name',
+        $rows = $this->page($base, $page, static fn (QueryBuilder $q) => $q->andWhere('(LOWER(a.subject_key) LIKE :search OR LOWER('.self::HOST_NAME.') LIKE :search)'),
+            ['name' => 'a.subject_key', 'host' => self::HOST_NAME, 'last_seen' => 'a.last_seen_at'], 'name',
             static fn (QueryBuilder $q) => $q->select(...self::appColumns()), 'a.id');
 
         return new Page(array_map(self::app(...), $rows['items']), $rows['filtered'], $rows['total']);
@@ -60,7 +63,7 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
     public function application(string $appId): ?AppRow
     {
         $row = $this->connection->createQueryBuilder()->select(...self::appColumns())->from('inventory_app_instance', 'a')
-            ->leftJoin('a', 'inventory_host', 'h', 'h.host_id = a.host_id')->where('a.id = :id')->setParameter('id', $appId)->fetchAssociative();
+            ->leftJoin('a', 'inventory_host', 'h', 'h.host_id = a.host_id')->leftJoin('a', 'inventory_host_label', 'l', 'l.host_id = a.host_id')->where('a.id = :id')->setParameter('id', $appId)->fetchAssociative();
 
         return false === $row ? null : self::app($row);
     }
@@ -101,6 +104,34 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
         ), $rows['items']), $rows['filtered'], $rows['total']);
     }
 
+    public function packagesNamed(string $teamId, string $digest, array $names): array
+    {
+        if ([] === $names) {
+            return [];
+        }
+
+        return array_map(static fn (array $row): PackageRow => new PackageRow(
+            Row::string($row['purl']), Row::string($row['type']), Row::nullableString($row['namespace']), Row::string($row['name']),
+            Row::nullableString($row['version']), Row::nullableString($row['dependency']), Row::nullableString($row['manager']),
+        ), $this->connection->fetchAllAssociative(
+            "SELECT p.purl, p.type, p.namespace, p.name, p.version, p.dependency, p.manager FROM inventory_package p JOIN inventory_blob b ON b.id = p.blob_id
+             WHERE b.team_id = :team AND b.digest = :digest AND p.type || ':' || COALESCE(p.namespace || '/', '') || p.name IN (:names) ORDER BY p.purl",
+            ['team' => $teamId, 'digest' => $digest, 'names' => $names],
+            ['names' => ArrayParameterType::STRING],
+        ));
+    }
+
+    public function distro(string $teamId, string $digest): ?string
+    {
+        $distro = $this->connection->fetchOne(
+            "SELECT SUBSTRING(p.purl FROM '[?&]distro=([^&#]+)') FROM inventory_package p JOIN inventory_blob b ON b.id = p.blob_id
+             WHERE b.team_id = :team AND b.digest = :digest AND p.type IN ('apk', 'deb', 'rpm') AND p.purl ~ '[?&]distro=[^&#]' ORDER BY p.purl LIMIT 1",
+            ['team' => $teamId, 'digest' => $digest],
+        );
+
+        return \is_string($distro) ? rawurldecode($distro) : null;
+    }
+
     public function history(array $subjects, string $subjectId, PageRequest $page): Page
     {
         $parameters = ['subject' => $subjectId, 'types' => array_map(static fn (SnapshotSubject $s): string => $s->value, $subjects)];
@@ -126,7 +157,8 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
     public function host(string $hostId): ?HostView
     {
         $row = $this->connection->fetchAssociative(
-            'SELECT h.host_id, h.team_id, h.facts, h.packages_digest, h.inventoried_at, '.\sprintf(self::PACKAGES_OF, 'h.team_id', 'h.packages_digest').' AS packages FROM inventory_host h WHERE h.host_id = :id',
+            'SELECT h.host_id, h.team_id, h.facts, h.packages_digest, h.inventoried_at, l.display_name, l.addresses, '.\sprintf(self::PACKAGES_OF, 'h.team_id', 'h.packages_digest').' AS packages
+             FROM inventory_host h LEFT JOIN inventory_host_label l ON l.host_id = h.host_id WHERE h.host_id = :id',
             ['id' => $hostId],
         );
         if (false === $row) {
@@ -138,7 +170,15 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
         return new HostView(
             Row::string($row['host_id']), Row::string($row['team_id']), \is_string($facts['hostname'] ?? null) ? $facts['hostname'] : '', $facts,
             Row::nullableString($row['packages_digest']), null === Row::nullableString($row['inventoried_at']) ? null : new \DateTimeImmutable(Row::string($row['inventoried_at'])), Row::int($row['packages']),
+            Row::nullableString($row['display_name']), array_values(array_filter(self::json($row['addresses']), \is_string(...))),
         );
+    }
+
+    public function hostLabel(string $hostId): ?array
+    {
+        $row = $this->connection->fetchAssociative('SELECT l.display_name, l.addresses FROM inventory_host_label l WHERE l.host_id = :id', ['id' => $hostId]);
+
+        return false === $row ? null : ['displayName' => Row::nullableString($row['display_name']), 'addresses' => array_values(array_filter(self::json($row['addresses']), \is_string(...)))];
     }
 
     public function teamPackages(string $teamId): array
@@ -164,7 +204,10 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
              WHERE a.team_id = :team AND a.present ORDER BY a.id',
             ['team' => $teamId],
         );
-        $hosts = $this->connection->fetchAllAssociative('SELECT h.host_id, h.facts, h.packages_digest FROM inventory_host h WHERE h.team_id = :team ORDER BY h.host_id', ['team' => $teamId]);
+        $hosts = $this->connection->fetchAllAssociative(
+            'SELECT h.host_id, h.facts, h.packages_digest, l.display_name FROM inventory_host h LEFT JOIN inventory_host_label l ON l.host_id = h.host_id WHERE h.team_id = :team ORDER BY h.host_id',
+            ['team' => $teamId],
+        );
         $digests = array_values(array_unique(array_filter([
             ...array_map(static fn (array $a): ?string => Row::nullableString($a['sbom_digest']), $apps),
             ...array_map(static fn (array $a): ?string => Row::nullableString($a['image_digest']), $apps),
@@ -200,7 +243,7 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
             $os = \is_array($facts['os'] ?? null) ? $facts['os'] : [];
             $subjects[] = new TeamSubject(TeamSubject::HOST, Row::string($host['host_id']), $packages[Row::nullableString($host['packages_digest']) ?? ''] ?? [], $runtimes,
                 \is_string($os['id'] ?? null) && \is_string($os['version_id'] ?? null) ? ['id' => $os['id'], 'version' => $os['version_id']] : null,
-                \is_string($facts['hostname'] ?? null) ? $facts['hostname'] : '');
+                Row::nullableString($host['display_name']) ?? (\is_string($facts['hostname'] ?? null) ? $facts['hostname'] : ''));
         }
 
         return $subjects;
@@ -251,7 +294,7 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
      */
     private static function appColumns(): array
     {
-        return ['a.id', 'a.team_id', 'a.host_id', "COALESCE(h.facts->>'hostname', '') AS hostname", 'a.subject_key', 'a.kind', 'a.fields', 'a.image_id', 'a.environment_id',
+        return ['a.id', 'a.team_id', 'a.host_id', self::HOST_NAME.' AS hostname', 'a.subject_key', 'a.kind', 'a.fields', 'a.image_id', 'a.environment_id', 'a.links',
             'a.assignment', 'a.present', 'a.last_seen_at', 'a.sbom_digest', \sprintf(self::PACKAGES_OF, 'a.team_id', 'a.sbom_digest').' AS packages'];
     }
 
@@ -264,7 +307,23 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
             Row::string($row['id']), Row::string($row['team_id']), Row::string($row['host_id']), Row::string($row['hostname']), Row::string($row['subject_key']),
             Row::string($row['kind']), self::json($row['fields']), Row::nullableString($row['image_id']), Row::nullableString($row['environment_id']),
             Row::string($row['assignment']), (bool) $row['present'], new \DateTimeImmutable(Row::string($row['last_seen_at'])), Row::string($row['sbom_digest']), Row::int($row['packages']),
+            links: self::links($row['links']),
         );
+    }
+
+    /**
+     * @return list<array{url: string, label: ?string}>
+     */
+    private static function links(mixed $value): array
+    {
+        $links = [];
+        foreach (self::json($value) as $link) {
+            if (\is_array($link) && \is_string($link['url'] ?? null)) {
+                $links[] = ['url' => $link['url'], 'label' => \is_string($link['label'] ?? null) ? $link['label'] : null];
+            }
+        }
+
+        return $links;
     }
 
     /**

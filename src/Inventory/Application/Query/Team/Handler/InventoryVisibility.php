@@ -32,7 +32,8 @@ final readonly class InventoryVisibility
         $host = Uuid::isValid($hostId) ? $this->read->host($hostId) : null;
         if (null === $host && $this->access->scope($teamId)->seesAll()) {
             $hostname = $this->queries->ask(new FindTeamHost($teamId, $hostId));
-            $host = null === $hostname ? null : new HostView($hostId, $teamId, $hostname, [], null, null, 0);
+            $label = $this->read->hostLabel($hostId);
+            $host = null === $hostname ? null : new HostView($hostId, $teamId, $hostname, [], null, null, 0, $label['displayName'] ?? null, $label['addresses'] ?? []);
         }
 
         if (null === $host || $host->teamId !== $teamId || !$this->seesSomeApplication($teamId, $hostId, null)) {

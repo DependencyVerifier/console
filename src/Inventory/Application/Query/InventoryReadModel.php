@@ -43,6 +43,20 @@ interface InventoryReadModel
     public function packages(string $teamId, string $digest, PageRequest $page): Page;
 
     /**
+     * The packages of a snapshot among the names given (`type:namespace/name`, e.g. `composer:symfony/framework-bundle`).
+     *
+     * @param list<string> $names
+     *
+     * @return list<PackageRow>
+     */
+    public function packagesNamed(string $teamId, string $digest, array $names): array;
+
+    /**
+     * The `distro` qualifier of the OS packages of a snapshot (e.g. `alpine-3.21`), none without OS packages.
+     */
+    public function distro(string $teamId, string $digest): ?string;
+
+    /**
      * The records of a subject, the latest first, with the trigger of their inventory.
      *
      * @param list<SnapshotSubject> $subjects
@@ -52,6 +66,13 @@ interface InventoryReadModel
     public function history(array $subjects, string $subjectId, PageRequest $page): Page;
 
     public function host(string $hostId): ?HostView;
+
+    /**
+     * The label of a host (Fleet's, copied), for a host never inventoried yet.
+     *
+     * @return array{displayName: ?string, addresses: list<string>}|null
+     */
+    public function hostLabel(string $hostId): ?array;
 
     /**
      * The packages of the current SBOMs of a team (its hosts, its applications still found, its images), each package

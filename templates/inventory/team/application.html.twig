@@ -16,6 +16,16 @@
             <twig:Button type="submit" variant="outline">{{ 'inventory.applications.detach'|trans }}</twig:Button>
         </form>
     {%- endif %}
+    {%- if view.mayDocument %}
+        <twig:FormDialog
+            id="application-links"
+            :title="'inventory.applications.links_title'|trans({name: application.name})"
+            :description="'inventory.applications.links_description'|trans"
+            :trigger="'inventory.applications.edit_links'|trans"
+            variant="outline"
+            :src="path('inventory_application_links', {teamId: team.id, appId: application.id})"
+        />
+    {%- endif %}
     {%- if view.assignable is not empty %}
         <twig:FormDialog
             id="attach-application"
@@ -25,6 +35,27 @@
             :src="path('inventory_application_attach', {teamId: team.id, appId: application.id})"
         />
     {%- endif %}
+{% endblock %}
+
+{% block object_facts %}
+    {%- set runtime = application.fields.runtime ?? {} %}
+    {%- set requires = application.requires %}
+    {%- for name in ['php', 'node'] %}
+        {%- set version = runtime.name is defined and runtime.name == name ? runtime.version : null %}
+        {%- if version or requires[name] is defined %}
+            <li><twig:Badge variant="secondary" class="font-mono">
+                {{- ('inventory.facts.' ~ name)|trans }}{% if version %} {{ version }}{% endif %}
+                {%- if requires[name] is defined %}<span class="text-muted-foreground">{{ 'inventory.facts.requires'|trans({constraint: requires[name]}) }}</span>{% endif -%}
+            </twig:Badge></li>
+        {%- endif %}
+    {%- endfor %}
+    {%- for framework in view.frameworks %}
+        <li><twig:Badge variant="outline">{{ framework.label }}{% if framework.version %} {{ framework.version }}{% endif %}</twig:Badge></li>
+    {%- endfor %}
+    {%- if view.os %}
+        <li><twig:Badge variant="outline">{{ view.os }}</twig:Badge></li>
+    {%- endif %}
+    <li><twig:Badge variant="outline">{{ 'inventory.facts.packages'|trans({count: application.packages}) }}</twig:Badge></li>
 {% endblock %}
 
 {% block tab %}
@@ -53,6 +84,21 @@
             <div>
                 <dt class="text-muted-foreground">{{ 'inventory.field.last_seen'|trans }}</dt>
                 <dd>{{ include('fleet/cells/time.html.twig', {value: application.lastSeenAt}) }}</dd>
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3">
+                <dt class="text-muted-foreground">{{ 'inventory.applications.links'|trans }}</dt>
+                <dd>
+                    {%- if application.links is empty %}<span class="text-muted-foreground">{{ 'inventory.applications.no_links'|trans }}</span>{% endif %}
+                    <ul class="flex flex-col gap-1">
+                        {%- for link in application.links %}
+                            <li class="flex min-w-0 items-center gap-2">
+                                <twig:ux:icon name="lucide:external-link" class="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                                <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer nofollow" class="truncate underline-offset-4 hover:underline">{{ link.label ?? link.url }}</a>
+                                {%- if link.label %}<span class="truncate text-xs text-muted-foreground">{{ link.url }}</span>{% endif %}
+                            </li>
+                        {%- endfor %}
+                    </ul>
+                </dd>
             </div>
         </dl>
     </section>

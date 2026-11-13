@@ -25,7 +25,7 @@ final readonly class ListSilentAgentsHandler implements QueryHandler
         return array_map(fn (Agent $agent): SilentAgent => new SilentAgent(
             $agent->id()->toString(),
             $agent->teamId()->toRfc4122(),
-            $this->hosts->find($agent->hostId())?->facts()->hostname ?? '',
+            $this->hosts->find($agent->hostId())?->name() ?? '',
             $agent->lastSeenAt(),
         ), $this->agents->approvedSilentSince($query->since, $query->limit));
     }

@@ -15,6 +15,7 @@ enum RouteCollection: string implements RouteCollectionInterface
     case PROJECT_APPLICATIONS = 'project_applications';
     case APPLICATION = 'application';
     case APPLICATION_ATTACH = 'application_attach';
+    case APPLICATION_LINKS = 'application_links';
     case APPLICATION_DETACH = 'application_detach';
     case HOST = 'host';
     case IMAGE = 'image';

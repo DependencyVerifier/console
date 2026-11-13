@@ -86,6 +86,13 @@ final class RolePermissionsTest extends TestCase
         yield 'host.order PA' => ['host.order', 'PA', 'none'];
         yield 'host.order PM' => ['host.order', 'PM', 'none'];
         yield 'host.order PV' => ['host.order', 'PV', 'none'];
+        yield 'host.edit TA' => ['host.edit', 'TA', 'default'];
+        yield 'host.edit TM' => ['host.edit', 'TM', 'grantable'];
+        yield 'host.edit TV' => ['host.edit', 'TV', 'none'];
+        yield 'host.edit TG' => ['host.edit', 'TG', 'none'];
+        yield 'host.edit PA' => ['host.edit', 'PA', 'none'];
+        yield 'host.edit PM' => ['host.edit', 'PM', 'none'];
+        yield 'host.edit PV' => ['host.edit', 'PV', 'none'];
         yield 'host.view TA' => ['host.view', 'TA', 'default'];
         yield 'host.view TM' => ['host.view', 'TM', 'default'];
         yield 'host.view TV' => ['host.view', 'TV', 'default'];

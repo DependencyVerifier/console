@@ -32,10 +32,10 @@ final readonly class DbalFleetReadModel implements FleetReadModel
 
         $rows = $this->page(
             $base, $page,
-            static fn (QueryBuilder $q) => $q->andWhere('(LOWER(h.hostname) LIKE :search OR LOWER(a.fingerprint) LIKE :search OR a.status LIKE :search OR LOWER(COALESCE(a.compose_project, \'\')) LIKE :search)'),
-            ['host' => 'h.hostname', 'status' => 'a.status', 'version' => 'a.version', 'last_seen' => 'a.last_seen_at'],
+            static fn (QueryBuilder $q) => $q->andWhere('(LOWER(COALESCE(h.display_name, h.hostname)) LIKE :search OR LOWER(h.hostname) LIKE :search OR LOWER(a.fingerprint) LIKE :search OR a.status LIKE :search OR LOWER(COALESCE(a.compose_project, \'\')) LIKE :search)'),
+            ['host' => 'COALESCE(h.display_name, h.hostname)', 'status' => 'a.status', 'version' => 'a.version', 'last_seen' => 'a.last_seen_at'],
             'host',
-            static fn (QueryBuilder $q) => $q->select('a.id', 'a.team_id', 'a.status', 'a.fingerprint', 'a.mode', 'a.scope', 'a.compose_project', 'a.version', 'a.host_id', 'h.hostname', 'a.enrolled_at', 'a.last_seen_at'),
+            static fn (QueryBuilder $q) => $q->select('a.id', 'a.team_id', 'a.status', 'a.fingerprint', 'a.mode', 'a.scope', 'a.compose_project', 'a.version', 'a.host_id', 'COALESCE(h.display_name, h.hostname) AS hostname', 'a.enrolled_at', 'a.last_seen_at'),
             'a.id',
         );
 
@@ -51,11 +51,11 @@ final readonly class DbalFleetReadModel implements FleetReadModel
         $base = $this->connection->createQueryBuilder()->from('fleet_host', 'h')->where('h.team_id = :team')->setParameter('team', $teamId);
         $rows = $this->page(
             $base, $page,
-            static fn (QueryBuilder $q) => $q->andWhere('(LOWER(h.hostname) LIKE :search OR LOWER(COALESCE(h.os_pretty_name, \'\')) LIKE :search)'),
-            ['hostname' => 'h.hostname', 'last_seen' => 'h.last_seen_at'],
+            static fn (QueryBuilder $q) => $q->andWhere('(LOWER(COALESCE(h.display_name, h.hostname)) LIKE :search OR LOWER(h.hostname) LIKE :search OR LOWER(COALESCE(h.os_pretty_name, \'\')) LIKE :search)'),
+            ['hostname' => 'COALESCE(h.display_name, h.hostname)', 'last_seen' => 'h.last_seen_at'],
             'hostname',
             static fn (QueryBuilder $q) => $q->select(
-                'h.id', 'h.hostname', 'h.os_pretty_name', 'h.arch', 'h.last_seen_at', 'h.created_at',
+                'h.id', 'COALESCE(h.display_name, h.hostname) AS hostname', 'h.os_pretty_name', 'h.arch', 'h.last_seen_at', 'h.created_at',
                 "(SELECT COUNT(*) FROM fleet_agent a WHERE a.host_id = h.id AND a.status <> 'revoked') AS live_agents",
                 '(SELECT COUNT(*) FROM fleet_agent a WHERE a.host_id = h.id) AS agents',
             ),

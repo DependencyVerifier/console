@@ -11,12 +11,19 @@ use Fleet\Application\Command\Agent\Handler\RevokeAgentHandler;
 use Fleet\Application\Command\Agent\RevokeAgent;
 use Fleet\Application\Command\Host\DeleteHost;
 use Fleet\Application\Command\Host\Handler\DeleteHostHandler;
+use Fleet\Application\Command\Host\Handler\LabelHostHandler;
+use Fleet\Application\Command\Host\LabelHost;
 use Fleet\Application\Command\Token\ApproveEnrollmentToken;
 use Fleet\Application\Command\Token\CreateEnrollmentToken;
 use Fleet\Application\Command\Token\Handler\ApproveEnrollmentTokenHandler;
 use Fleet\Application\Command\Token\Handler\CreateEnrollmentTokenHandler;
 use Fleet\Application\Command\Token\Handler\RevokeEnrollmentTokenHandler;
 use Fleet\Application\Command\Token\RevokeEnrollmentToken;
+use Fleet\Application\EventHandler\PublishHostLabel;
+use Fleet\Application\Query\Team\GetHostLabel;
+use Fleet\Application\Query\Team\Handler\GetHostLabelHandler;
+use Fleet\Application\Query\View\HostLabelView;
+use Fleet\Domain\Event\HostLabelled;
 use Fleet\Domain\Model\AgentOrder;
 use Fleet\Domain\Model\AgentOrderId;
 use Fleet\Domain\Model\AgentStatus;
@@ -32,12 +39,16 @@ use PHPUnit\Framework\TestCase;
 use Shared\Application\Audit\Target;
 use Shared\Application\Authorization\PermissionDenied;
 use Shared\Application\Authorization\ResourceNotFound;
+use Shared\Application\Contract\Fleet\HostLabelled as PublishedHostLabelled;
 use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Domain\Authorization\Permission;
 use Tests\Fleet\Support\Fleet;
 use Tests\Fleet\Support\FleetWorld;
 use Tests\Identity\Support\PrefixTokenHasher;
+use Tests\Identity\Support\RecordingEventBus;
 use Tests\Organization\Support\Teams;
+
+use function Symfony\Component\String\u;
 
 final class UiHandlersTest extends TestCase
 {
@@ -209,6 +220,38 @@ final class UiHandlersTest extends TestCase
         $world->as('team_member');
         $this->assertRefusal(PermissionDenied::class, static fn () => $delete(new DeleteHost(Fleet::HOST)));
         self::assertEquals(Target::of('host', Fleet::HOST), new DeleteHost(Fleet::HOST)->auditTarget());
+    }
+
+    #[Test]
+    public function it_should_label_a_host_and_publish_it(): void
+    {
+        $world = new FleetWorld()->as('team_admin', Permission::HostEdit);
+        $world->hosts->add(Fleet::host());
+        $label = new LabelHostHandler($world->access(), $world->hosts);
+        $read = new GetHostLabelHandler($world->access(), $world->hosts);
+
+        $label(new LabelHost(Fleet::HOST, 'Shop front', ['10.0.0.1']));
+        $host = $world->hosts->find(Fleet::host()->id());
+        self::assertSame('Shop front', $host?->name());
+        self::assertEquals(new HostLabelView(Fleet::HOST, 'web-01', 'Shop front', ['10.0.0.1']), $read(new GetHostLabel(Fleet::TEAM, Fleet::HOST)));
+
+        $events = new RecordingEventBus();
+        new PublishHostLabel($events)(new HostLabelled(Fleet::HOST, Fleet::TEAM, 'Shop front', ['10.0.0.1']));
+        self::assertEquals([new PublishedHostLabelled(Fleet::HOST, Fleet::TEAM, 'Shop front', ['10.0.0.1'])], $events->published);
+
+        $command = new LabelHost(Fleet::HOST, u('a')->repeat(300)->toString(), ['10.0.0.1', '10.0.0.2']);
+        self::assertSame(['display_name' => u('a')->repeat(100)->toString(), 'addresses' => 2], $command->auditContext()->values, 'The name bounded, the addresses counted.');
+        self::assertEquals(Target::of('host', Fleet::HOST), $command->auditTarget());
+
+        foreach (['not-a-uuid', '019a6b2c-7f00-7a11-8b22-3c44d55e6f99'] as $unknown) {
+            $this->assertRefusal(ResourceNotFound::class, static fn () => $label(new LabelHost($unknown, null, [])));
+            $this->assertRefusal(ResourceNotFound::class, static fn () => $read(new GetHostLabel(Fleet::TEAM, $unknown)));
+        }
+        $this->assertRefusal(ResourceNotFound::class, static fn () => $read(new GetHostLabel('019a6b2c-1f00-7a11-8b22-3c44d55e6f99', Fleet::HOST)), 'Of another team.');
+        $world->as('team_member');
+        $this->assertRefusal(PermissionDenied::class, static fn () => $label(new LabelHost(Fleet::HOST, null, [])));
+        $this->assertRefusal(PermissionDenied::class, static fn () => $read(new GetHostLabel(Fleet::TEAM, Fleet::HOST)));
+        self::assertSame('Shop front', $world->hosts->find(Fleet::host()->id())?->name(), 'Refused: unchanged.');
     }
 
     private function create(FleetWorld $world): CreateEnrollmentTokenHandler
