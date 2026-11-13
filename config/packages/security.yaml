@@ -23,6 +23,10 @@ security:
             lazy: true
             provider: accounts
             user_checker: Identity\Infrastructure\Security\AccountChecker
+            # Signing in with a passkey (POST /login/passkey): no second factor after it (PasskeyToken).
+            custom_authenticators:
+                - Identity\Infrastructure\Security\PasskeyAuthenticator
+            entry_point: form_login
             form_login:
                 login_path: identity_login
                 check_path: identity_login
@@ -60,6 +64,7 @@ security:
         - { path: ^/agent/v1/enrollments$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/agent/v1/, roles: ROLE_AGENT }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/login/passkey(/options)?$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
         - { path: ^/password/forgot$, roles: PUBLIC_ACCESS }
         - { path: ^/password/reset/new$, roles: PUBLIC_ACCESS, methods: [GET, POST] }

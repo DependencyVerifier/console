@@ -6,6 +6,7 @@ namespace Identity\UI\Controller\Account;
 
 use Identity\UI\Form\CodeType;
 use Identity\UI\Form\NewPasswordType;
+use Identity\UI\Form\PasskeyType;
 use Shared\UI\Action\ActionButtonType;
 use Shared\UI\Action\ActionForm;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -24,6 +25,7 @@ final readonly class AccountForms
     public const string TOTP_CONFIRM = 'totp_confirm';
     public const string TOTP_DISABLE = 'totp_disable';
     public const string BACKUP_CODES = 'backup_codes';
+    public const string PASSKEY_REGISTER = 'passkey_register';
 
     public function __construct(private FormFactoryInterface $forms)
     {
@@ -43,6 +45,22 @@ final readonly class AccountForms
     public function totpConfirm(): FormInterface
     {
         return $this->forms->createNamed(self::TOTP_CONFIRM, CodeType::class, null, ['csrf_token_id' => self::TOTP_CONFIRM]);
+    }
+
+    /**
+     * @return FormInterface<array{name: string, response: string}|null>
+     */
+    public function passkey(): FormInterface
+    {
+        return $this->forms->createNamed(self::PASSKEY_REGISTER, PasskeyType::class, null, ['csrf_token_id' => self::PASSKEY_REGISTER]);
+    }
+
+    /**
+     * The name (and CSRF token id) of the button revoking one passkey.
+     */
+    public static function passkeyRevoke(string $passkeyId): string
+    {
+        return 'passkey_revoke_'.$passkeyId;
     }
 
     /**

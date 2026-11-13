@@ -19,6 +19,8 @@ final readonly class UserProfile
         public string $secondFactor,
         public int $remainingBackupCodes,
         public \DateTimeImmutable $createdAt,
+        /** @var list<PasskeySummary> */
+        public array $passkeys = [],
     ) {
     }
 

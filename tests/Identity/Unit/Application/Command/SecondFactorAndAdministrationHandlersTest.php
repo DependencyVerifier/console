@@ -158,7 +158,7 @@ final class SecondFactorAndAdministrationHandlersTest extends TestCase
     {
         $user = Users::withTotp(Users::member());
         $attempts = new InMemoryAttempts();
-        $attempt = new SecondFactorAttempt($this->access(new InMemoryUsers($user)), $attempts, new ScriptedThrottle(), new ImmediateSection(), new FixedRequest(), new RecordingAudit(), new MockClock());
+        $attempt = new SecondFactorAttempt($this->access(new InMemoryUsers($user)), $attempts, new ScriptedThrottle(), new ImmediateSection(), new FixedRequest(), new RecordingAudit(), new MockClock(), new InMemoryUsers($user));
 
         new VerifyTotpHandler($attempt, new TotpCheck(new MappedTotpVerifier(['111111' => 500])))(new VerifyTotp(Users::ID, '111111', $totp = Uuid::v7()->toRfc4122()));
         new UseBackupCodeHandler($attempt, new BackupCodeCheck(new PrefixMatcher()))(new UseBackupCode(Users::ID, 'aaaaa-11111', $backup = Uuid::v7()->toRfc4122()));
@@ -168,7 +168,7 @@ final class SecondFactorAndAdministrationHandlersTest extends TestCase
 
         $member = Users::member();
         $member->issueEmailLoginCode(Uuid::v7(), '424242', 'h:424242', new \DateTimeImmutable());
-        $pending = new SecondFactorAttempt($this->access(new InMemoryUsers($member)), $attempts, new ScriptedThrottle(), new ImmediateSection(), new FixedRequest(), new RecordingAudit(), new MockClock());
+        $pending = new SecondFactorAttempt($this->access(new InMemoryUsers($member)), $attempts, new ScriptedThrottle(), new ImmediateSection(), new FixedRequest(), new RecordingAudit(), new MockClock(), new InMemoryUsers($member));
         new VerifyEmailLoginCodeHandler($pending, new EmailCodeCheck(new TokenMatcher()))(new VerifyEmailLoginCode(Users::ID, '424242', $email = Uuid::v7()->toRfc4122()));
         self::assertSame(CodeVerificationOutcome::Accepted, $attempts->find(Uuid::fromString($email))?->outcome());
 

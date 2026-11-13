@@ -1,6 +1,7 @@
 {% extends 'shared/layout/app.html.twig' %}
 {% form_theme password_form 'shared/form/theme.html.twig' %}
 {% form_theme totp_confirm_form 'shared/form/theme.html.twig' %}
+{% form_theme passkey_form 'shared/form/theme.html.twig' %}
 
 {% block title %}{{ 'identity.account.title'|trans }} · DependencyVerifier{% endblock %}
 
@@ -72,6 +73,42 @@
                     {{ form_start(totp_start_form, {action: path('identity_account_totp_start'), attr: {'data-turbo': 'false'}}) }}
                         <twig:Button type="submit">{{ 'identity.account.totp.start'|trans }}</twig:Button>
                     {{ form_end(totp_start_form) }}
+                {% endif %}
+            </twig:Card:Content>
+        </twig:Card>
+
+        <twig:Card class="lg:col-span-2">
+            <twig:Card:Header>
+                <twig:Card:Title>{{ 'identity.account.passkeys.title'|trans }}</twig:Card:Title>
+                <twig:Card:Description>{{ 'identity.account.passkeys.description'|trans }}</twig:Card:Description>
+            </twig:Card:Header>
+            <twig:Card:Content class="flex flex-col gap-4">
+                {% if profile.passkeys is empty %}
+                    <p class="text-sm text-muted-foreground">{{ 'identity.account.passkeys.none'|trans }}</p>
+                {% else %}
+                    <ul class="divide-y rounded-md border">
+                        {% for passkey in profile.passkeys %}
+                            <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                                <div>
+                                    <p class="text-sm font-medium">{{ passkey.name }}</p>
+                                    <p class="text-xs text-muted-foreground">{{ 'identity.account.passkeys.dates'|trans({created: passkey.createdAt|date('Y-m-d'), used: passkey.lastUsedAt ? passkey.lastUsedAt|date('Y-m-d H:i') : '—'}) }}</p>
+                                </div>
+                                {{ form_start(passkey_revoke_forms[passkey.id], {action: path('identity_account_passkey_revoke', {passkeyId: passkey.id}), attr: {'data-turbo': 'false'}}) }}
+                                    <twig:Button type="submit" variant="destructive" size="sm">{{ 'identity.account.passkeys.revoke'|trans }}</twig:Button>
+                                {{ form_end(passkey_revoke_forms[passkey.id]) }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if profile.passkeys|length < max_passkeys %}
+                    {{ form_start(passkey_form, {action: path('identity_account_passkey_register'), attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false', novalidate: 'novalidate',
+                        'data-controller': 'passkey', 'data-passkey-options-value': path('identity_account_passkey_options'), 'data-passkey-csrf-value': csrf_token('passkey_register'),
+                        'data-passkey-mode-value': 'create', 'data-action': 'submit->passkey#start'}}) }}
+                        {{ form_row(passkey_form.name) }}
+                        {{ form_widget(passkey_form.response) }}
+                        <p class="text-sm text-destructive" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
+                        <twig:Button type="submit" class="w-fit"><twig:ux:icon name="lucide:key-round" /> {{ 'identity.account.passkeys.add'|trans }}</twig:Button>
+                    {{ form_end(passkey_form) }}
                 {% endif %}
             </twig:Card:Content>
         </twig:Card>

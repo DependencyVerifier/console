@@ -13,6 +13,7 @@ enum ThrottleName: string
     case SecondFactorLong = 'second_factor_long';
     case SecondFactorIp = 'second_factor_ip';
     case SecondFactorAlert = 'second_factor_alert';
+    case PasskeyLoginIp = 'passkey_login_ip';
     case PasswordResetEmail = 'password_reset_email';
     case PasswordResetIp = 'password_reset_ip';
     case EmailCodeResend = 'email_code_resend';

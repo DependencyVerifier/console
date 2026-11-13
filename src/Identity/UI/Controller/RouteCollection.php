@@ -10,6 +10,15 @@ enum RouteCollection: string implements RouteCollectionInterface
 {
     case LOGIN = 'login';
     case LOGOUT = 'logout';
+    case LOGIN_PASSKEY = 'login_passkey';
+    case LOGIN_PASSKEY_OPTIONS = 'login_passkey_options';
+    case TWO_FACTOR_PASSKEY_OPTIONS = 'two_factor_passkey_options';
+    case REAUTHENTICATE_PASSKEY = 'reauthenticate_passkey';
+    case REAUTHENTICATE_PASSKEY_OPTIONS = 'reauthenticate_passkey_options';
+    case ACCOUNT_PASSKEY_OPTIONS = 'account_passkey_options';
+    case ACCOUNT_PASSKEY_REGISTER = 'account_passkey_register';
+    case ACCOUNT_PASSKEY_REVOKE = 'account_passkey_revoke';
+    case ADMIN_USER_REVOKE_PASSKEY = 'admin_user_revoke_passkey';
     case TWO_FACTOR_RESEND = 'two_factor_resend';
     case PASSWORD_FORGOT = 'password_forgot';
     case PASSWORD_RESET_LANDING = 'password_reset_landing';

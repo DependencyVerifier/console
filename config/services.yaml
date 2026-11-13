@@ -105,6 +105,7 @@ services:
                 invitation_resend_team: '@limiter.invitation_resend_team'
                 agent_requests: '@limiter.agent_requests'
                 agent_enrollment_ip: '@limiter.agent_enrollment_ip'
+                passkey_login_ip: '@limiter.passkey_login_ip'
 
 when@test:
     parameters:

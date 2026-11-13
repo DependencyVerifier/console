@@ -17,4 +17,6 @@ final class SessionKeys
     public const string PASSWORD_RESET_REQUEST = '_depverify.password_reset_request';
     public const string INVITATION = '_depverify.invitation';
     public const string EMAIL_CHANGE_REQUEST = '_depverify.email_change_request';
+    /** The options (challenge) of the passkey ceremony in progress: useless without the passkey, single use. */
+    public const string PASSKEY_OPTIONS = '_depverify.passkey_options';
 }

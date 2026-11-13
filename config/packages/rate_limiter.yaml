@@ -15,6 +15,10 @@ framework:
             <<: *limiter
             limit: 20
             interval: '24 hours'
+        # Passkey sign-ins of one IP (no password before them): failures counted like a second factor.
+        passkey_login_ip:
+            <<: *limiter
+            limit: 20
         second_factor_alert:
             <<: *limiter
             limit: 1

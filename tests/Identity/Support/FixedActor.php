@@ -19,6 +19,11 @@ final readonly class FixedActor implements CurrentActor
         return new self(Actor::user(Uuid::fromString($id)));
     }
 
+    public static function anonymous(): self
+    {
+        return new self(Actor::anonymous());
+    }
+
     public function actor(): Actor
     {
         return $this->actor;

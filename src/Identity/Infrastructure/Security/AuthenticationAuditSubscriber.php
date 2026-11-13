@@ -47,7 +47,7 @@ final readonly class AuthenticationAuditSubscriber
     public function onLoginFailure(LoginFailureEvent $event): void
     {
         $exception = $event->getException();
-        if ($exception instanceof InvalidCsrfTokenException || $event->getAuthenticator() instanceof TwoFactorAuthenticator) {
+        if ($exception instanceof InvalidCsrfTokenException || $exception instanceof PasskeyNotAccepted || $event->getAuthenticator() instanceof TwoFactorAuthenticator) {
             return;
         }
 

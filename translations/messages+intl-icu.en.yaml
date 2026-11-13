@@ -60,6 +60,9 @@ refusal:
     unavailable: The service is temporarily unavailable. Try again in a moment.
     error: Something went wrong. Try again.
 rule:
+    passkey_rejected: "The passkey could not be verified. Try again."
+    invalid_passkey_name: "Give the passkey a name of 64 characters at most, different from your other passkeys."
+    passkey_limit_reached: "An account holds 10 passkeys at most. Remove one first."
     console_key_rotation_not_prepared: "Set APP_AGENT_SIGNING_KEY_NEXT to a new key first."
     agent_not_upgradable: "Only an approved host agent behind the latest verified release can be upgraded (a container agent is upgraded by its image)."
     invalid_host_label: "A display name of 100 printable characters at most, and up to 16 valid IP addresses."
@@ -129,10 +132,20 @@ identity:
         error:
             invalid_credentials: Invalid email or password.
             throttled: Too many attempts. Try again later.
+            passkey: "The passkey was not accepted. Try again, or sign in with your password."
+        passkey: Sign in with a passkey
+    passkey:
+        failed: "The passkey could not be used (cancelled, not available on this device, or refused). Try again."
     two_factor:
         title: Second factor
         email_description: We sent a 6-digit code to your email address.
         totp_description: Enter the code shown by your authenticator app.
+        passkey_description: Use one of your passkeys.
+        passkey: Use a passkey
+        use:
+            depverify_passkey: Use a passkey instead
+            depverify_totp: Use your authenticator app instead
+            depverify_email: Use a code sent by email instead
         backup_hint: "Lost your device? Enter one of your backup codes (xxxxx-xxxxx)."
         trust_device: Trust this device for 30 days
         submit: Verify
@@ -147,6 +160,8 @@ identity:
         totp_hint: Code from your authenticator app, or a backup code.
         email_hint: We sent a code to your email address.
         submit: Confirm
+        passkey: Confirm with a passkey
+        or: or
         error:
             invalid: Invalid password or code.
     password_forgot:
@@ -191,6 +206,18 @@ identity:
             disable: Turn off
             disabled: Authenticator app removed. Sign in again.
             enabled: The authenticator app is active. Keep these backup codes now.
+        passkeys:
+            title: Passkeys
+            description: "A passkey (security key, phone, password manager) signs you in without password nor second factor: it checks it is you on its own."
+            none: No passkey yet.
+            name: Name
+            name_help: "To recognize it later: \"YubiKey office\", \"iCloud\"…"
+            no_response: Use the button to create the passkey.
+            add: Add a passkey
+            registered: Passkey added.
+            revoke: Remove
+            revoked: Passkey removed. Sign in again.
+            dates: "Added {created} · last used {used}"
         backup_codes:
             title: Backup codes
             remaining: "{count} backup codes left."
@@ -221,6 +248,7 @@ identity:
                 restore: Account restored, still deactivated.
                 grant_super_admin: Super admin granted.
                 revoke_super_admin: Super admin revoked.
+                revoke_passkey: Passkey removed. The account is signed out everywhere.
 admin:
     title: Administration
     users:
@@ -238,6 +266,10 @@ admin:
         totp: Authenticator app
         email_code: Email code
         reset_second_factor: Reset 2FA
+        passkeys: Passkeys
+        passkeys_help: "Removing one signs the account out everywhere."
+        no_passkey: No passkey.
+        revoke_passkey: Remove
         deactivate: Deactivate
         reactivate: Reactivate
         grant_super_admin: Make super admin

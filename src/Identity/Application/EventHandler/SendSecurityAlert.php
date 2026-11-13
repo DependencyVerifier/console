@@ -7,6 +7,8 @@ namespace Identity\Application\EventHandler;
 use Identity\Application\Port\SecurityAlert;
 use Identity\Application\Port\SecurityAlertSender;
 use Identity\Domain\Event\BackupCodesRegenerated;
+use Identity\Domain\Event\PasskeyRegistered;
+use Identity\Domain\Event\PasskeyRevoked;
 use Identity\Domain\Event\PasswordChanged;
 use Identity\Domain\Event\SecondFactorReset;
 use Identity\Domain\Event\SecondFactorThrottled;
@@ -27,7 +29,7 @@ final readonly class SendSecurityAlert implements EventHandler
     {
     }
 
-    public function __invoke(PasswordChanged|TotpEnabled|TotpDisabled|BackupCodesRegenerated|SecondFactorReset|SuperAdminGranted|SuperAdminRevoked|SecondFactorThrottled $event): void
+    public function __invoke(PasswordChanged|TotpEnabled|TotpDisabled|BackupCodesRegenerated|SecondFactorReset|SuperAdminGranted|SuperAdminRevoked|SecondFactorThrottled|PasskeyRegistered|PasskeyRevoked $event): void
     {
         $user = $this->users->find(UserId::fromString($event->userId));
         if (null === $user) {
@@ -43,6 +45,8 @@ final readonly class SendSecurityAlert implements EventHandler
             SuperAdminGranted::class => SecurityAlert::SuperAdminGranted,
             SuperAdminRevoked::class => SecurityAlert::SuperAdminRevoked,
             SecondFactorThrottled::class => SecurityAlert::SecondFactorThrottled,
+            PasskeyRegistered::class => SecurityAlert::PasskeyRegistered,
+            PasskeyRevoked::class => SecurityAlert::PasskeyRevoked,
         });
     }
 }

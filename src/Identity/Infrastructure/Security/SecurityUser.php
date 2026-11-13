@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Identity\Infrastructure\Security;
 
 use Identity\Domain\Model\User;
+use Identity\Infrastructure\Security\TwoFactor\PasskeyProvider;
+use Scheb\TwoFactorBundle\Model\PreferredProviderInterface;
 use Scheb\TwoFactorBundle\Model\TrustedDeviceInterface;
 use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -17,7 +19,7 @@ use function Symfony\Component\String\u;
  * version logs every session out (native Symfony invalidation). Only the id, email, authVersion and super admin flag
  * are serialized into the session: never the password hash, never the TOTP secret.
  */
-final class SecurityUser implements UserInterface, PasswordAuthenticatedUserInterface, EquatableInterface, TrustedDeviceInterface
+final class SecurityUser implements UserInterface, PasswordAuthenticatedUserInterface, EquatableInterface, TrustedDeviceInterface, PreferredProviderInterface
 {
     private function __construct(
         public readonly string $id,
@@ -29,6 +31,7 @@ final class SecurityUser implements UserInterface, PasswordAuthenticatedUserInte
         private bool $totpActive,
         private bool $canLogIn,
         private string $displayName,
+        private bool $hasPasskeys = false,
     ) {
     }
 
@@ -44,7 +47,24 @@ final class SecurityUser implements UserInterface, PasswordAuthenticatedUserInte
             $user->secondFactor()->state()->isTotpActive(),
             $user->canLogIn(),
             $user->displayName(),
+            [] !== $user->passkeys(),
         );
+    }
+
+    /**
+     * Whether a passkey may be the second factor (rebuilt at every request, never in the session).
+     */
+    public function hasPasskeys(): bool
+    {
+        return $this->hasPasskeys;
+    }
+
+    /**
+     * A passkey first when the account holds one (the other factors stay a link away).
+     */
+    public function getPreferredTwoFactorProvider(): ?string
+    {
+        return $this->hasPasskeys ? PasskeyProvider::NAME : null;
     }
 
     /**
@@ -113,5 +133,6 @@ final class SecurityUser implements UserInterface, PasswordAuthenticatedUserInte
         $this->totpActive = false;
         $this->displayName = '';
         $this->canLogIn = false;
+        $this->hasPasskeys = false;
     }
 }

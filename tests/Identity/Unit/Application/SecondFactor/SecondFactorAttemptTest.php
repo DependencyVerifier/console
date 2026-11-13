@@ -247,6 +247,7 @@ final class SecondFactorAttemptTest extends TestCase
             $request ?? new FixedRequest(),
             $this->audit,
             $this->clock,
+            $this->users,
         );
     }
 

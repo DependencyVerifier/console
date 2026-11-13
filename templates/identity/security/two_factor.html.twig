@@ -6,7 +6,7 @@
     <div class="flex flex-col gap-6">
         <div>
             <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.two_factor.title'|trans }}</h1>
-            <p class="mt-1 text-sm text-muted-foreground">{{ (email_code ? 'identity.two_factor.email_description' : 'identity.two_factor.totp_description')|trans }}</p>
+            <p class="mt-1 text-sm text-muted-foreground">{{ (passkey ? 'identity.two_factor.passkey_description' : (email_code ? 'identity.two_factor.email_description' : 'identity.two_factor.totp_description'))|trans }}</p>
         </div>
 
         {% if error_key %}
@@ -16,6 +16,22 @@
             </twig:Alert>
         {% endif %}
 
+        {% if passkey %}
+        <form method="post" action="{{ checkPathUrl ? checkPathUrl : path(checkPathRoute) }}" class="flex flex-col gap-6" data-turbo="false"
+              data-controller="passkey" data-passkey-options-value="{{ path('identity_two_factor_passkey_options') }}"
+              data-passkey-csrf-value="{{ csrf_token(csrfTokenId) }}" data-passkey-mode-value="get" data-action="submit->passkey#start">
+            <input type="hidden" name="{{ csrfParameterName }}" value="{{ csrf_token(csrfTokenId) }}">
+            <input type="hidden" name="{{ authCodeParameterName }}" data-passkey-target="response">
+            {% if displayTrustedOption %}
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="{{ trustedParameterName }}" value="1" class="size-4 rounded border-input">
+                    {{ 'identity.two_factor.trust_device'|trans }}
+                </label>
+            {% endif %}
+            <twig:Button type="submit" class="w-full"><twig:ux:icon name="lucide:key-round" /> {{ 'identity.two_factor.passkey'|trans }}</twig:Button>
+            <p class="text-sm text-destructive" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
+        </form>
+        {% else %}
         <form method="post" action="{{ checkPathUrl ? checkPathUrl : path(checkPathRoute) }}" class="flex flex-col gap-6" data-turbo="false">
             <input type="hidden" name="{{ csrfParameterName }}" value="{{ csrf_token(csrfTokenId) }}">
             <twig:Field:Group>
@@ -35,6 +51,11 @@
                 <twig:Button type="submit" class="w-full">{{ 'identity.two_factor.submit'|trans }}</twig:Button>
             </twig:Field:Group>
         </form>
+        {% endif %}
+
+        {% for other in availableTwoFactorProviders|filter(p => p != twoFactorProvider) %}
+            <a href="{{ path('2fa_login', {preferProvider: other}) }}" class="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">{{ ('identity.two_factor.use.' ~ other)|trans }}</a>
+        {% endfor %}
 
         {% if email_code %}
             <form method="post" action="{{ path('identity_two_factor_resend') }}" data-turbo="false">

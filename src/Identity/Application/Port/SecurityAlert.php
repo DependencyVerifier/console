@@ -19,4 +19,6 @@ enum SecurityAlert: string
     case SuperAdminRevoked = 'super_admin_revoked';
     case SecondFactorThrottled = 'second_factor_throttled';
     case TrustedDeviceRegistered = 'trusted_device_registered';
+    case PasskeyRegistered = 'passkey_registered';
+    case PasskeyRevoked = 'passkey_revoked';
 }

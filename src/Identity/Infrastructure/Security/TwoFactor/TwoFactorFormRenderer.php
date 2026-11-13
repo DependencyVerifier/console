@@ -29,6 +29,7 @@ final readonly class TwoFactorFormRenderer implements TwoFactorFormRendererInter
             ...$templateVars,
             'error_key' => \is_string($error) ? $error : null,
             'email_code' => EmailCodeProvider::NAME === ($templateVars['twoFactorProvider'] ?? null),
+            'passkey' => PasskeyProvider::NAME === ($templateVars['twoFactorProvider'] ?? null),
         ]), Response::HTTP_OK, ['Cache-Control' => 'no-store']);
     }
 }

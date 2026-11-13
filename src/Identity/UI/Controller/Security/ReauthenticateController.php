@@ -15,14 +15,13 @@ use Identity\Infrastructure\Security\SessionKeys;
 use Identity\Infrastructure\Security\TwoFactor\CodeVerifyingProvider;
 use Identity\UI\Controller\RouteCollection;
 use Identity\UI\Form\ReauthenticateType;
-use Psr\Clock\ClockInterface;
+use Identity\UI\Security\ReauthenticationSuccess;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Trusted\TrustedDeviceManagerInterface;
 use Shared\Application\Audit\AlreadyAudited;
 use Shared\Application\Bus\CommandBus;
 use Shared\Application\Security\AttemptThrottle;
 use Shared\Application\Security\ThrottleName;
 use Shared\Application\Security\ThrottleSubject;
-use Shared\UI\Controller\RouteCollection as SharedRoutes;
 use Shared\UI\Security\CsrfFailure;
 use Shared\UI\Security\CsrfRejection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,7 +31,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Uid\Uuid;
 
@@ -54,8 +52,7 @@ final class ReauthenticateController extends AbstractController
         #[Autowire(service: 'scheb_two_factor.trusted_device_manager')]
         private readonly TrustedDeviceManagerInterface $trustedDevices,
         private readonly CsrfRejection $csrfRejection,
-        private readonly RouterInterface $router,
-        private readonly ClockInterface $clock,
+        private readonly ReauthenticationSuccess $success,
     ) {
     }
 
@@ -85,7 +82,7 @@ final class ReauthenticateController extends AbstractController
                 $data = $form->getData();
                 $error = $this->check($user, $data['password'], $withCode ? (string) ($data['code'] ?? '') : null);
                 if (null === $error) {
-                    return $this->succeed($request);
+                    return $this->success->respond($request);
                 }
 
                 $form->addError(new FormError($error));
@@ -93,8 +90,13 @@ final class ReauthenticateController extends AbstractController
             }
         }
 
+        $session = $request->getSession();
+        $error = $session->get(SessionKeys::AUTH_ERROR);
+        $session->remove(SessionKeys::AUTH_ERROR);
         $response = $this->render('identity/security/reauthenticate.html.twig', [
             'form' => $form,
+            'passkey' => $user->hasPasskeys(),
+            'error_key' => \is_string($error) ? $error : null,
             'with_code' => $withCode,
             'totp' => $user->isTotpActive(),
         ], new Response(status: $status));
@@ -140,18 +142,5 @@ final class ReauthenticateController extends AbstractController
         return [] !== u($code)->trim()->lower()->match('/^[a-z0-9]{5}-[a-z0-9]{5}$/')
             ? new UseBackupCode($user->id, $code, $attemptId)
             : new VerifyTotp($user->id, $code, $attemptId);
-    }
-
-    private function succeed(Request $request): Response
-    {
-        $session = $request->getSession();
-        $session->set(SessionKeys::RECENT_AUTHENTICATION_AT, $this->clock->now()->getTimestamp());
-        $session->migrate(true);
-
-        $route = $session->get(SessionKeys::REAUTH_RETURN_ROUTE);
-        $session->remove(SessionKeys::REAUTH_RETURN_ROUTE);
-        $internal = \is_string($route) && null !== $this->router->getRouteCollection()->get($route) ? $route : SharedRoutes::HOME->prefixed();
-
-        return $this->redirectToRoute($internal, status: Response::HTTP_SEE_OTHER);
     }
 }

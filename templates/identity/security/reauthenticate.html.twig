@@ -9,6 +9,23 @@
             <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.reauthenticate.title'|trans }}</h1>
             <p class="mt-1 text-sm text-muted-foreground">{{ 'identity.reauthenticate.description'|trans }}</p>
         </div>
+        {% if error_key %}
+            <twig:Alert variant="destructive">
+                <twig:ux:icon name="lucide:circle-alert" />
+                <twig:Alert:Description>{{ error_key|trans }}</twig:Alert:Description>
+            </twig:Alert>
+        {% endif %}
+        {% if passkey %}
+            <form method="post" action="{{ path('identity_reauthenticate_passkey') }}" class="flex flex-col gap-2" data-turbo="false"
+                  data-controller="passkey" data-passkey-options-value="{{ path('identity_reauthenticate_passkey_options') }}"
+                  data-passkey-csrf-value="{{ csrf_token('reauthenticate_passkey') }}" data-passkey-mode-value="get" data-action="submit->passkey#start">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('reauthenticate_passkey') }}">
+                <input type="hidden" name="_passkey" data-passkey-target="response">
+                <twig:Button type="submit" class="w-full"><twig:ux:icon name="lucide:key-round" /> {{ 'identity.reauthenticate.passkey'|trans }}</twig:Button>
+                <p class="text-sm text-destructive" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
+            </form>
+            <p class="text-center text-xs text-muted-foreground">{{ 'identity.reauthenticate.or'|trans }}</p>
+        {% endif %}
         {{ form_start(form, {attr: {class: 'flex flex-col gap-6', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
             {{ form_errors(form) }}
             {{ form_row(form.password) }}

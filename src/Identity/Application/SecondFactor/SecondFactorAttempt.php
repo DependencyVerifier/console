@@ -10,6 +10,7 @@ use Identity\Domain\Model\CodeVerificationOutcome;
 use Identity\Domain\Model\User;
 use Identity\Domain\Model\UserId;
 use Identity\Domain\Repository\CodeVerificationAttemptRepository;
+use Identity\Domain\Repository\UserRepository;
 use Psr\Clock\ClockInterface;
 use Shared\Application\Audit\CommandAudit;
 use Shared\Application\Audit\Outcome;
@@ -43,6 +44,7 @@ final readonly class SecondFactorAttempt
         private RequestContextProvider $requestContext,
         private CommandAudit $audit,
         private ClockInterface $clock,
+        private UserRepository $users,
     ) {
     }
 
@@ -50,13 +52,30 @@ final readonly class SecondFactorAttempt
     {
         $userId = UserId::fromString($command->userId);
         $this->access->assertSelf($userId);
-        $user = $this->access->lock($userId);
+
+        return $this->attempt($this->access->lock($userId), $command, $check, ThrottleName::SecondFactorIp);
+    }
+
+    /**
+     * The same algorithm for a sign-in without password (a passkey): no session yet, the account is the one the
+     * command claims (unknown: rejected, counted on the IP), its own IP window, and an account that may not log in
+     * is refused even with a valid signature.
+     */
+    public function signIn(CodeVerification $command, CodeCheck $check): CodeVerificationOutcome
+    {
+        return $this->attempt($this->users->lockById(UserId::fromString($command->userId)), $command, $check, ThrottleName::PasskeyLoginIp);
+    }
+
+    private function attempt(?User $user, CodeVerification $command, CodeCheck $check, ThrottleName $ipWindow): CodeVerificationOutcome
+    {
+        $userId = UserId::fromString($command->userId);
         $now = $this->clock->now();
         $account = ThrottleSubject::forAccount($command->userId);
         $ip = ThrottleSubject::forIp($this->requestContext->current()->ip ?? self::NO_IP);
+        $windows = [[ThrottleName::SecondFactorShort, $account], [ThrottleName::SecondFactorLong, $account], [$ipWindow, $ip]];
 
         try {
-            $outcome = $this->exclusiveSection->run($ip, fn (): CodeVerificationOutcome => $this->evaluate($user, $command, $check, $account, $ip, $now));
+            $outcome = $this->exclusiveSection->run($ip, fn (): CodeVerificationOutcome => $this->evaluate($user, $command, $check, $windows, $account, $now));
             $audited = $this->auditOutcome($outcome);
         } catch (Contended) {
             $outcome = CodeVerificationOutcome::Throttled;
@@ -70,23 +89,29 @@ final readonly class SecondFactorAttempt
         return $outcome;
     }
 
-    private function evaluate(User $user, CodeVerification $command, CodeCheck $check, ThrottleSubject $account, ThrottleSubject $ip, \DateTimeImmutable $now): CodeVerificationOutcome
+    /**
+     * @param list<array{ThrottleName, ThrottleSubject}> $windows
+     */
+    private function evaluate(?User $user, CodeVerification $command, CodeCheck $check, array $windows, ThrottleSubject $account, \DateTimeImmutable $now): CodeVerificationOutcome
     {
-        $windows = [[ThrottleName::SecondFactorShort, $account], [ThrottleName::SecondFactorLong, $account], [ThrottleName::SecondFactorIp, $ip]];
         foreach ($windows as [$name, $subject]) {
             if (!$this->throttle->peek($name, $subject)->accepted) {
                 return CodeVerificationOutcome::Throttled;
             }
         }
 
-        $outcome = $check->verify($user, $command, $now);
+        $outcome = null === $user ? CodeVerificationOutcome::Rejected : $check->verify($user, $command, $now);
+        if (null !== $user && $outcome->isAccepted() && !$user->canLogIn()) {
+            $outcome = CodeVerificationOutcome::Rejected;
+        }
+
         if (CodeVerificationOutcome::Rejected !== $outcome) {
             return $outcome;
         }
 
         foreach ($windows as [$name, $subject]) {
             $decision = $this->throttle->consume($name, $subject);
-            if (ThrottleName::SecondFactorLong === $name && $decision->justExhausted && $this->throttle->consume(ThrottleName::SecondFactorAlert, $account)->accepted) {
+            if (null !== $user && ThrottleName::SecondFactorLong === $name && $decision->justExhausted && $this->throttle->consume(ThrottleName::SecondFactorAlert, $account)->accepted) {
                 $user->noteSecondFactorThrottled($decision->retryAfter);
             }
         }

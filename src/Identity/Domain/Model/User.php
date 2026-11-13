@@ -10,6 +10,8 @@ use Doctrine\ORM\Mapping as ORM;
 use Identity\Domain\Event\BackupCodesRegenerated;
 use Identity\Domain\Event\EmailChanged;
 use Identity\Domain\Event\EmailLoginCodeIssued;
+use Identity\Domain\Event\PasskeyRegistered;
+use Identity\Domain\Event\PasskeyRevoked;
 use Identity\Domain\Event\PasswordChanged;
 use Identity\Domain\Event\SecondFactorReset;
 use Identity\Domain\Event\SecondFactorThrottled;
@@ -42,6 +44,8 @@ class User implements RecordsEvents
     use EventRecording;
 
     public const int DISPLAY_NAME_MAX = 100;
+    public const int PASSKEYS_MAX = 10;
+    public const int PASSKEY_NAME_MAX = 64;
 
     #[ORM\Embedded(class: Credentials::class, columnPrefix: false)]
     private Credentials $credentials;
@@ -66,6 +70,11 @@ class User implements RecordsEvents
     #[ORM\OneToMany(targetEntity: BackupCode::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $backupCodes;
 
+    /** @var Collection<int, PasskeyCredential> */
+    #[ORM\OneToMany(targetEntity: PasskeyCredential::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['createdAt' => 'ASC'])]
+    private Collection $passkeys;
+
     /** @var Collection<int, EmailLoginCode> */
     #[ORM\OneToMany(targetEntity: EmailLoginCode::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $emailLoginCodes;
@@ -86,6 +95,7 @@ class User implements RecordsEvents
         $this->privileges = Privileges::none();
         $this->backupCodes = new ArrayCollection();
         $this->emailLoginCodes = new ArrayCollection();
+        $this->passkeys = new ArrayCollection();
     }
 
     public static function createSuperAdmin(UserId $id, EmailAddress $email, string $passwordHash, \DateTimeImmutable $now): self
@@ -415,6 +425,68 @@ class User implements RecordsEvents
         $this->replaceBackupCodes($hashes);
         $this->sessionVersions = $this->sessionVersions->revokeAll();
         $this->recordThat(new BackupCodesRegenerated($this->id->toRfc4122()));
+    }
+
+    // ---------------------------------------------------------------- passkeys
+
+    /**
+     * @return list<PasskeyCredential> oldest first
+     */
+    public function passkeys(): array
+    {
+        return array_values($this->passkeys->toArray());
+    }
+
+    public function hasPasskey(Uuid $passkeyId): bool
+    {
+        return $this->passkeys->exists(static fn (int $key, PasskeyCredential $p): bool => $p->id()->equals($passkeyId));
+    }
+
+    /**
+     * A passkey verified by the ceremony, under a name its holder recognizes (1 to 64 characters, unique within the
+     * account, case aside). At most 10. Sessions are kept: adding a way in takes none away.
+     */
+    public function registerPasskey(Uuid $passkeyId, NewPasskey $passkey, string $name, \DateTimeImmutable $now): void
+    {
+        $name = u($name)->trim();
+        $taken = $this->passkeys->exists(static fn (int $key, PasskeyCredential $p): bool => u($p->name())->lower()->equalsTo($name->lower()->toString()));
+        if ($name->isEmpty() || $name->length() > self::PASSKEY_NAME_MAX || $taken) {
+            throw new InvalidPasskeyName();
+        }
+
+        if ($this->passkeys->count() >= self::PASSKEYS_MAX) {
+            throw new PasskeyLimitReached();
+        }
+
+        $this->passkeys->add(PasskeyCredential::of($passkeyId, $this, $passkey, $name->toString(), $now));
+        $this->recordThat(new PasskeyRegistered($this->id->toRfc4122()));
+    }
+
+    /**
+     * Removes a passkey (nothing when the account has none of that id): every session and trusted device is revoked.
+     */
+    public function revokePasskey(Uuid $passkeyId): void
+    {
+        $passkey = $this->passkeys->findFirst(static fn (int $key, PasskeyCredential $p): bool => $p->id()->equals($passkeyId));
+        if (null === $passkey) {
+            return;
+        }
+
+        $this->passkeys->removeElement($passkey);
+        $this->sessionVersions = $this->sessionVersions->revokeAll();
+        $this->recordThat(new PasskeyRevoked($this->id->toRfc4122()));
+    }
+
+    /**
+     * A signature of one of its passkeys, verified by the ceremony: accepted when its counter grows (or stays at 0).
+     *
+     * @phpstan-impure
+     */
+    public function usePasskey(string $credentialId, int $signCount, \DateTimeImmutable $now): CodeVerificationOutcome
+    {
+        $passkey = $this->passkeys->findFirst(static fn (int $key, PasskeyCredential $p): bool => $p->credentialId() === $credentialId);
+
+        return null !== $passkey && $passkey->use($signCount, $now) ? CodeVerificationOutcome::Accepted : CodeVerificationOutcome::Rejected;
     }
 
     /**

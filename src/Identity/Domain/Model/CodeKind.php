@@ -10,4 +10,6 @@ enum CodeKind: string
     case TotpEnrollment = 'totp_enrollment';
     case EmailCode = 'email_code';
     case BackupCode = 'backup_code';
+    case Passkey = 'passkey';
+    case PasskeyLogin = 'passkey_login';
 }

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Identity\Application\Query\User\Handler;
 
 use Identity\Application\Query\User\GetUserProfile;
+use Identity\Application\Query\User\PasskeySummary;
 use Identity\Application\Query\User\UserProfile;
+use Identity\Domain\Model\PasskeyCredential;
 use Identity\Domain\Model\UserId;
 use Identity\Domain\Repository\UserRepository;
 use Shared\Application\Authorization\PermissionChecker;
@@ -43,6 +45,7 @@ final readonly class GetUserProfileHandler implements QueryHandler
             $user->secondFactor()->state()->name(),
             $user->remainingBackupCodes(),
             $user->createdAt(),
+            array_map(static fn (PasskeyCredential $p): PasskeySummary => new PasskeySummary($p->id()->toRfc4122(), $p->name(), $p->createdAt(), $p->lastUsedAt()), $user->passkeys()),
         );
     }
 }
