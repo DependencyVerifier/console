@@ -20,6 +20,7 @@ WORKDIR /app
 RUN <<-EOF
 	apt-get update
 	apt-get install -y --no-install-recommends \
+		cron \
 		file \
 		git
 	install-php-extensions \
@@ -45,6 +46,11 @@ RUN install-php-extensions pdo_pgsql
 COPY --link frankenphp/conf.d/10-app.ini $PHP_INI_DIR/app.conf.d/
 COPY --link --chmod=755 frankenphp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 COPY --link frankenphp/Caddyfile /etc/frankenphp/Caddyfile
+
+# The scheduled commands (the `cron` service of Compose runs them)
+COPY --link frankenphp/crontab /etc/depverify/crontab
+COPY --link --chmod=755 frankenphp/docker-cron.sh /usr/local/bin/docker-cron
+RUN crontab -u www-data /etc/depverify/crontab
 
 ENTRYPOINT ["docker-entrypoint"]
 
@@ -174,6 +180,13 @@ COPY --from=frankenphp_prod_builder /usr/bin/file /usr/bin/file
 COPY --from=frankenphp_prod_builder /usr/lib/file/magic.mgc /usr/lib/file/magic.mgc
 
 ENV  OPENSSL_CONF=/etc/ssl/openssl.cnf XDG_CONFIG_HOME=/config XDG_DATA_HOME=/data SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
+# The scheduled commands (the `cron` service of Compose runs them), installed before the setuid bits are removed
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends cron && rm -rf /var/lib/apt/lists/*
+COPY --link frankenphp/crontab /etc/depverify/crontab
+COPY --link --chmod=755 frankenphp/docker-cron.sh /usr/local/bin/docker-cron
+RUN crontab -u www-data /etc/depverify/crontab
 
 RUN <<-EOF
 	mkdir -p /data/caddy /config/caddy

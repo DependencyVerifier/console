@@ -29,6 +29,15 @@ services:
       - host.docker.internal:host-gateway
     tty: true
 
+  cron:
+    image: ${IMAGES_PREFIX:-}app-php-dev
+    volumes:
+      - ./:/app
+      - /app/var
+    environment:
+      XDEBUG_MODE: "off"
+      APP_ENV: "${APP_ENV:-dev}"
+
   # The worker does not reload code: `make worker-restart` after a change to a message handler.
   worker:
     image: ${IMAGES_PREFIX:-}app-php-dev

@@ -13,3 +13,8 @@ services:
     image: ${IMAGES_PREFIX:-}app-php-prod
     environment:
       APP_SECRET: ${APP_SECRET}
+
+  cron:
+    image: ${IMAGES_PREFIX:-}app-php-prod
+    environment:
+      APP_SECRET: ${APP_SECRET}

@@ -1,0 +1,16 @@
+# DependencyVerifier console: the scheduled commands, installed for www-data by the Dockerfile (`crontab -u www-data`)
+# and run by the `cron` service of Compose (frankenphp/docker-cron.sh). Times are UTC. The output of each job goes to
+# the logs of the service (`docker compose logs cron`). The commands that sync or compute only queue the work: the
+# worker runs it.
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# m    h    dom mon dow  command
+*/5    *    *   *   *    cd /app && php bin/console app:fleet:maintain --no-interaction >> /tmp/cron.log 2>&1
+*/5    *    *   *   *    cd /app && php bin/console app:notification:check --no-interaction >> /tmp/cron.log 2>&1
+15     *    *   *   *    cd /app && php bin/console app:inventory:maintain --no-interaction >> /tmp/cron.log 2>&1
+30     */6  *   *   *    cd /app && php bin/console app:vulnerability:sync --no-interaction >> /tmp/cron.log 2>&1
+0      3    *   *   *    cd /app && php bin/console app:vulnerability:sync-lifecycle --no-interaction >> /tmp/cron.log 2>&1
+0      4    *   *   *    cd /app && php bin/console app:exposure:refresh --no-interaction >> /tmp/cron.log 2>&1
+0      5    *   *   *    cd /app && php bin/console app:fleet:sync-agent-release --no-interaction >> /tmp/cron.log 2>&1
+0      7    *   *   *    cd /app && php bin/console app:notification:digest --no-interaction >> /tmp/cron.log 2>&1

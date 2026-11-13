@@ -37,6 +37,19 @@ services:
         published: ${HTTP3_PORT:-443}
         protocol: udp
 
+  # The scheduled commands (frankenphp/crontab): the cron daemon runs as root and starts each job as www-data, with
+  # the runtime role, like php and the worker. `docker compose logs cron` shows their output.
+  cron:
+    restart: unless-stopped
+    user: root
+    command: ["docker-cron"]
+    environment:
+      DATABASE_URL: postgresql://depverify_app:${DEPVERIFY_APP_PASSWORD:-!ChangeMeApp!}@database:5432/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-18}&charset=${POSTGRES_CHARSET:-utf8}
+    depends_on:
+      - database
+    healthcheck:
+      disable: true
+
   # Messenger worker of the async queues (ingest first): the same image and runtime role as php, no web server.
   # It stops every hour (or at 256 MB) and Compose restarts it, so a deploy or a leak never lasts.
   worker:

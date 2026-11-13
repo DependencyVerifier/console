@@ -202,6 +202,8 @@ make db-roles / make audit-partitions / make rate-limiter-prune / make fleet-mai
 make agent-release-sync / make agent-release-import dir=…   # verified agent releases for install.sh (cron: daily)
 make vuln-sync / make eol-sync / make findings-refresh   # cron: every 6 h / daily / daily after eol-sync (they only queue the work)
 make notifications-check / make notifications-digest     # cron: every 5 minutes / daily at 07:00
+# Every scheduled command runs from frankenphp/crontab (installed for www-data by the Dockerfile): the Compose service
+# `cron` (root daemon, jobs as www-data with the container's environment, output in `docker compose logs cron`).
 make worker-restart / make worker-logs  # the consumer of ingest, matching, feeds, notifications (restart after a code change; `docker compose up -d worker` after a change of compose.yaml)
 make fleet-fake-agent a='enroll --token=dvet_…'   # dev demo agent (then a=poll, a='run --polls=10', a=inventory; name=… for another one)
 make super-admin email=you@example.com / make mailpit
