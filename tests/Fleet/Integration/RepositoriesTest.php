@@ -74,7 +74,7 @@ final class RepositoriesTest extends KernelTestCase
         $hosts->add(Fleet::host());
         $this->flush();
 
-        $identity = Fleet::facts()->identityFor(AgentMode::Container);
+        $identity = Fleet::facts()->identityFor(AgentMode::Container, 'ed25519:key');
         self::assertSame(Fleet::HOST, $hosts->findByIdentity(Uuid::fromString(Fleet::TEAM), $identity)?->id()->toString());
         self::assertNull($hosts->findByIdentity(Uuid::fromString(Fleet::OTHER_TEAM), $identity));
         self::assertNull($hosts->findByIdentity(Uuid::fromString(Fleet::TEAM), new HostIdentity('machine', $identity->value)));

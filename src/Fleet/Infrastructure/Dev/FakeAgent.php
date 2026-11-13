@@ -20,7 +20,7 @@ use function Symfony\Component\String\u;
  * exactly as the agent must: signed requests (§4), order checks (§7.2), results at the next poll (§7.5).
  * SET_CONFIG applies its version; SCAN_NOW sends a deterministic inventory (§8) right after the poll, so a second one
  * without change uploads nothing: host facts, then a Compose service `demo/web` and its image (container mode) or the
- * OS packages of the host and an application `/srv/demo` (host mode).
+ * OS packages of the host and an application `/srv/demo` (host and embedded modes).
  */
 final class FakeAgent
 {

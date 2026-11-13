@@ -132,7 +132,7 @@ final class AgentApiTest extends IdentityWebTestCase
         $this->assertProblem(409, 'quota_exceeded');
         self::assertSame(0, $this->fetchInt('SELECT uses FROM fleet_enrollment_token WHERE id = ?', [$token->id()->toString()]), 'Rolled back: the token is still usable.');
 
-        AgentClient::generate()->enroll($this->client, $another, mode: 'embedded');
+        AgentClient::generate()->enroll($this->client, $another, mode: 'ecs');
         $this->assertProblem(400, 'invalid_payload');
         self::assertSame(['rule:token_invalid', 'rule:token_invalid', 'rule:token_expired', 'rule:quota', 'rule:invalid_payload'], array_column(array_filter(AuditLog::entries($this->connection(), 'fleet.enroll_agent'), static fn (array $e): bool => 'denied' === $e['outcome']), 'reason'));
     }

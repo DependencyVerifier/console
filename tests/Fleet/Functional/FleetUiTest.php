@@ -52,6 +52,8 @@ final class FleetUiTest extends IdentityWebTestCase
         self::assertSame(1, preg_match('/dvet_[A-Za-z0-9_-]{43}/', $reveal, $match), 'The token, shown once.');
         $token = $match[0];
         self::assertStringContainsString('AGENT_CONSOLE_PUBKEY: &quot;ed25519:', $reveal);
+        self::assertStringContainsString('ENV AGENT_MODE=embedded \\', $reveal, 'The Dockerfile of an embedded agent.');
+        self::assertStringContainsString('ENTRYPOINT ["sh", "-c", "depverify-agent run & exec \\"$@\\"", "--"]', $reveal, 'Text of a pre: a lone & is valid HTML.');
         self::assertStringContainsString('<turbo-frame id="create-token-form">', $reveal);
         self::assertStringNotContainsString($token, (string) json_encode(AuditLog::entries($this->connection(), 'fleet.')), 'Never audited.');
         self::assertSame(['success'], array_column(AuditLog::entries($this->connection(), 'fleet.create_enrollment_token'), 'outcome'));

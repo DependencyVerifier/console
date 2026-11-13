@@ -57,7 +57,7 @@ final class Fleet
 
     public static function host(string $teamId = self::TEAM, string $id = self::HOST): Host
     {
-        return Host::register(HostId::fromString($id), Uuid::fromString($teamId), self::facts()->identityFor(AgentMode::Container), self::facts(), self::now());
+        return Host::register(HostId::fromString($id), Uuid::fromString($teamId), self::facts()->identityFor(AgentMode::Container, 'ed25519:key'), self::facts(), self::now());
     }
 
     public static function runtime(): AgentRuntime

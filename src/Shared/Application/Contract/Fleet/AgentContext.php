@@ -30,4 +30,12 @@ final readonly class AgentContext
     {
         return 'container' === $this->mode && \in_array($this->scope, ['compose', 'labeled'], true);
     }
+
+    /**
+     * An embedded agent sees its own container only (protocol §8.4): its file system, never Docker.
+     */
+    public function isEmbedded(): bool
+    {
+        return 'embedded' === $this->mode;
+    }
 }

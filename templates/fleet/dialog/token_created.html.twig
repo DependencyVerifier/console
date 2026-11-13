@@ -25,6 +25,21 @@
 {{- "services:\n  depverify-agent:\n    image: ghcr.io/dependencyverifier/agent@sha256:<digest>\n    restart: unless-stopped\n    environment:\n      AGENT_MODE: container\n      AGENT_SCOPE: compose\n      AGENT_CONSOLE_URL: " ~ console_url ~ "\n      AGENT_CONSOLE_PUBKEY: \"" ~ fleet.consoleKey ~ "\"\n      AGENT_TOKEN_FILE: /run/secrets/agent_token\n      DOCKER_HOST: tcp://depverify-docker-proxy:2375\n    secrets: [agent_token]\n    volumes:\n      - depverify-agent-data:/var/lib/agent\n    networks: [depverify-internal, default]\n    read_only: true\n    cap_drop: [ALL]\n    security_opt: [\"no-new-privileges:true\"]\n\n  depverify-docker-proxy:\n    image: tecnativa/docker-socket-proxy:<version>\n    environment: {CONTAINERS: 1, IMAGES: 1, INFO: 1, VERSION: 1, POST: 0}\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock:ro\n    networks: [depverify-internal]\n    read_only: true\n\nnetworks:\n  depverify-internal:\n    internal: true\n\nvolumes:\n  depverify-agent-data:\n\nsecrets:\n  agent_token:\n    file: ./.agent_token" -}}
             </pre>
         </div>
+        {%- set embedded -%}
+# Dockerfile of the application
+COPY --from=ghcr.io/dependencyverifier/agent@sha256:<digest> /agent /usr/local/bin/depverify-agent
+ENV AGENT_MODE=embedded \
+    AGENT_CONSOLE_URL={{ console_url }} \
+    AGENT_CONSOLE_PUBKEY="{{ fleet.consoleKey }}" \
+    AGENT_TOKEN_FILE=/run/secrets/agent_token
+VOLUME /var/lib/agent
+# The agent next to the application (or under tini / s6-overlay)
+ENTRYPOINT ["sh", "-c", "depverify-agent run & exec \"$@\"", "--"]
+        {%- endset %}
+        <div>
+            <p class="mb-1 text-muted-foreground">{{ 'fleet.tokens.embedded'|trans }}</p>
+            <pre class="max-h-72 overflow-y-auto rounded-md border bg-muted px-3 py-2 font-mono text-xs break-all whitespace-pre-wrap select-all">{{ embedded }}</pre>
+        </div>
         <p class="text-muted-foreground">{{ 'fleet.tokens.console_key'|trans }} <code class="font-mono text-xs break-all">{{ fleet.consoleKeyId }}</code></p>
         <footer class="flex justify-end">
             <twig:Button type="button" data-action="dialog#close">{{ 'fleet.tokens.done'|trans }}</twig:Button>

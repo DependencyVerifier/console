@@ -60,6 +60,22 @@ final class EnrollAgentTest extends TestCase
     }
 
     #[Test]
+    public function it_should_enroll_an_embedded_agent_as_its_own_host(): void
+    {
+        $world = $this->world();
+        $agent = AgentClient::generate();
+        $world->enroll()($this->command($world, $agent, body: ['mode' => 'embedded', 'scope' => null, 'compose_project' => null]));
+
+        $enrolled = $world->agents->find(AgentId::fromString(self::NEW_AGENT));
+        self::assertNotNull($enrolled);
+        self::assertSame([AgentMode::Embedded, null, null], [$enrolled->runtime()->mode, $enrolled->runtime()->scope, $enrolled->runtime()->composeProject]);
+        self::assertEquals(new HostIdentity('embedded', $agent->key->fingerprint()), $world->hosts->find($enrolled->hostId())?->identity(), 'One host per replica, whatever its engine.');
+
+        $fresh = $this->world();
+        $this->assertRefused(InvalidEnrollmentPayload::class, 'invalid_payload', fn () => $fresh->enroll()($this->command($fresh, AgentClient::generate(), body: ['mode' => 'embedded', 'compose_project' => null])));
+    }
+
+    #[Test]
     public function it_should_answer_a_retry_with_the_first_agent_and_refuse_a_revoked_one(): void
     {
         $world = $this->world();
@@ -197,7 +213,7 @@ final class EnrollAgentTest extends TestCase
      */
     public static function invalidPayloads(): iterable
     {
-        yield 'embedded mode' => [['mode' => 'embedded']];
+        yield 'ecs mode' => [['mode' => 'ecs']];
         yield 'unknown scope' => [['scope' => 'pod']];
         yield 'no token' => [['enrollment_token' => null]];
         yield 'no version' => [['agent_version' => null]];

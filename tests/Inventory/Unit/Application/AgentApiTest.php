@@ -108,6 +108,21 @@ final class AgentApiTest extends TestCase
     }
 
     #[Test]
+    public function it_should_keep_an_embedded_agent_inside_its_container(): void
+    {
+        $world = new InventoryWorld();
+        $world->agent(mode: 'embedded', scope: null, project: null);
+        [$facts] = $this->inventory();
+        $image = Documents::manifest(Inv::RUN, $facts, [Documents::subject('image:'.Inv::IMAGE, 'container_image', '{}', ['image_id' => Inv::IMAGE, 'repo_digests' => [], 'tags' => [], 'provenance' => 'local-build'])]);
+        $this->assertRule('scope_violation', fn () => $this->submit($world, (string) json_encode($image)));
+        self::assertSame([], $world->runs->runs, 'Nothing stored.');
+
+        $own = Documents::manifest(Inv::RUN, $facts, [Documents::subject('host', 'host', '{}'), Documents::subject('path:/app', 'path', '{}', ['path' => '/app', 'origin' => 'discovered'])]);
+        $this->submit($world, (string) json_encode($own));
+        self::assertCount(1, $world->runs->runs, 'Its own file system: the host subject of its container and its applications.');
+    }
+
+    #[Test]
     public function it_should_refuse_inventories_of_a_pending_agent(): void
     {
         $world = new InventoryWorld();

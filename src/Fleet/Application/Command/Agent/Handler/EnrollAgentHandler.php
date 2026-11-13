@@ -96,7 +96,7 @@ final readonly class EnrollAgentHandler implements CommandHandler
         $this->quotas->assertAgentSeat($token->teamId());
         $token->consume($now);
 
-        $identity = $facts->identityFor($runtime->mode);
+        $identity = $facts->identityFor($runtime->mode, $key->fingerprint());
         $host = $this->hosts->findByIdentity($token->teamId(), $identity);
         if (null === $host) {
             $host = Host::register(HostId::of(Uuid::v7()), $token->teamId(), $identity, $facts, $now);
@@ -119,7 +119,7 @@ final readonly class EnrollAgentHandler implements CommandHandler
 
     private static function runtimeOf(AgentPayload $payload): AgentRuntime
     {
-        $mode = AgentMode::tryFrom($payload->string('mode')) ?? throw new ProtocolRefusal(Problem::InvalidPayload, 'Only the host and container modes are accepted.');
+        $mode = AgentMode::tryFrom($payload->string('mode')) ?? throw new ProtocolRefusal(Problem::InvalidPayload, 'Only the host, container and embedded modes are accepted.');
         $scope = $payload->optionalString('scope');
 
         return new AgentRuntime(

@@ -52,10 +52,16 @@ final readonly class HostFacts
 
     /**
      * The key grouping the agents of one machine within a team (decision of step 2): the Docker engine for a
-     * container agent, the machine id for a host agent, each falling back on the other, then on the hostname.
+     * container agent, the machine id for a host agent, each falling back on the other, then on the hostname. An
+     * embedded agent is its own host (one per replica; the replicas of an image share a machine id and a hostname
+     * may be reused): the fingerprint of its key.
      */
-    public function identityFor(AgentMode $mode): HostIdentity
+    public function identityFor(AgentMode $mode, string $keyFingerprint): HostIdentity
     {
+        if (AgentMode::Embedded === $mode) {
+            return new HostIdentity('embedded', $keyFingerprint);
+        }
+
         $preferred = AgentMode::Container === $mode
             ? [['docker', $this->dockerEngineId], ['machine', $this->machineIdHash]]
             : [['machine', $this->machineIdHash], ['docker', $this->dockerEngineId]];

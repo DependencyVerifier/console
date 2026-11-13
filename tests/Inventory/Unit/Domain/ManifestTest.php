@@ -50,6 +50,15 @@ final class ManifestTest extends TestCase
         self::assertSame(['compose:shop/php'], Inv::manifest([Inv::compose()])->outsideComposeProject('blog'));
     }
 
+    #[Test]
+    public function it_should_keep_an_embedded_agent_inside_its_container(): void
+    {
+        $manifest = Inv::manifest([Inv::compose(), Inv::image(), Inv::path(), Inv::host(),
+            new Subject('container:solo', SubjectKind::Container, Inv::sbom(6), ['container_name' => 'solo'])]);
+        self::assertSame(['compose:shop/php', 'image:'.Inv::IMAGE, 'container:solo'], $manifest->outsideOwnFileSystem());
+        self::assertSame([], Inv::manifest([Inv::path(), Inv::host()])->outsideOwnFileSystem());
+    }
+
     /**
      * @return iterable<string, array{\Closure(): mixed}>
      */

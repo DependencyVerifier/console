@@ -557,6 +557,7 @@ fleet:
     mode:
         host: Host
         container: Container
+        embedded: In the image
     scope:
         compose: Compose project
         labeled: Labeled containers
@@ -634,6 +635,7 @@ fleet:
         token_file: "On the server, next to the Compose file, store it as the agent secret:"
         install: "On a server (systemd), as root: installs the binary, verified by its SHA-256"
         compose: Compose snippet
+        embedded: "In the application's image, when neither the host nor Docker can be reached: one agent per replica (a reusable token), its state on a volume (/var/lib/agent), else a new agent at each recreation"
         console_key: "Fingerprint of the console key the agent pins:"
         done: Done
         actions: Token actions

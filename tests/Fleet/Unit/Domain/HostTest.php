@@ -29,16 +29,17 @@ final class HostTest extends TestCase
     public function it_should_group_the_agents_of_a_machine_by_engine_or_machine_id(): void
     {
         $facts = Fleet::facts();
-        self::assertEquals(new HostIdentity('docker', 'b1c7a0f2-3e4d-4c5b-9a8f-7e6d5c4b3a21'), $facts->identityFor(AgentMode::Container));
-        self::assertEquals(new HostIdentity('machine', Fleet::MACHINE), $facts->identityFor(AgentMode::Host));
+        self::assertEquals(new HostIdentity('docker', 'b1c7a0f2-3e4d-4c5b-9a8f-7e6d5c4b3a21'), $facts->identityFor(AgentMode::Container, 'ed25519:key'));
+        self::assertEquals(new HostIdentity('machine', Fleet::MACHINE), $facts->identityFor(AgentMode::Host, 'ed25519:key'));
 
         $noDocker = new HostFacts('web-01', machineIdHash: Fleet::MACHINE);
-        self::assertEquals(new HostIdentity('machine', Fleet::MACHINE), $noDocker->identityFor(AgentMode::Container));
+        self::assertEquals(new HostIdentity('machine', Fleet::MACHINE), $noDocker->identityFor(AgentMode::Container, 'ed25519:key'));
         $noMachine = new HostFacts('web-01', dockerEngineId: 'engine');
-        self::assertEquals(new HostIdentity('docker', 'engine'), $noMachine->identityFor(AgentMode::Host));
+        self::assertEquals(new HostIdentity('docker', 'engine'), $noMachine->identityFor(AgentMode::Host, 'ed25519:key'));
         $empty = new HostFacts('Web-01', dockerEngineId: '');
-        self::assertEquals(new HostIdentity('hostname', 'web-01'), $empty->identityFor(AgentMode::Container));
-        self::assertEquals(new HostIdentity('hostname', 'web-01'), $empty->identityFor(AgentMode::Host));
+        self::assertEquals(new HostIdentity('hostname', 'web-01'), $empty->identityFor(AgentMode::Container, 'ed25519:key'));
+        self::assertEquals(new HostIdentity('hostname', 'web-01'), $empty->identityFor(AgentMode::Host, 'ed25519:key'));
+        self::assertEquals(new HostIdentity('embedded', 'ed25519:key'), $facts->identityFor(AgentMode::Embedded, 'ed25519:key'), 'An embedded agent is its own host.');
     }
 
     #[Test]
@@ -46,7 +47,7 @@ final class HostTest extends TestCase
     {
         $host = Fleet::host();
         self::assertSame([Fleet::HOST, Fleet::TEAM], [$host->id()->toString(), $host->teamId()->toRfc4122()]);
-        self::assertEquals(Fleet::facts()->identityFor(AgentMode::Container), $host->identity());
+        self::assertEquals(Fleet::facts()->identityFor(AgentMode::Container, 'ed25519:key'), $host->identity());
         self::assertEquals(Fleet::now(), $host->createdAt());
         self::assertNull($host->lastSeenAt());
 

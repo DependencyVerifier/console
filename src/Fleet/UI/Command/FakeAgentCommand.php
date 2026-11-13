@@ -45,7 +45,7 @@ final readonly class FakeAgentCommand
         #[Option('Enrollment token (enroll)')] ?string $token = null,
         #[Option('Name of the fake agent (one state file each)')] string $name = 'demo',
         #[Option('Hostname it reports (enroll)')] ?string $hostname = null,
-        #[Option('host or container (enroll)')] string $mode = 'container',
+        #[Option('host, container or embedded (enroll)')] string $mode = 'container',
         #[Option('Number of polls (run)')] int $polls = 10,
         #[Option('Longest wait between two polls, in seconds (run)')] int $maxWait = 15,
     ): int {

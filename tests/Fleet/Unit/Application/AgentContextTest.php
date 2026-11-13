@@ -72,6 +72,8 @@ final class AgentContextTest extends TestCase
         self::assertFalse($context('approved', 'container', 'host')->isConfinedToComposeProject());
         self::assertFalse($context('approved', 'host', null)->isConfinedToComposeProject());
         self::assertFalse($context('approved', 'host', 'compose')->isConfinedToComposeProject(), 'Only a container agent has a scope.');
+        self::assertSame([true, false, false], [$context('approved', 'embedded', null)->isEmbedded(), $context('approved', 'host', null)->isEmbedded(), $context('approved', 'container', 'host')->isEmbedded()]);
+        self::assertFalse($context('approved', 'embedded', null)->isConfinedToComposeProject());
     }
 
     #[Test]

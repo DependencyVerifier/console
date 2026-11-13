@@ -36,8 +36,13 @@ final readonly class SubmitManifestHandler implements CommandHandler
         if ($agent->isConfinedToComposeProject()) {
             $outside = $manifest->outsideComposeProject((string) $agent->composeProject);
             if ([] !== $outside) {
-                throw new ScopeViolation(\sprintf('Outside the Compose project "%s": %s.', $agent->composeProject, u(', ')->join(\array_slice($outside, 0, 5))->truncate(500)));
+                throw self::outside(\sprintf('the Compose project "%s"', $agent->composeProject), $outside);
             }
+        }
+
+        $outside = $agent->isEmbedded() ? $manifest->outsideOwnFileSystem() : [];
+        if ([] !== $outside) {
+            throw self::outside('the container of an embedded agent', $outside);
         }
 
         $id = Uuid::fromString($command->inventoryId);
@@ -51,5 +56,13 @@ final readonly class SubmitManifestHandler implements CommandHandler
         }
 
         $this->runs->add(InventoryRun::open($id, Uuid::fromString($agent->agentId), Uuid::fromString($agent->teamId), Uuid::fromString($agent->hostId), $manifest, $this->clock->now()));
+    }
+
+    /**
+     * @param list<string> $keys
+     */
+    private static function outside(string $scope, array $keys): ScopeViolation
+    {
+        return new ScopeViolation(\sprintf('Outside %s: %s.', $scope, u(', ')->join(\array_slice($keys, 0, 5))->truncate(500)));
     }
 }

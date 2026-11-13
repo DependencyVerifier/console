@@ -83,6 +83,24 @@ final readonly class Manifest
     }
 
     /**
+     * What an embedded agent may not send (protocol §8.4): only its own file system (the `host` subject of its
+     * container, its applications) is in its scope; never a container, a service or an image.
+     *
+     * @return list<string> the keys outside the scope
+     */
+    public function outsideOwnFileSystem(): array
+    {
+        $outside = [];
+        foreach ($this->subjects as $subject) {
+            if (!\in_array($subject->kind, [SubjectKind::Path, SubjectKind::Host], true)) {
+                $outside[] = $subject->key;
+            }
+        }
+
+        return $outside;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array
