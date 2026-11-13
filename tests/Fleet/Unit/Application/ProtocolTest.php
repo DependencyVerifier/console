@@ -35,7 +35,7 @@ final class ProtocolTest extends TestCase
         $order->issue(new \DateTimeImmutable('2026-11-09 09:00:00', new \DateTimeZone('Europe/Paris')));
         $signer = new OrderSigner($world->signer);
 
-        $order->deliver($signer->sign($order));
+        $order->deliver((string) $signer->sign($order), $signer->currentKey());
         self::assertSame(ProtocolVectors::string($vector, 'signed_order.signature.value'), $order->signature());
         self::assertSame(ProtocolVectors::map($vector, 'signed_order'), json_decode((string) json_encode($signer->envelope($order)), true), 'Times in UTC with a Z.');
     }
@@ -61,7 +61,7 @@ final class ProtocolTest extends TestCase
             self::assertNull($order->signature());
         }
 
-        $order->deliver($signer->sign($order));
+        $order->deliver((string) $signer->sign($order), $signer->currentKey());
         $envelope = $signer->envelope($order);
         self::assertEquals(new \stdClass(), $envelope['order']['payload']);
         self::assertSame('2026-11-09T08:15:00Z', $envelope['order']['expires_at']);

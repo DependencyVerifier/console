@@ -163,7 +163,7 @@ final class FakeAgentTest extends TestCase
     {
         $order = AgentOrder::scanNow(AgentOrderId::fromString($id), $agent, null, Fleet::now());
         $order->issue(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
-        $order->deliver($signer->sign($order));
+        $order->deliver((string) $signer->sign($order), $signer->currentKey());
 
         return $signer->envelope($order);
     }

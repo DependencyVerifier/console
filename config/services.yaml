@@ -11,6 +11,8 @@ parameters:
     env(AGENT_RELEASE_PUBKEY): 'RWRWM7+kVrTd63TMnDIUOLjb78MC3QJTImbW3Gi/8ooaxK7iF2tC/ZSz'
     # A webhook never reaches a private network, unless set to 1 (dev, a local receiver; the tests).
     env(NOTIFICATION_WEBHOOK_ALLOW_PRIVATE): '0'
+    # The console key the agents move to during a rotation (make console-key-rotate): empty outside a rotation.
+    env(APP_AGENT_SIGNING_KEY_NEXT): ''
 
 services:
     _defaults:

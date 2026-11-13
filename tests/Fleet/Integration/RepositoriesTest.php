@@ -145,7 +145,7 @@ final class RepositoriesTest extends KernelTestCase
 
         $scan = $orders->find($scan->id()) ?? self::fail('No order.');
         $scan->issue(Fleet::now());
-        $scan->deliver('signature');
+        $scan->deliver('signature', 'SHA256:console');
         $this->flush();
         self::assertCount(0, $orders->deliveredExpiredBefore(Fleet::now()->modify('+15 minutes -1 second'), 10));
         self::assertSame([Fleet::ORDER], array_map(static fn (AgentOrder $o): string => $o->id()->toString(), $orders->deliveredExpiredBefore(Fleet::now()->modify('+15 minutes'), 10)));

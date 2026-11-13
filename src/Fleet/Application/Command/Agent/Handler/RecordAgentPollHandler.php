@@ -13,6 +13,7 @@ use Fleet\Domain\Model\Agent;
 use Fleet\Domain\Model\AgentId;
 use Fleet\Domain\Model\AgentOrder;
 use Fleet\Domain\Model\AgentOrderId;
+use Fleet\Domain\Model\AgentPublicKey;
 use Fleet\Domain\Model\OrderStatus;
 use Fleet\Domain\Model\OrderType;
 use Fleet\Domain\Repository\AgentOrderRepository;
@@ -75,10 +76,21 @@ final readonly class RecordAgentPollHandler implements CommandHandler
             $open[] = $lagging;
         }
 
+        // The console key the agent pins: the current one until a ROTATE_CONSOLE_KEY moves it.
+        $current = $this->signer->currentKey();
+        if (null === $agent->pinnedConsoleKey()) {
+            $agent->pinConsoleKey($current);
+        }
+
+        $pinned = $agent->pinnedConsoleKey() ?? $current;
         foreach ($open as $order) {
             if (OrderStatus::Queued === $order->status()) {
                 $order->issue($now);
-                $order->deliver($this->signer->sign($order));
+                // Never delivered with a key the console no longer holds (the agent then needs a new installation).
+                $signature = $this->signer->sign($order, $pinned);
+                if (null !== $signature) {
+                    $order->deliver($signature, $pinned);
+                }
             } else {
                 $order->expireIfLate($now);
             }
@@ -97,6 +109,10 @@ final readonly class RecordAgentPollHandler implements CommandHandler
         $order = $this->orders->find(AgentOrderId::fromString($orderId));
         if (null !== $order && $order->agentId()->value->equals($agent->id()->value)) {
             $order->finish($status, $result->optionalString('reason'), $finishedAt, $now);
+            $newKey = $order->payload()['new_key'] ?? null;
+            if (OrderType::RotateConsoleKey === $order->type() && OrderStatus::Executed === $order->status() && \is_string($newKey)) {
+                $agent->pinConsoleKey(AgentPublicKey::fromText($newKey)->fingerprint());
+            }
         }
     }
 

@@ -10,6 +10,8 @@ enum RouteCollection: string implements RouteCollectionInterface
 {
     case AGENT_ENROLL = 'agent_enroll';
     case AGENT_POLL = 'agent_poll';
+    case AGENT_KEY_ROTATION = 'agent_key_rotation';
+    case AGENT_ROTATE_KEY = 'agent_rotate_key';
     case TEAM_HOSTS = 'team_hosts';
     case TEAM_AGENTS = 'team_agents';
     case TEAM_ENROLLMENT = 'team_enrollment';

@@ -105,7 +105,7 @@ final class PollTest extends TestCase
         $world->agents->add($other);
         $foreign = AgentOrder::scanNow(AgentOrderId::fromString(self::OTHER_ORDER), $other, null, Fleet::now());
         $foreign->issue(Fleet::now());
-        $foreign->deliver('s');
+        $foreign->deliver('s', 'SHA256:console');
         $world->orders->add($foreign);
 
         $world->poll()($this->poll([

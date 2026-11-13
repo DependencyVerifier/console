@@ -75,6 +75,12 @@ final readonly class DoctrineAgentRepository implements AgentRepository
         return $this->manager->get()->getRepository(Agent::class)->findBy(['teamId' => $teamId], ['enrolledAt' => 'ASC']);
     }
 
+    public function approved(): array
+    {
+        /** @var list<Agent> */
+        return $this->manager->get()->getRepository(Agent::class)->findBy(['status' => AgentStatus::Approved], ['enrolledAt' => 'ASC']);
+    }
+
     public function ofHost(HostId $hostId): array
     {
         /** @var list<Agent> */

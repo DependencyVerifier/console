@@ -12,4 +12,6 @@ enum OrderType: string
     case ScanNow = 'SCAN_NOW';
     case SetConfig = 'SET_CONFIG';
     case UpgradeAgent = 'UPGRADE_AGENT';
+    case RotateKey = 'ROTATE_KEY';
+    case RotateConsoleKey = 'ROTATE_CONSOLE_KEY';
 }

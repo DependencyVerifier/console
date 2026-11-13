@@ -35,6 +35,10 @@ class AgentOrder
     #[ORM\Column(length: 128, nullable: true)]
     private ?string $signature = null;
 
+    /** The fingerprint of the console key that signed it (the one its agent pins). */
+    #[ORM\Column(length: 60, nullable: true)]
+    private ?string $signedWith = null;
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $finishedAt = null;
 
@@ -85,6 +89,22 @@ class AgentOrder
         }
 
         return self::queue($id, $agent, OrderType::UpgradeAgent, ['version' => $version], $requestedBy, $now);
+    }
+
+    /**
+     * A new key pair for the agent (protocol §7.3): it announces the new key itself (§5.3).
+     */
+    public static function rotateKey(AgentOrderId $id, Agent $agent, ?Uuid $requestedBy, \DateTimeImmutable $now): self
+    {
+        return self::queue($id, $agent, OrderType::RotateKey, [], $requestedBy, $now);
+    }
+
+    /**
+     * The console key the agent pins from now on, announced with the key it pins today (protocol §7.3).
+     */
+    public static function rotateConsoleKey(AgentOrderId $id, Agent $agent, AgentPublicKey $next, \DateTimeImmutable $now): self
+    {
+        return self::queue($id, $agent, OrderType::RotateConsoleKey, ['new_key' => $next->text()], null, $now);
     }
 
     public function id(): AgentOrderId
@@ -145,6 +165,11 @@ class AgentOrder
         return $this->signature;
     }
 
+    public function signedWith(): ?string
+    {
+        return $this->signedWith;
+    }
+
     public function finishedAt(): ?\DateTimeImmutable
     {
         return $this->finishedAt;
@@ -173,13 +198,14 @@ class AgentOrder
         $this->expiresAt = $now->modify(self::VALIDITY);
     }
 
-    public function deliver(string $signature): void
+    public function deliver(string $signature, string $signedWith): void
     {
         if (OrderStatus::Queued !== $this->status || null === $this->issuedAt) {
             throw new \LogicException('Only an issued, queued order is delivered.');
         }
 
         $this->signature = $signature;
+        $this->signedWith = $signedWith;
         $this->status = OrderStatus::Delivered;
     }
 

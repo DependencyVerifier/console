@@ -39,6 +39,11 @@ interface AgentRepository
      */
     public function ofTeam(Uuid $teamId): array;
 
+    /**
+     * @return list<Agent> every approved agent of the instance
+     */
+    public function approved(): array;
+
     public function add(Agent $agent): void;
 
     public function remove(Agent $agent): void;

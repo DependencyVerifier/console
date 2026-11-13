@@ -185,6 +185,10 @@ notifications-digest: ## Queue the daily notification digests, and on Monday the
 agent-release-sync: ## Download, verify (AGENT_RELEASE_PUBKEY) and store the latest release of the agent, served by install.sh (cron: daily)
 	@$(CONSOLE) app:fleet:sync-agent-release
 
+.PHONY: console-key-rotate
+console-key-rotate: ## Move the approved agents to the next console key (APP_AGENT_SIGNING_KEY_NEXT); run until all are on it
+	@$(CONSOLE) app:fleet:rotate-console-key
+
 .PHONY: agent-release-import
 agent-release-import: ## Import a signed release of the agent from a folder (dir=…: SHA256SUMS, SHA256SUMS.minisig, binaries)
 	@:$(if $(dir),,$(error Usage: make agent-release-import dir=<folder>))

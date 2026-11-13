@@ -42,7 +42,7 @@ final class AgentOrderTest extends TestCase
         $order->issue($issued);
         self::assertEquals($issued, $order->issuedAt());
         self::assertEquals($issued->modify('+15 minutes'), $order->expiresAt());
-        $order->deliver('signature');
+        $order->deliver('signature', 'SHA256:console');
         self::assertSame([OrderStatus::Delivered, 'signature', true], [$order->status(), $order->signature(), $order->isSigned()]);
         self::assertTrue($order->isDeliverableAt($issued->modify('+14 minutes 59 seconds')), 'Sent again until a result.');
         self::assertFalse($order->isDeliverableAt($issued->modify('+15 minutes')));
@@ -55,7 +55,7 @@ final class AgentOrderTest extends TestCase
     {
         $order = $this->scanNow();
         try {
-            $order->deliver('unsigned');
+            $order->deliver('unsigned', 'SHA256:console');
             self::fail('Delivered before being issued.');
         } catch (\LogicException) {
             self::assertSame(OrderStatus::Queued, $order->status());
@@ -69,9 +69,9 @@ final class AgentOrderTest extends TestCase
             self::assertEquals(Fleet::now(), $order->issuedAt());
         }
 
-        $order->deliver('s1');
+        $order->deliver('s1', 'SHA256:console');
         $this->expectException(\LogicException::class);
-        $order->deliver('s2');
+        $order->deliver('s2', 'SHA256:console');
     }
 
     #[Test]
@@ -228,7 +228,7 @@ final class AgentOrderTest extends TestCase
     {
         $order = $this->scanNow();
         $order->issue(Fleet::now());
-        $order->deliver('signature');
+        $order->deliver('signature', 'SHA256:console');
 
         return $order;
     }

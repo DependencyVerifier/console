@@ -62,6 +62,11 @@ final class InMemoryAgents implements AgentRepository
         return array_values(array_filter($this->agents, static fn (Agent $a): bool => $a->teamId()->equals($teamId)));
     }
 
+    public function approved(): array
+    {
+        return array_values(array_filter($this->agents, static fn (Agent $a): bool => AgentStatus::Approved === $a->status()));
+    }
+
     public function ofHost(HostId $hostId): array
     {
         return array_values(array_filter($this->agents, static fn (Agent $a): bool => $a->hostId()->value->equals($hostId->value)));

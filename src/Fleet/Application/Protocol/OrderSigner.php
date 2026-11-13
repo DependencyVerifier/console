@@ -19,11 +19,23 @@ final readonly class OrderSigner
     {
     }
 
-    public function sign(AgentOrder $order): string
+    /**
+     * The fingerprint of the key the console signs with today.
+     */
+    public function currentKey(): string
     {
-        $signature = base64_encode($this->signer->sign(CanonicalJson::encode(self::order($order))));
+        return $this->signer->publicKey()->fingerprint();
+    }
 
-        return u($signature)->replace('+', '-')->replace('/', '_')->trimEnd('=')->toString();
+    /**
+     * The signature of an order with the console key its agent pins (the current one by default); none when the
+     * console no longer holds that key.
+     */
+    public function sign(AgentOrder $order, ?string $pinned = null): ?string
+    {
+        $signature = $this->signer->signWith($pinned ?? $this->signer->publicKey()->fingerprint(), CanonicalJson::encode(self::order($order)));
+
+        return null === $signature ? null : u(base64_encode($signature))->replace('+', '-')->replace('/', '_')->trimEnd('=')->toString();
     }
 
     /**
@@ -33,7 +45,7 @@ final readonly class OrderSigner
     {
         return [
             'order' => self::order($order),
-            'signature' => ['alg' => 'ed25519', 'key_id' => $this->signer->publicKey()->fingerprint(), 'value' => $order->signature() ?? throw new \LogicException('The order is not signed.')],
+            'signature' => ['alg' => 'ed25519', 'key_id' => $order->signedWith() ?? $this->signer->publicKey()->fingerprint(), 'value' => $order->signature() ?? throw new \LogicException('The order is not signed.')],
         ];
     }
 

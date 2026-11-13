@@ -51,6 +51,9 @@ class Agent implements RecordsEvents
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $desiredConfig = null;
 
+    #[ORM\Column(length: 60, nullable: true)]
+    private ?string $consoleKeyId = null;
+
     private function __construct(
         #[ORM\Id]
         #[ORM\Column(type: 'uuid')]
@@ -128,6 +131,32 @@ class Agent implements RecordsEvents
     public function fingerprint(): string
     {
         return $this->fingerprint;
+    }
+
+    /**
+     * The fingerprint of the console key it pins (null until its first poll: the current one).
+     */
+    public function pinnedConsoleKey(): ?string
+    {
+        return $this->consoleKeyId;
+    }
+
+    public function pinConsoleKey(string $fingerprint): void
+    {
+        $this->consoleKeyId = $fingerprint;
+    }
+
+    /**
+     * ROTATE_KEY: the new public key of the agent (proven by the agent, checked unique by the handler).
+     */
+    public function rotateKey(AgentPublicKey $key): void
+    {
+        if (AgentStatus::Approved !== $this->status || $key->fingerprint() === $this->fingerprint) {
+            throw new InvalidOrderPayload();
+        }
+
+        $this->publicKey = $key->text();
+        $this->fingerprint = $key->fingerprint();
     }
 
     public function runtime(): AgentRuntime

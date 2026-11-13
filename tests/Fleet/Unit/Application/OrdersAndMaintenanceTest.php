@@ -130,7 +130,7 @@ final class OrdersAndMaintenanceTest extends TestCase
         $world->agents->add($agent);
         $delivered = AgentOrder::setConfig(AgentOrderId::fromString(Fleet::ORDER), $agent, new AgentConfig(60, version: 1), null, Fleet::now());
         $delivered->issue(Fleet::now());
-        $delivered->deliver('s');
+        $delivered->deliver('s', 'SHA256:console');
         $scan = AgentOrder::scanNow(AgentOrderId::fromString(self::ORDER_2), $agent, null, Fleet::now());
         $world->orders->add($delivered);
         $world->orders->add($scan);
@@ -169,7 +169,7 @@ final class OrdersAndMaintenanceTest extends TestCase
         $world->clock->modify('+7 days');
         $fresh->seen('0.1.0', 0, $world->clock->now()->modify('-1 second'));
         $late->issue($world->clock->now()->modify('-16 minutes'));
-        $late->deliver('s');
+        $late->deliver('s', 'SHA256:console');
         $world->nonces->remember('k', 'new', $world->clock->now()->modify('-9 minutes'));
         $report = $this->maintain($world, 1);
 
@@ -198,7 +198,7 @@ final class OrdersAndMaintenanceTest extends TestCase
         $world->agents->add($agent);
         $order = AgentOrder::scanNow(AgentOrderId::fromString(Fleet::ORDER), $agent, null, Fleet::now());
         $order->issue(Fleet::now());
-        $order->deliver('s');
+        $order->deliver('s', 'SHA256:console');
         $world->orders->add($order);
         $world->clock->modify('+15 minutes 59 seconds');
 

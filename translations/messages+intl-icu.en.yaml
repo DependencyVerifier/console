@@ -60,6 +60,7 @@ refusal:
     unavailable: The service is temporarily unavailable. Try again in a moment.
     error: Something went wrong. Try again.
 rule:
+    console_key_rotation_not_prepared: "Set APP_AGENT_SIGNING_KEY_NEXT to a new key first."
     agent_not_upgradable: "Only an approved host agent behind the latest verified release can be upgraded (a container agent is upgraded by its image)."
     invalid_host_label: "A display name of 100 printable characters at most, and up to 16 valid IP addresses."
     invalid_documentation_link: "Each link must be an http(s) URL without credentials (2048 characters at most), with a label of 100 characters at most; 10 links at most."
@@ -608,6 +609,9 @@ fleet:
         upgrade: "Upgrade to {version}"
         upgrade_queued: "Upgrade requested. The agent verifies the release with the key built into it, then restarts on it at its next poll."
         upgrade_all: Upgrade the host agents
+        rotate_key: Rotate key
+        rotate_key_help: "The agent makes a new key pair and proves it to the console; its fingerprint changes."
+        key_rotation_queued: "Key rotation requested. The agent makes its new key at its next poll."
         upgrade_all_help: "Every approved host agent behind the latest verified release gets an upgrade order. Container agents are upgraded by their image."
         upgrades_queued: Upgrades requested for the host agents behind the latest release.
     enrollment:
