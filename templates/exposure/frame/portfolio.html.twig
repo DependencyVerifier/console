@@ -1,0 +1,85 @@
+{#- The home dashboard (variable: portfolio Portfolio): the most urgent findings in production across the teams of the
+    actor, then one card per team (its production figures, its projects with a production environment). -#}
+<div class="flex flex-col gap-6">
+    {%- if portfolio.teams is empty %}
+        <p class="text-sm text-muted-foreground" data-portfolio="empty">{{ 'exposure.portfolio.no_team'|trans }}</p>
+    {%- else %}
+        <section class="flex flex-col gap-3" aria-labelledby="portfolio-urgent">
+            <h2 id="portfolio-urgent" class="flex items-center gap-2 text-base font-semibold">
+                <twig:ux:icon name="lucide:shield-alert" class="size-4 text-destructive" aria-hidden="true" />{{ 'exposure.portfolio.urgent'|trans }}
+            </h2>
+            {%- if portfolio.urgent is empty %}
+                <p class="flex items-center gap-2 text-sm text-muted-foreground" data-portfolio="quiet"><twig:ux:icon name="lucide:shield-check" class="size-4" aria-hidden="true" />{{ 'exposure.portfolio.quiet'|trans }}</p>
+            {%- else %}
+                <ul class="divide-y rounded-lg border" data-portfolio="urgent">
+                    {%- for finding in portfolio.urgent %}
+                        <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
+                            <div class="flex min-w-0 flex-col gap-0.5">
+                                <a href="{{ path('exposure_finding', {teamId: finding.teamId, findingId: finding.id}) }}" target="_top" class="truncate font-medium underline-offset-4 hover:underline">{{ finding.title }}</a>
+                                <span class="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                                    <span class="font-medium text-foreground">{{ (portfolio.teams|filter(t => t.teamId == finding.teamId)|first).name }}</span>
+                                    <span aria-hidden="true">·</span>
+                                    {{- include('exposure/cells/finding_subject_link.html.twig', {row: finding}) -}}
+                                    <span aria-hidden="true">·</span>
+                                    {{- include('exposure/cells/finding_place.html.twig', {row: finding}) -}}
+                                </span>
+                            </div>
+                            {{ include('exposure/cells/finding_severity.html.twig', {row: finding}) }}
+                        </li>
+                    {%- endfor %}
+                </ul>
+            {%- endif %}
+        </section>
+        <div class="grid gap-4 lg:grid-cols-2">
+            {%- for team in portfolio.teams %}
+                <section class="flex flex-col gap-3 rounded-lg border p-4" data-portfolio-team="{{ team.teamId }}" aria-labelledby="portfolio-team-{{ team.teamId }}">
+                    <div class="flex items-center justify-between gap-2">
+                        <h2 id="portfolio-team-{{ team.teamId }}" class="text-sm font-semibold"><a href="{{ path('organization_team', {teamId: team.teamId}) }}" target="_top" class="underline-offset-4 hover:underline">{{ team.name }}</a></h2>
+                        <span class="text-xs text-muted-foreground">{{ ('role.' ~ team.role)|trans }}</span>
+                    </div>
+                    {%- if not team.production.hasProduction %}
+                        <p class="text-sm text-muted-foreground">{{ 'exposure.production.none'|trans }}</p>
+                    {%- else %}
+                        {%- set link = path('exposure_team_findings', {teamId: team.teamId}) %}
+                        <dl class="grid grid-cols-4 gap-2">
+                            {%- for figure in [
+                                {key: 'kev', label: 'exposure.dashboard.known_exploited', value: team.production.summary.knownExploited, query: 'kind=vulnerability'},
+                                {key: 'critical', label: 'exposure.severity.critical', value: team.production.summary.severities.critical ?? 0, query: 'kind=vulnerability&severity=critical'},
+                                {key: 'high', label: 'exposure.severity.high', value: team.production.summary.severities.high ?? 0, query: 'kind=vulnerability&severity=high'},
+                                {key: 'eol', label: 'exposure.dashboard.ends_of_life', value: team.production.summary.endsOfLife, query: 'kind=eol'},
+                            ] %}
+                                <div class="rounded-md border px-2 py-1.5{% if figure.value > 0 %} border-destructive/40 bg-destructive/5{% endif %}" data-portfolio-figure="{{ figure.key }}">
+                                    <dt class="truncate text-xs text-muted-foreground">{{ figure.label|trans }}</dt>
+                                    <dd class="text-lg font-semibold tabular-nums"><a href="{{ link }}?production=1&{{ figure.query }}" target="_top" class="hover:underline">{{ figure.value }}</a></dd>
+                                </div>
+                            {%- endfor %}
+                        </dl>
+                        {%- if team.projects is not empty %}
+                            <table class="w-full text-sm">
+                                <thead class="text-xs text-muted-foreground">
+                                    <tr>
+                                        <th scope="col" class="py-1 text-start font-normal">{{ 'exposure.portfolio.project'|trans }}</th>
+                                        <th scope="col" class="py-1 text-end font-normal">{{ 'exposure.dashboard.known_exploited'|trans }}</th>
+                                        <th scope="col" class="py-1 text-end font-normal">{{ 'exposure.severity.critical'|trans }}</th>
+                                        <th scope="col" class="py-1 text-end font-normal">{{ 'exposure.severity.high'|trans }}</th>
+                                        <th scope="col" class="py-1 text-end font-normal">{{ 'exposure.dashboard.ends_of_life'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    {%- for project in team.projects %}
+                                        <tr data-portfolio-project="{{ project.projectId }}">
+                                            <td class="py-1.5"><a href="{{ path('exposure_project_findings', {teamId: team.teamId, projectId: project.projectId}) }}?production=1" target="_top" class="underline-offset-4 hover:underline">{{ project.name }}</a></td>
+                                            {%- for key in ['knownExploited', 'critical', 'high', 'endsOfLife'] %}
+                                                <td class="py-1.5 text-end tabular-nums{% if project[key] > 0 %} font-semibold text-destructive{% endif %}">{{ project[key] }}</td>
+                                            {%- endfor %}
+                                        </tr>
+                                    {%- endfor %}
+                                </tbody>
+                            </table>
+                        {%- endif %}
+                    {%- endif %}
+                </section>
+            {%- endfor %}
+        </div>
+    {%- endif %}
+</div>

@@ -51,18 +51,29 @@ final readonly class RefreshFindingsHandler implements CommandHandler
             $existing[$finding->identity()] = $finding;
         }
 
-        $projects = [];
+        $environments = [];
         foreach ($this->queries->ask(new ListTeamEnvironments($command->teamId)) as $environment) {
-            $projects[$environment->environmentId] = $environment->projectId;
+            $environments[$environment->environmentId] = $environment;
+        }
+
+        // A host is in production when it carries an application attached to a production environment.
+        $productionHosts = [];
+        foreach ($subjects as $subject) {
+            if (null !== $subject->hostId && ($environments[$subject->environmentId ?? '']->production ?? false)) {
+                $productionHosts[$subject->hostId] = true;
+            }
         }
 
         foreach ($subjects as $subject) {
             $type = SubjectType::from($subject->type);
-            $project = $projects[$subject->environmentId ?? ''] ?? null;
+            $environment = $environments[$subject->environmentId ?? ''] ?? null;
             $placement = new SubjectPlacement(
                 $subject->name,
-                null === $project || null === $subject->environmentId ? null : Uuid::fromString($subject->environmentId),
-                null === $project ? null : Uuid::fromString($project),
+                null === $environment ? null : Uuid::fromString($environment->environmentId),
+                null === $environment ? null : Uuid::fromString($environment->projectId),
+                null === $subject->hostId ? null : Uuid::fromString($subject->hostId),
+                $subject->hostName,
+                SubjectType::Host === $type ? isset($productionHosts[$subject->id]) : ($environment->production ?? false),
             );
             foreach ($risks[$subject->key()] ?? [] as $risk) {
                 $facts = self::facts($risk);

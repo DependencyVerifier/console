@@ -17,7 +17,7 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class ListFindingsHandler implements QueryHandler
 {
-    public function __construct(private FindingAccess $access, private FindingReadModel $read, private ClockInterface $clock)
+    public function __construct(private FindingAccess $access, private FindingReadModel $read, private ClockInterface $clock, private FindingPlaces $places)
     {
     }
 
@@ -33,6 +33,6 @@ final readonly class ListFindingsHandler implements QueryHandler
 
         $this->access->project($query->teamId, $type, $query->subjectId);
 
-        return $this->read->ofSubject($query->teamId, $type->value, $query->subjectId, $this->clock->now(), $query->page);
+        return $this->places->page($query->teamId, $this->read->ofSubject($query->teamId, $type->value, $query->subjectId, $this->clock->now(), $query->page));
     }
 }

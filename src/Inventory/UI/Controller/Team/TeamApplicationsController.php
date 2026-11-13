@@ -26,7 +26,7 @@ final readonly class TeamApplicationsController
     {
         return $this->page->render($teamId, 'applications', 'team_applications', [
             'unattached' => $this->tables->createFromType(ApplicationsTable::class, ['teamId' => $teamId, 'unattached' => true, 'name' => 'unattached'])->handleRequest($request),
-            'applications' => $this->tables->createFromType(ApplicationsTable::class, ['teamId' => $teamId])->handleRequest($request),
+            'applications' => $this->tables->createFromType(ApplicationsTable::class, ['teamId' => $teamId, 'attached' => true])->handleRequest($request),
         ]);
     }
 }

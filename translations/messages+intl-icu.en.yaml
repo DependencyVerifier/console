@@ -29,7 +29,7 @@ nav:
     logout: Log out
 home:
     title: Overview
-    description: Teams, projects and hosts arrive with the next steps.
+    description: "What threatens production first, across your teams and projects."
     admin:
         title: Instance administration
         description: Accounts, second factor resets and super admins.
@@ -684,6 +684,9 @@ inventory:
         description: What the agents found running on the hosts of the team, attached to the environments of its projects.
         project_description: The applications attached to the environments of this project.
         to_attach: To attach
+        attached_title: Attached
+        no_environment: "There is no environment to attach it to yet. Create a project and its environments first."
+        no_environment_link: Projects
         links: Documentation
         edit_links: Edit links
         links_title: "Documentation of {name}"
@@ -760,6 +763,12 @@ exposure:
         no_vulnerability: No open vulnerability.
         see_all: See the findings
     filters:
+        host: Host
+        any_host: Any host
+        production: Production
+        any_production: Production or not
+        production_only: Production only
+        not_production: Not production
         label: Filter the findings
         kind: Kind
         severity: Severity
@@ -776,6 +785,22 @@ exposure:
     subject:
         application: Application
         host: Host
+    portfolio:
+        urgent: Most urgent in production
+        quiet: Nothing urgent open in production in your teams.
+        no_team: You are not a member of any team yet.
+        project: Project
+    production:
+        title: In production
+        see_all: See the findings in production
+        none: "No environment is marked production yet. Mark your production environments (Project › Environments) to see here what threatens them first."
+        quiet: Nothing urgent open in production.
+    place:
+        title: Where
+        environment: Project / environment
+        fleet: Fleet (not attached)
+        production: Production
+        not_production: Not production
     field:
         subject: Application or host
         finding: Finding

@@ -1,0 +1,49 @@
+{#- What is open in production (variables: production ProductionExposure, link the Findings section, or null): the
+    figures (each a link to the filtered list), the most urgent findings, or why there is nothing to show. -#}
+<section class="flex flex-col gap-3 rounded-lg border border-destructive/30 p-4" data-dashboard="production" aria-labelledby="production-title">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="production-title" class="flex items-center gap-2 text-sm font-semibold">
+            <twig:ux:icon name="lucide:shield-alert" class="size-4 text-destructive" aria-hidden="true" />{{ 'exposure.production.title'|trans }}
+        </h2>
+        {%- if link and production.hasProduction %}<a href="{{ link }}?production=1" target="_top" class="text-sm underline-offset-4 hover:underline">{{ 'exposure.production.see_all'|trans }}</a>{% endif %}
+    </div>
+    {%- if not production.hasProduction %}
+        <p class="text-sm text-muted-foreground" data-production="none">{{ 'exposure.production.none'|trans }}</p>
+    {%- else %}
+        {%- set figures = [
+            {key: 'kev', label: 'exposure.dashboard.known_exploited', value: production.summary.knownExploited, query: 'kind=vulnerability'},
+            {key: 'critical', label: 'exposure.severity.critical', value: production.summary.severities.critical ?? 0, query: 'kind=vulnerability&severity=critical'},
+            {key: 'high', label: 'exposure.severity.high', value: production.summary.severities.high ?? 0, query: 'kind=vulnerability&severity=high'},
+            {key: 'eol', label: 'exposure.dashboard.ends_of_life', value: production.summary.endsOfLife, query: 'kind=eol'},
+        ] %}
+        <dl class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {%- for figure in figures %}
+                <div class="rounded-md border px-3 py-2{% if figure.value > 0 %} border-destructive/40 bg-destructive/5{% endif %}" data-production-figure="{{ figure.key }}">
+                    <dt class="text-xs text-muted-foreground">{{ figure.label|trans }}</dt>
+                    <dd class="mt-1 text-xl font-semibold tabular-nums">
+                        {%- if link %}<a href="{{ link }}?production=1&{{ figure.query }}" target="_top" class="hover:underline">{{ figure.value }}</a>{% else %}{{ figure.value }}{% endif -%}
+                    </dd>
+                </div>
+            {%- endfor %}
+        </dl>
+        {%- if production.quiet %}
+            <p class="flex items-center gap-2 text-sm text-muted-foreground" data-production="quiet"><twig:ux:icon name="lucide:shield-check" class="size-4" aria-hidden="true" />{{ 'exposure.production.quiet'|trans }}</p>
+        {%- else %}
+            <ul class="divide-y rounded-md border" data-production="urgent">
+                {%- for finding in production.urgent %}
+                    <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+                        <div class="flex min-w-0 flex-col gap-0.5">
+                            <a href="{{ path('exposure_finding', {teamId: finding.teamId, findingId: finding.id}) }}" target="_top" class="truncate font-medium underline-offset-4 hover:underline">{{ finding.title }}</a>
+                            <span class="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                                {{- include('exposure/cells/finding_subject_link.html.twig', {row: finding}) -}}
+                                <span aria-hidden="true">·</span>
+                                {{- include('exposure/cells/finding_place.html.twig', {row: finding}) -}}
+                            </span>
+                        </div>
+                        {{ include('exposure/cells/finding_severity.html.twig', {row: finding}) }}
+                    </li>
+                {%- endfor %}
+            </ul>
+        {%- endif %}
+    {%- endif %}
+</section>

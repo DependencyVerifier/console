@@ -199,8 +199,10 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
     public function teamSubjects(string $teamId): array
     {
         $apps = $this->connection->fetchAllAssociative(
-            'SELECT a.id, a.fields, a.subject_key, a.environment_id, a.sbom_digest, i.sbom_digest AS image_digest FROM inventory_app_instance a
+            'SELECT a.id, a.fields, a.subject_key, a.environment_id, a.sbom_digest, i.sbom_digest AS image_digest, a.host_id, '.self::HOST_NAME.' AS hostname
+             FROM inventory_app_instance a
              LEFT JOIN inventory_container_image i ON i.team_id = a.team_id AND i.image_id = a.image_id
+             LEFT JOIN inventory_host h ON h.host_id = a.host_id LEFT JOIN inventory_host_label l ON l.host_id = a.host_id
              WHERE a.team_id = :team AND a.present ORDER BY a.id',
             ['team' => $teamId],
         );
@@ -228,7 +230,7 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
             $runtime = $fields['runtime'] ?? null;
             $runtimes = \is_array($runtime) && \is_string($runtime['name'] ?? null) && \is_string($runtime['version'] ?? null) ? [['name' => $runtime['name'], 'version' => $runtime['version']]] : [];
             $subjects[] = new TeamSubject(TeamSubject::APPLICATION, Row::string($app['id']), [...$packages[Row::string($app['sbom_digest'])] ?? [], ...$packages[Row::nullableString($app['image_digest']) ?? ''] ?? []], $runtimes, null,
-                AppRow::nameOf($fields, Row::string($app['subject_key'])), Row::nullableString($app['environment_id']));
+                AppRow::nameOf($fields, Row::string($app['subject_key'])), Row::nullableString($app['environment_id']), Row::string($app['host_id']), Row::string($app['hostname']));
         }
 
         foreach ($hosts as $host) {
@@ -241,9 +243,10 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
             }
 
             $os = \is_array($facts['os'] ?? null) ? $facts['os'] : [];
+            $name = Row::nullableString($host['display_name']) ?? (\is_string($facts['hostname'] ?? null) ? $facts['hostname'] : '');
             $subjects[] = new TeamSubject(TeamSubject::HOST, Row::string($host['host_id']), $packages[Row::nullableString($host['packages_digest']) ?? ''] ?? [], $runtimes,
                 \is_string($os['id'] ?? null) && \is_string($os['version_id'] ?? null) ? ['id' => $os['id'], 'version' => $os['version_id']] : null,
-                Row::nullableString($host['display_name']) ?? (\is_string($facts['hostname'] ?? null) ? $facts['hostname'] : ''));
+                $name, null, Row::string($host['host_id']), $name);
         }
 
         return $subjects;

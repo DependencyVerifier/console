@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Exposure\UI\Controller\Team;
 
+use Exposure\Application\Query\ExposureScope;
 use Exposure\Application\Query\FindingCriteria;
+use Exposure\Application\Query\ListFindingHosts;
 use Shared\Application\Bus\QueryBus;
 use Shared\Application\Contract\Organization\GetVisibleProjects;
 use Shared\Application\Contract\Organization\ListTeamEnvironments;
@@ -25,7 +27,13 @@ final readonly class FindingsFilters
     {
         $value = static fn (string $name): ?string => \is_string($request->query->get($name)) && '' !== $request->query->get($name) ? (string) $request->query->get($name) : null;
 
-        return new FindingCriteria($value('kind'), $value('severity'), $value('status'), $value('project'), $value('environment'));
+        $production = match ($value('production')) {
+            '1' => true,
+            '0' => false,
+            default => null,
+        };
+
+        return new FindingCriteria($value('kind'), $value('severity'), $value('status'), $value('project'), $value('environment'), $value('host'), $production);
     }
 
     /**
@@ -46,6 +54,26 @@ final readonly class FindingsFilters
         asort($projects);
 
         return $projects;
+    }
+
+    /**
+     * The hosts of the findings of a perimeter the actor sees, by name.
+     *
+     * @return array<string, string> host id => name
+     */
+    public function hosts(string $teamId, ExposureScope $scope = ExposureScope::Team, ?string $id = null): array
+    {
+        return $this->queries->ask(new ListFindingHosts($teamId, $scope, $id));
+    }
+
+    /**
+     * @return list<TeamEnvironment> the environments the actor sees of the team
+     */
+    public function teamEnvironments(string $teamId): array
+    {
+        $visible = $this->queries->ask(new GetVisibleProjects($teamId));
+
+        return array_values(array_filter($this->queries->ask(new ListTeamEnvironments($teamId)), static fn (TeamEnvironment $e): bool => $visible->sees($e->projectId)));
     }
 
     /**

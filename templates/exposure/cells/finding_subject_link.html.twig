@@ -1,0 +1,6 @@
+{#- The link to the application or the host of a finding (row: FindingRow). -#}
+{%- if row.subjectType == 'application' -%}
+    <a href="{{ path('inventory_application', {teamId: row.teamId, appId: row.subjectId}) }}" class="underline-offset-4 hover:underline">{{ row.subjectName ?: 'exposure.subject.application'|trans }}</a>
+{%- else -%}
+    <a href="{{ path('inventory_host', {teamId: row.teamId, hostId: row.subjectId}) }}" class="font-mono text-xs underline-offset-4 hover:underline">{{ row.subjectName ?: 'exposure.subject.host'|trans }}</a>
+{%- endif -%}

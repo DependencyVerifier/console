@@ -56,7 +56,7 @@ final class InventoryUiTest extends IdentityWebTestCase
         self::assertCount(1, $unattached, 'No label, no default environment: not attached.');
         self::assertStringContainsString('shop / php', (string) $unattached[0]['name']);
         self::assertStringContainsString('web-01', (string) $unattached[0]['host']);
-        self::assertCount(1, DataTables::draw($this->client, '/teams/'.$teamId.'/applications', 'applications')['data']);
+        self::assertCount(0, DataTables::draw($this->client, '/teams/'.$teamId.'/applications', 'applications')['data'], 'Not attached: listed once, under To attach.');
 
         $page = $this->client->request('GET', \sprintf('/teams/%s/applications/%s', $teamId, $appId));
         self::assertResponseIsSuccessful();

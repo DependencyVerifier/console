@@ -51,6 +51,8 @@ final readonly class TeamFindingsController
             'trend_chart' => $this->charts->trend($summary),
             'criteria' => $criteria,
             'projects' => $this->filters->projects($teamId),
+            'environments' => $this->filters->teamEnvironments($teamId),
+            'hosts' => $this->filters->hosts($teamId),
             'team' => $team,
             'tab' => 'findings',
             'tabs' => TeamPage::tabsOf($team),

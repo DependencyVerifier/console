@@ -38,6 +38,29 @@
 {% endblock %}
 
 {% block tab %}
+    <section class="rounded-lg border p-4" aria-labelledby="finding-where">
+        <h2 id="finding-where" class="mb-3 text-sm font-medium">{{ 'exposure.place.title'|trans }}</h2>
+        <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+                <dt class="text-muted-foreground">{{ ('exposure.subject.' ~ finding.subjectType)|trans }}</dt>
+                <dd>{{ include('exposure/cells/finding_subject_link.html.twig', {row: finding}) }}</dd>
+            </div>
+            {%- if finding.subjectType == 'application' %}
+                <div>
+                    <dt class="text-muted-foreground">{{ 'exposure.subject.host'|trans }}</dt>
+                    <dd>{% if finding.hostId %}<a href="{{ path('inventory_host', {teamId: team.id, hostId: finding.hostId}) }}" class="underline-offset-4 hover:underline">{{ finding.hostName ?: '—' }}</a>{% else %}—{% endif %}</dd>
+                </div>
+            {%- endif %}
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.place.environment'|trans }}</dt>
+                <dd>{% if finding.environmentId and finding.environment %}<a href="{{ path('exposure_environment', {teamId: team.id, projectId: finding.projectId, environmentId: finding.environmentId}) }}" class="underline-offset-4 hover:underline">{{ finding.environment }}</a>{% else %}<span class="text-muted-foreground">{{ 'exposure.place.fleet'|trans }}</span>{% endif %}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.place.production'|trans }}</dt>
+                <dd>{% if finding.production %}<twig:Badge variant="destructive">{{ 'exposure.place.production'|trans }}</twig:Badge>{% else %}<span class="text-muted-foreground">{{ 'exposure.place.not_production'|trans }}</span>{% endif %}</dd>
+            </div>
+        </dl>
+    </section>
     <section class="rounded-lg border p-4">
         <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
             <div>

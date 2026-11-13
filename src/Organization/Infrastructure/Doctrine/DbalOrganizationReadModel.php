@@ -165,7 +165,7 @@ final readonly class DbalOrganizationReadModel implements OrganizationReadModel
     public function teamEnvironments(string $teamId, ?string $environmentId = null): array
     {
         $query = $this->connection->createQueryBuilder()
-            ->select('e.id', 'e.name', 'p.id AS project_id', 'p.name AS project_name')
+            ->select('e.id', 'e.name', 'e.production', 'p.id AS project_id', 'p.name AS project_name')
             ->from('organization_environment', 'e')
             ->innerJoin('e', 'organization_project', 'p', 'p.id = e.project_id')
             ->where('p.team_id = :team')->setParameter('team', $teamId)
@@ -175,7 +175,7 @@ final readonly class DbalOrganizationReadModel implements OrganizationReadModel
         }
 
         return array_values(array_map(static fn (array $row): TeamEnvironment => new TeamEnvironment(
-            Row::string($row['id']), Row::string($row['name']), Row::string($row['project_id']), Row::string($row['project_name']),
+            Row::string($row['id']), Row::string($row['name']), Row::string($row['project_id']), Row::string($row['project_name']), (bool) $row['production'],
         ), $query->fetchAllAssociative()));
     }
 

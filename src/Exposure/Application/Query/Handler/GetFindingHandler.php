@@ -21,7 +21,7 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class GetFindingHandler implements QueryHandler
 {
-    public function __construct(private FindingAccess $access, private FindingReadModel $read, private RiskAcceptanceRepository $acceptances, private QueryBus $queries, private ClockInterface $clock)
+    public function __construct(private FindingAccess $access, private FindingReadModel $read, private RiskAcceptanceRepository $acceptances, private QueryBus $queries, private ClockInterface $clock, private FindingPlaces $places)
     {
     }
 
@@ -40,6 +40,6 @@ final readonly class GetFindingHandler implements QueryHandler
             $a->justification(), ($accounts[$a->acceptedBy()->toRfc4122()] ?? null)->email ?? '—', $a->acceptedAt(), $a->expiresOn(), $a->revokedAt(), $a->isActiveOn($today),
         ), $history);
 
-        return new FindingView($finding, $acceptances, $this->access->mayAccept($finding->teamId, $project));
+        return new FindingView($this->places->rows($finding->teamId, [$finding])[0], $acceptances, $this->access->mayAccept($finding->teamId, $project));
     }
 }

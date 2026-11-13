@@ -150,11 +150,45 @@ final class FindingsChainTest extends IdentityWebTestCase
         self::assertSame([], DataTables::draw($this->client, '/teams/'.$teamId.'/findings?status=fixed', 'findings')['data']);
         $this->client->request('GET', '/teams/'.$teamId.'/frames/exposure', server: ['HTTP_TURBO_FRAME' => 'team-exposure']);
         self::assertSelectorTextContains('[data-figure="high"] dd', '1');
+        self::assertSelectorExists('[data-dashboard="production"] [data-production="quiet"]', 'A production environment, nothing in it yet.');
 
         $dialog = $this->client->request('GET', \sprintf('/teams/%s/applications/%s/attach', $teamId, $appId), server: ['HTTP_TURBO_FRAME' => 'attach-application-form']);
         $this->client->submit($dialog->filter('form')->form(), ['attach[environment]' => $environmentId], ['HTTP_ACCEPT' => self::STREAM]);
         self::assertResponseIsSuccessful();
         self::assertSame([$projectId, $environmentId], [$this->fetchString('SELECT DISTINCT CAST(project_id AS TEXT) FROM exposure_finding'), $this->fetchString('SELECT DISTINCT CAST(environment_id AS TEXT) FROM exposure_finding')], 'Placed again once attached.');
+
+        self::assertSame(['yes', $hostId], [$this->fetchString("SELECT CASE WHEN BOOL_AND(production) THEN 'yes' ELSE 'no' END FROM exposure_finding"), $this->fetchString('SELECT DISTINCT CAST(host_id AS TEXT) FROM exposure_finding')], 'In production, on its host.');
+        $findingId = $this->fetchString("SELECT id FROM exposure_finding WHERE subject_type = 'application' LIMIT 1");
+        $page = $this->client->request('GET', \sprintf('/teams/%s/findings/%s', $teamId, $findingId));
+        $where = $page->filter('section[aria-labelledby="finding-where"]');
+        self::assertStringContainsString('Shop / production', $where->text());
+        self::assertStringContainsString('Production', $where->filter('[data-slot="badge"]')->text());
+        self::assertCount(1, $where->filter(\sprintf('a[href="/teams/%s/hosts/%s"]', $teamId, $hostId)));
+        self::assertCount(1, $where->filter(\sprintf('a[href="/teams/%s/projects/%s/environments/%s"]', $teamId, $projectId, $environmentId)));
+        $subject = (string) DataTables::draw($this->client, '/teams/'.$teamId.'/findings', 'findings')['data'][0]['subject'];
+        self::assertStringContainsString('Shop / production', $subject);
+        self::assertStringContainsString('Production', $subject);
+        $frame = $this->client->request('GET', '/teams/'.$teamId.'/frames/exposure', server: ['HTTP_TURBO_FRAME' => 'team-exposure']);
+        self::assertSame('1', $frame->filter('[data-production-figure="high"] dd')->text());
+        self::assertSame(\sprintf('/teams/%s/findings?production=1&kind=vulnerability&severity=high', $teamId), $frame->filter('[data-production-figure="high"] a')->attr('href'));
+        self::assertStringContainsString('Command Injection in lodash', $frame->filter('[data-production="urgent"]')->text(), 'The most urgent in production.');
+        $this->client->request('GET', '/');
+        self::assertSelectorExists('turbo-frame#home-portfolio[src="/frames/portfolio"]', 'The home page loads the production of the teams.');
+        $home = $this->client->request('GET', '/frames/portfolio', server: ['HTTP_TURBO_FRAME' => 'home-portfolio']);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Command Injection in lodash', $home->filter('[data-portfolio="urgent"]')->text());
+        self::assertStringContainsString('Alpha', $home->filter('[data-portfolio="urgent"]')->text(), 'With its team.');
+        self::assertSame('1', $home->filter(\sprintf('[data-portfolio-team="%s"] [data-portfolio-figure="high"] dd', $teamId))->text());
+        self::assertCount(1, $home->filter(\sprintf('[data-portfolio-project="%s"]', $projectId)));
+        self::assertCount(4, DataTables::draw($this->client, '/teams/'.$teamId.'/findings?production=1', 'findings')['data'], 'In production.');
+        self::assertSame([], DataTables::draw($this->client, '/teams/'.$teamId.'/findings?production=0', 'findings')['data']);
+        self::assertCount(4, DataTables::draw($this->client, \sprintf('/teams/%s/findings?host=%s', $teamId, $hostId), 'findings')['data'], 'On its host.');
+        self::assertSame([], DataTables::draw($this->client, \sprintf('/teams/%s/findings?host=%s', $teamId, Uuid::v7()->toRfc4122()), 'findings')['data']);
+        self::assertCount(4, DataTables::draw($this->client, '/teams/'.$teamId.'/findings?project=not-a-uuid', 'findings')['data'], 'A malformed id: no filter.');
+        $filters = $this->client->request('GET', '/teams/'.$teamId.'/findings?production=1');
+        self::assertCount(1, $filters->filter(\sprintf('select[name="host"] option[value="%s"]', $hostId)));
+        self::assertCount(1, $filters->filter(\sprintf('select[name="environment"] option[value="%s"]', $environmentId)));
+        self::assertSame('1', $filters->filter('select[name="production"] option[selected]')->attr('value'));
 
         $projectUrl = \sprintf('/teams/%s/projects/%s/findings', $teamId, $projectId);
         $this->client->request('GET', $projectUrl);

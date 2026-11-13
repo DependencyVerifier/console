@@ -35,6 +35,9 @@ final class InMemoryFindingReadModel implements FindingReadModel
         return new Page($rows, \count($rows), \count($rows));
     }
 
+    /** @var list<int> the limits of urgent() */
+    public array $limits = [];
+
     /** @var list<array{ExposureFilter, ?FindingCriteria}> what the handlers asked */
     public array $filters = [];
 
@@ -51,6 +54,32 @@ final class InMemoryFindingReadModel implements FindingReadModel
         $this->filters[] = [$filter, null];
 
         return new ExposureSummary([], 0, [], 0, 0, [], [], []);
+    }
+
+    public function urgent(ExposureFilter $filter, \DateTimeImmutable $today, int $limit): array
+    {
+        $this->filters[] = [$filter, null];
+        $this->limits[] = $limit;
+        $rows = array_map(fn (Finding $f): FindingRow => $this->row($f, $today), array_values(array_filter($this->findings->findings, static fn (Finding $f): bool => $f->teamId()->toRfc4122() === $filter->teamId)));
+
+        return \array_slice($rows, 0, $limit);
+    }
+
+    /** @var array<string, array{knownExploited: int, critical: int, high: int, endsOfLife: int}> */
+    public array $projectFigures = [];
+
+    public function projectFigures(ExposureFilter $filter, \DateTimeImmutable $today): array
+    {
+        $this->filters[] = [$filter, null];
+
+        return $this->projectFigures;
+    }
+
+    public function hosts(ExposureFilter $filter): array
+    {
+        $this->filters[] = [$filter, null];
+
+        return ['h1' => 'web-01'];
     }
 
     public function find(string $findingId, \DateTimeImmutable $today): ?FindingRow

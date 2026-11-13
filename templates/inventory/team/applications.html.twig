@@ -7,5 +7,5 @@
     {%- if team.role != 'team_guest' %}
         <div id="unattached" class="scroll-mt-4"><twig:DataTable :table="tables.unattached" :title="'inventory.applications.to_attach'|trans" /></div>
     {%- endif %}
-    <twig:DataTable :table="tables.applications" :title="'inventory.applications.title'|trans" />
+    <twig:DataTable :table="tables.applications" :title="'inventory.applications.attached_title'|trans" />
 {% endblock %}

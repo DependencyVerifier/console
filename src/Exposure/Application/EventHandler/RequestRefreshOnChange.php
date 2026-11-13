@@ -9,6 +9,7 @@ use Shared\Application\Bus\CommandBus;
 use Shared\Application\Bus\EventHandler;
 use Shared\Application\Contract\Inventory\ApplicationPlacementChanged;
 use Shared\Application\Contract\Inventory\InventoryChanged;
+use Shared\Application\Contract\Organization\EnvironmentChanged;
 use Shared\Application\Contract\Vulnerability\AdvisoriesChanged;
 
 /**
@@ -22,7 +23,7 @@ final readonly class RequestRefreshOnChange implements EventHandler
     {
     }
 
-    public function __invoke(InventoryChanged|ApplicationPlacementChanged|AdvisoriesChanged $event): void
+    public function __invoke(InventoryChanged|ApplicationPlacementChanged|EnvironmentChanged|AdvisoriesChanged $event): void
     {
         $this->commands->dispatch(new RequestExposureRefresh($event instanceof AdvisoriesChanged ? null : $event->teamId));
     }

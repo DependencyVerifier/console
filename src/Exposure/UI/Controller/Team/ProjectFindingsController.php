@@ -44,6 +44,7 @@ final readonly class ProjectFindingsController
             'trend_chart' => $this->charts->trend($summary),
             'criteria' => $criteria,
             'environments' => $this->filters->environments($teamId, $projectId),
+            'hosts' => $this->filters->hosts($teamId, ExposureScope::Project, $projectId),
         ], 'exposure/project/findings.html.twig');
     }
 }

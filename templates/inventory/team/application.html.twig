@@ -26,6 +26,9 @@
             :src="path('inventory_application_links', {teamId: team.id, appId: application.id})"
         />
     {%- endif %}
+    {%- if view.assignable is empty and application.environmentId is null and (team.can('project.create') or team.can('project.environments.manage')) %}
+        <p class="text-sm text-muted-foreground">{{ 'inventory.applications.no_environment'|trans }} <a href="{{ path('organization_team_projects', {teamId: team.id}) }}" class="font-medium text-foreground underline underline-offset-4">{{ 'inventory.applications.no_environment_link'|trans }}</a></p>
+    {%- endif %}
     {%- if view.assignable is not empty %}
         <twig:FormDialog
             id="attach-application"

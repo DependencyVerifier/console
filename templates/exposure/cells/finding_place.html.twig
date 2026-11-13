@@ -1,0 +1,14 @@
+{#- Where the subject of a finding is (row: FindingRow): its host, its project / environment (or the fleet), and a
+    Production badge. One line under the subject in the lists. -#}
+<span class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+    {%- if row.subjectType == 'application' and row.hostId -%}
+        <a href="{{ path('inventory_host', {teamId: row.teamId, hostId: row.hostId}) }}" class="underline-offset-4 hover:underline">{{ row.hostName ?: 'exposure.subject.host'|trans }}</a>
+        <span aria-hidden="true">·</span>
+    {%- endif -%}
+    {%- if row.environmentId and row.environment -%}
+        <a href="{{ path('exposure_environment', {teamId: row.teamId, projectId: row.projectId, environmentId: row.environmentId}) }}" class="underline-offset-4 hover:underline">{{ row.environment }}</a>
+    {%- else -%}
+        <span>{{ 'exposure.place.fleet'|trans }}</span>
+    {%- endif -%}
+    {%- if row.production %}<twig:Badge variant="destructive">{{ 'exposure.place.production'|trans }}</twig:Badge>{% endif -%}
+</span>

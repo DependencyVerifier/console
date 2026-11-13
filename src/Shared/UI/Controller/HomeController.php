@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Landing page of the authenticated area. Team dashboards arrive with Organization.
+ * Landing page of the authenticated area: the production of every team of the actor (a lazy frame of Exposure).
  */
 #[Route(path: '/', name: RouteCollection::HOME->value, methods: ['GET'])]
 final class HomeController extends AbstractController

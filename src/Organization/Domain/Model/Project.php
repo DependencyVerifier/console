@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Organization\Domain\Authorization\RolePermissions;
+use Organization\Domain\Event\EnvironmentProductionChanged;
 use Shared\Domain\Authorization\Permission;
 use Shared\Domain\Authorization\PermissionScope;
 use Shared\Domain\Model\EventRecording;
@@ -215,7 +216,11 @@ class Project implements RecordsEvents
         $name = Names::environment($name);
         $environment = $this->environment($id);
         $this->assertUniqueName($name, $environment);
+        $wasProduction = $environment->isProduction();
         $environment->update($name, $production);
+        if ($wasProduction !== $production) {
+            $this->recordThat(new EnvironmentProductionChanged($this->teamId->toRfc4122(), $id->toString()));
+        }
     }
 
     public function removeEnvironment(EnvironmentId $id): void

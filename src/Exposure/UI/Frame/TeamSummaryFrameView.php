@@ -31,6 +31,6 @@ final readonly class TeamSummaryFrameView implements FrameView
 
     public function render(FrameContext $context): string
     {
-        return $this->summary->render($context, ExposureScope::Team, null, RouteCollection::TEAM_FINDINGS->prefixed(), ['teamId' => $context->get('teamId')]);
+        return $this->summary->render($context, ExposureScope::Team, null, RouteCollection::TEAM_FINDINGS->prefixed(), ['teamId' => $context->get('teamId')], true);
     }
 }

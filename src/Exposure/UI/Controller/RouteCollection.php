@@ -17,6 +17,7 @@ enum RouteCollection: string implements RouteCollectionInterface
     case TEAM_SUMMARY_FRAME = 'team_summary_frame';
     case PROJECT_SUMMARY_FRAME = 'project_summary_frame';
     case HOST_SUMMARY_FRAME = 'host_summary_frame';
+    case PORTFOLIO_FRAME = 'portfolio_frame';
 
     public function prefixed(): string
     {

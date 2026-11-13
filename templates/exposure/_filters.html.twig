@@ -1,6 +1,7 @@
 {#- The filters of a list of findings: a GET form (the DataTable posts to the same URL, so it keeps them), submitted at
     each change by auto_submit_controller.ts, and by its button without script. Variables: criteria FindingCriteria,
-    projects (id => name, team only), environments (list<TeamEnvironment>, project only). -#}
+    projects (id => name, team only), environments (list<TeamEnvironment>: of the team, named Project / env, when
+    projects is set; else of the project), hosts (id => name). -#}
 <form method="get" class="flex flex-wrap items-end gap-3 text-sm" data-controller="auto-submit" data-action="change->auto-submit#submit" aria-label="{{ 'exposure.filters.label'|trans }}">
     {%- set selects = {
         kind: {'': 'exposure.filters.any_kind'|trans}|merge({vulnerability: 'exposure.kind.vulnerability'|trans, eol: 'exposure.kind.eol'|trans, outdated: 'exposure.kind.outdated'|trans}),
@@ -30,9 +31,26 @@
             <span class="text-xs text-muted-foreground">{{ 'exposure.filters.environment'|trans }}</span>
             <select name="environment" class="h-9 rounded-md border bg-background px-2">
                 <option value="">{{ 'exposure.filters.any_environment'|trans }}</option>
-                {%- for environment in environments %}<option value="{{ environment.environmentId }}"{% if environment.environmentId == criteria.environmentId %} selected{% endif %}>{{ environment.name }}</option>{% endfor %}
+                {%- for environment in environments %}<option value="{{ environment.environmentId }}"{% if environment.environmentId == criteria.environmentId %} selected{% endif %}>{% if projects is defined %}{{ environment.projectName }} / {% endif %}{{ environment.name }}{% if environment.production %} · {{ 'exposure.place.production'|trans }}{% endif %}</option>{% endfor %}
             </select>
         </label>
     {%- endif %}
+    {%- if hosts is defined and hosts is not empty %}
+        <label class="flex flex-col gap-1">
+            <span class="text-xs text-muted-foreground">{{ 'exposure.filters.host'|trans }}</span>
+            <select name="host" class="h-9 rounded-md border bg-background px-2">
+                <option value="">{{ 'exposure.filters.any_host'|trans }}</option>
+                {%- for id, name in hosts %}<option value="{{ id }}"{% if id == criteria.hostId %} selected{% endif %}>{{ name }}</option>{% endfor %}
+            </select>
+        </label>
+    {%- endif %}
+    <label class="flex flex-col gap-1">
+        <span class="text-xs text-muted-foreground">{{ 'exposure.filters.production'|trans }}</span>
+        <select name="production" class="h-9 rounded-md border bg-background px-2">
+            {%- for value, label in {'': 'exposure.filters.any_production'|trans, '1': 'exposure.filters.production_only'|trans, '0': 'exposure.filters.not_production'|trans} %}
+                <option value="{{ value }}"{% if (value == '1' and criteria.production is same as(true)) or (value == '0' and criteria.production is same as(false)) or (value == '' and criteria.production is null) %} selected{% endif %}>{{ label }}</option>
+            {%- endfor %}
+        </select>
+    </label>
     <twig:Button type="submit" variant="outline" size="sm">{{ 'exposure.filters.apply'|trans }}</twig:Button>
 </form>

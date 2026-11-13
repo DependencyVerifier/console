@@ -10,6 +10,7 @@ use Exposure\Application\Command\Risk\Handler\RevokeRiskAcceptanceHandler;
 use Exposure\Application\Command\Risk\Handler\RiskDecision;
 use Exposure\Application\Command\Risk\RevokeRiskAcceptance;
 use Exposure\Application\Query\GetFinding;
+use Exposure\Application\Query\Handler\FindingPlaces;
 use Exposure\Application\Query\Handler\GetFindingHandler;
 use Exposure\Application\Query\Handler\ListFindingsHandler;
 use Exposure\Application\Query\ListFindings;
@@ -165,7 +166,7 @@ final class RiskDecisionsTest extends TestCase
     public function it_should_show_the_findings_the_actor_sees(): void
     {
         $read = new InMemoryFindingReadModel($this->findings, $this->acceptances);
-        $list = fn (string $type, string $subject, string $team = self::TEAM): array => array_map(static fn (FindingRow $r): string => $r->subjectId, (new ListFindingsHandler($this->access(), $read, $this->clock))(new ListFindings($team, $type, $subject, new PageRequest()))->items);
+        $list = fn (string $type, string $subject, string $team = self::TEAM): array => array_map(static fn (FindingRow $r): string => $r->subjectId, (new ListFindingsHandler($this->access(), $read, $this->clock, $this->places()))(new ListFindings($team, $type, $subject, new PageRequest()))->items);
         self::assertSame([self::SHOP_APP], $list('application', self::SHOP_APP));
         self::assertSame([self::HOST], $list('host', self::HOST));
         self::assertSame([self::LOOSE_APP], $list('application', self::LOOSE_APP));
@@ -176,7 +177,7 @@ final class RiskDecisionsTest extends TestCase
 
         $finding = $this->finding(self::SHOP_APP)->id()->toRfc4122();
         $this->accept()(new AcceptRisk($finding, 'Not reachable.', '2027-01-31'));
-        $get = fn (string $id, string $team = self::TEAM) => (new GetFindingHandler($this->access(), $read, $this->acceptances, $this->accounts(), $this->clock))(new GetFinding($team, $id));
+        $get = fn (string $id, string $team = self::TEAM) => (new GetFindingHandler($this->access(), $read, $this->acceptances, $this->accounts(), $this->clock, $this->places()))(new GetFinding($team, $id));
         $view = $get($finding);
         self::assertSame([true, '2027-01-31', 'alice@example.com', true], [$view->mayDecide, $view->finding->acceptedUntil?->format('Y-m-d'), $view->acceptances[0]->acceptedBy, $view->runningAcceptance()?->active]);
         self::assertTrue($view->finding->isAccepted());
@@ -203,6 +204,13 @@ final class RiskDecisionsTest extends TestCase
     private function decision(): RiskDecision
     {
         return new RiskDecision($this->findings, $this->access());
+    }
+
+    private function places(): FindingPlaces
+    {
+        return new FindingPlaces(new FixedQueries([
+            ListTeamEnvironments::class => static fn (): array => [new TeamEnvironment(self::BLOG_ENV, 'production', self::BLOG, 'Blog'), new TeamEnvironment(self::SHOP_ENV, 'production', self::SHOP, 'Shop', true)],
+        ]));
     }
 
     private function access(): FindingAccess

@@ -209,8 +209,14 @@ final class TeamViewsTest extends TestCase
         self::assertSame(['environments' => [self::BLOG_ENV], 'unattached' => false, 'host' => null, 'image' => null], $this->read->lastFilter);
         $this->assertNotFound(static fn () => $byEnvironment('019a6b2c-4f00-7a11-8b22-3c44d55e6f09'), 'Not an environment of the team.');
         self::assertNull(new ListApplications(Inv::TEAM)->environmentId);
+        $attached = fn (?string $project = null): array => array_map(static fn (AppRow $r): string => $r->id, (new ListApplicationsHandler($this->access(), $this->read))(new ListApplications(Inv::TEAM, projectId: $project, attachedOnly: true))->items);
+        self::assertSame([Inv::APP, self::BLOG_APP], $attached(), 'Attached only: in an environment of the team.');
+        self::assertSame(['environments' => [self::BLOG_ENV, Inv::ENVIRONMENT], 'unattached' => false, 'host' => null, 'image' => null], $this->read->lastFilter);
+        self::assertSame([Inv::APP], $attached(self::SHOP), 'Within a project, its environments.');
+        self::assertFalse(new ListApplications(Inv::TEAM)->attachedOnly);
 
         $this->guest = true;
+        self::assertSame([Inv::APP], $attached(), 'A guest: its environments only.');
         self::assertSame([Inv::APP.' Shop / production'], $list());
         self::assertSame([Inv::APP.' Shop / production'], $list(self::SHOP));
         $this->read->lastFilter = [];

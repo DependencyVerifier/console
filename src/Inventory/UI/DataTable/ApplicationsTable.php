@@ -25,8 +25,8 @@ final class ApplicationsTable implements DataTableTypeInterface
     {
         $resolver = new OptionsResolver();
         $resolver->setRequired('teamId')->setAllowedTypes('teamId', 'string');
-        $resolver->setDefaults(['projectId' => null, 'environmentId' => null, 'unattached' => false, 'hostId' => null, 'imageId' => null, 'name' => 'applications']);
-        /** @var array{teamId: string, projectId: ?string, environmentId: ?string, unattached: bool, hostId: ?string, imageId: ?string, name: string} $o */
+        $resolver->setDefaults(['projectId' => null, 'environmentId' => null, 'unattached' => false, 'attached' => false, 'hostId' => null, 'imageId' => null, 'name' => 'applications']);
+        /** @var array{teamId: string, projectId: ?string, environmentId: ?string, unattached: bool, attached: bool, hostId: ?string, imageId: ?string, name: string} $o */
         $o = $resolver->resolve($options);
 
         $dataTable
@@ -36,6 +36,6 @@ final class ApplicationsTable implements DataTableTypeInterface
             ->add('environment', TwigColumn::class, ['field' => 'environment', 'label' => 'inventory.field.environment', 'orderable' => false, 'template' => 'inventory/cells/app_environment.html.twig'])
             ->add('packages', TwigColumn::class, ['field' => 'packages', 'label' => 'inventory.field.packages', 'orderable' => false, 'template' => 'fleet/cells/number.html.twig'])
             ->add('last_seen', TwigColumn::class, ['field' => 'lastSeenAt', 'label' => 'inventory.field.last_seen', 'orderable' => true, 'template' => 'fleet/cells/time.html.twig'])
-            ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListApplications => new ListApplications($o['teamId'], $page, $o['projectId'], $o['unattached'], $o['hostId'], $o['imageId'], $o['environmentId'])]);
+            ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListApplications => new ListApplications($o['teamId'], $page, $o['projectId'], $o['unattached'], $o['hostId'], $o['imageId'], $o['environmentId'], $o['attached'])]);
     }
 }

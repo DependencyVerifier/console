@@ -14,7 +14,7 @@ use Shared\Application\Query\Page;
 
 final readonly class ListTeamFindingsHandler implements QueryHandler
 {
-    public function __construct(private FindingAccess $access, private FindingReadModel $read, private ClockInterface $clock)
+    public function __construct(private FindingAccess $access, private FindingReadModel $read, private ClockInterface $clock, private FindingPlaces $places)
     {
     }
 
@@ -23,6 +23,6 @@ final readonly class ListTeamFindingsHandler implements QueryHandler
      */
     public function __invoke(ListTeamFindings $query): Page
     {
-        return $this->read->list($this->access->filter($query->teamId, $query->scope, $query->id), $query->criteria, $this->clock->now(), $query->page);
+        return $this->places->page($query->teamId, $this->read->list($this->access->filter($query->teamId, $query->scope, $query->id), $query->criteria, $this->clock->now(), $query->page));
     }
 }

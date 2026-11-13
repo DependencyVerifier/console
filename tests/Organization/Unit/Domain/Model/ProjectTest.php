@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Organization\Unit\Domain\Model;
 
+use Organization\Application\EventHandler\PublishEnvironmentChanges;
+use Organization\Domain\Event\EnvironmentProductionChanged;
 use Organization\Domain\Model\AlreadyMember;
 use Organization\Domain\Model\DuplicateEnvironmentName;
 use Organization\Domain\Model\EnvironmentId;
@@ -20,8 +22,10 @@ use Organization\Domain\Model\TeamId;
 use Organization\Domain\Model\TeamRole;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Shared\Application\Contract\Organization\EnvironmentChanged;
 use Shared\Domain\Authorization\Permission;
 use Symfony\Component\Uid\Uuid;
+use Tests\Identity\Support\RecordingEventBus;
 use Tests\Organization\Support\Teams;
 
 use function Symfony\Component\String\u;
@@ -119,6 +123,7 @@ final class ProjectTest extends TestCase
     public function it_should_manage_environments_with_unique_names(): void
     {
         $project = $this->createBy(null);
+        $project->releaseEvents();
         $prod = $project->addEnvironment(EnvironmentId::fromString(self::ENV), ' Production ', true);
         $project->addEnvironment(EnvironmentId::fromString(self::ENV_2), 'staging', false);
 
@@ -136,9 +141,18 @@ final class ProjectTest extends TestCase
         } catch (DuplicateEnvironmentName) {
         }
 
+        self::assertSame([], $project->releaseEvents(), 'Nothing to tell of a new environment: no application in it yet.');
         $project->updateEnvironment(EnvironmentId::fromString(self::ENV), 'production', false);
         self::assertSame('production', $prod->name(), 'Renaming itself is fine.');
         self::assertFalse($prod->isProduction());
+        self::assertEquals([new EnvironmentProductionChanged($project->teamId()->toString(), self::ENV)], $project->releaseEvents());
+        $project->updateEnvironment(EnvironmentId::fromString(self::ENV), 'prod', false);
+        self::assertSame([], $project->releaseEvents(), 'Renamed only: the names are read at display time.');
+        $project->updateEnvironment(EnvironmentId::fromString(self::ENV), 'production', true);
+        self::assertCount(1, $project->releaseEvents());
+        $events = new RecordingEventBus();
+        new PublishEnvironmentChanges($events)(new EnvironmentProductionChanged(Teams::TEAM, self::ENV));
+        self::assertEquals([new EnvironmentChanged(Teams::TEAM, self::ENV)], $events->published);
 
         try {
             $project->updateEnvironment(EnvironmentId::fromString(self::ENV_2), 'Production', true);

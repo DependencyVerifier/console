@@ -23,6 +23,9 @@ final readonly class DbalFindingReadModel implements FindingReadModel
     private const string ACCEPTED_UNTIL = '(SELECT MAX(r.expires_on) FROM exposure_risk_acceptance r WHERE r.finding_id = f.id AND r.revoked_at IS NULL AND r.expires_on > :today) AS accepted_until';
     private const string NO_ID = '00000000-0000-0000-0000-000000000000';
     private const string ACCEPTED = '(EXISTS (SELECT 1 FROM exposure_risk_acceptance a WHERE a.finding_id = f.id AND a.revoked_at IS NULL AND a.expires_on > :today))';
+    /** Exploited first, then the most severe vulnerabilities, then the ends of life already reached or coming. */
+    private const string URGENCY = "f.known_exploited DESC, CASE f.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,
+        CASE f.eol_level WHEN 'expired' THEN 0 WHEN 'imminent' THEN 1 WHEN 'soon' THEN 2 ELSE 3 END, CASE f.kind WHEN 'vulnerability' THEN 0 ELSE 1 END, f.cvss DESC NULLS LAST, f.title, f.id";
     private const string ORDER = "CASE f.status WHEN 'open' THEN 0 ELSE 1 END, CASE f.kind WHEN 'vulnerability' THEN 0 WHEN 'eol' THEN 1 ELSE 2 END,
         CASE f.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END, f.known_exploited DESC, f.end_of_life NULLS LAST, f.title, f.id";
 
@@ -56,6 +59,14 @@ final readonly class DbalFindingReadModel implements FindingReadModel
 
         if (null !== $criteria->environmentId) {
             $base->andWhere('f.environment_id = :criteria_environment')->setParameter('criteria_environment', $criteria->environmentId);
+        }
+
+        if (null !== $criteria->hostId) {
+            $base->andWhere('f.host_id = :criteria_host')->setParameter('criteria_host', $criteria->hostId);
+        }
+
+        if (null !== $criteria->production) {
+            $base->andWhere($criteria->production ? 'f.production' : 'NOT f.production');
         }
 
         match ($criteria->status) {
@@ -150,6 +161,42 @@ final readonly class DbalFindingReadModel implements FindingReadModel
         return new Page(array_map(self::row(...), $rows), $count, $total);
     }
 
+    public function urgent(ExposureFilter $filter, \DateTimeImmutable $today, int $limit): array
+    {
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $this->select($this->scoped($filter, $today))->andWhere("f.status = 'open'")->andWhere('NOT '.self::ACCEPTED)->andWhere("f.kind IN ('vulnerability', 'eol')")
+            ->orderBy(self::URGENCY)->setMaxResults($limit)->fetchAllAssociative();
+
+        return array_map(self::row(...), $rows);
+    }
+
+    public function projectFigures(ExposureFilter $filter, \DateTimeImmutable $today): array
+    {
+        $open = "f.status = 'open' AND NOT ".self::ACCEPTED;
+        $figures = [];
+        foreach ($this->scoped($filter, $today)->select('CAST(f.project_id AS TEXT) AS project_id',
+            "COUNT(*) FILTER (WHERE $open AND f.kind = 'vulnerability' AND f.known_exploited) AS known_exploited",
+            "COUNT(*) FILTER (WHERE $open AND f.kind = 'vulnerability' AND f.severity = 'critical') AS critical",
+            "COUNT(*) FILTER (WHERE $open AND f.kind = 'vulnerability' AND f.severity = 'high') AS high",
+            "COUNT(*) FILTER (WHERE $open AND f.kind = 'eol' AND f.eol_level IN ('soon', 'imminent', 'expired')) AS ends_of_life",
+        )->andWhere('f.project_id IS NOT NULL')->groupBy('f.project_id')->fetchAllAssociative() as $row) {
+            $figures[Row::string($row['project_id'])] = ['knownExploited' => Row::int($row['known_exploited']), 'critical' => Row::int($row['critical']), 'high' => Row::int($row['high']), 'endsOfLife' => Row::int($row['ends_of_life'])];
+        }
+
+        return $figures;
+    }
+
+    public function hosts(ExposureFilter $filter): array
+    {
+        $hosts = [];
+        foreach ($this->scoped($filter, new \DateTimeImmutable())->select('CAST(f.host_id AS TEXT) AS host_id', 'MAX(f.host_name) AS host_name')->andWhere('f.host_id IS NOT NULL')
+            ->groupBy('f.host_id')->orderBy('MAX(f.host_name)')->fetchAllAssociative() as $row) {
+            $hosts[Row::string($row['host_id'])] = Row::nullableString($row['host_name']) ?? '';
+        }
+
+        return $hosts;
+    }
+
     /**
      * The findings of the team the filter lets through.
      */
@@ -173,6 +220,10 @@ final readonly class DbalFindingReadModel implements FindingReadModel
             $query->andWhere("f.subject_type = 'host'")->andWhere('f.subject_id = :host')->setParameter('host', $filter->hostId);
         }
 
+        if ($filter->production) {
+            $query->andWhere('f.production');
+        }
+
         return $query;
     }
 
@@ -187,7 +238,8 @@ final readonly class DbalFindingReadModel implements FindingReadModel
     private function select(QueryBuilder $query): QueryBuilder
     {
         return $query->select('f.id', 'f.team_id', 'f.subject_type', 'f.subject_id', 'f.kind', 'f.title', 'f.package', 'f.installed', 'f.fixed', 'f.severity', 'f.cvss', 'f.known_exploited', 'f.epss',
-            'f.eol_level', 'f.end_of_life', 'f.latest', 'f.aliases', 'f.status', 'f.first_seen_at', 'f.last_seen_at', 'f.fixed_at', self::ACCEPTED_UNTIL, 'f.subject_name', 'f.suggested', 'f.project_id', 'f.environment_id');
+            'f.eol_level', 'f.end_of_life', 'f.latest', 'f.aliases', 'f.status', 'f.first_seen_at', 'f.last_seen_at', 'f.fixed_at', self::ACCEPTED_UNTIL, 'f.subject_name', 'f.suggested', 'f.project_id', 'f.environment_id',
+            'f.host_id', 'f.host_name', 'f.production');
     }
 
     /**
@@ -206,6 +258,7 @@ final readonly class DbalFindingReadModel implements FindingReadModel
             \is_array($aliases) ? array_values(array_filter($aliases, \is_string(...))) : [], Row::string($row['status']),
             new \DateTimeImmutable(Row::string($row['first_seen_at'])), new \DateTimeImmutable(Row::string($row['last_seen_at'])), $date($row['fixed_at']), $date($row['accepted_until']),
             Row::string($row['subject_name']), Row::nullableString($row['suggested']), Row::nullableString($row['project_id']), Row::nullableString($row['environment_id']),
+            Row::nullableString($row['host_id']), Row::nullableString($row['host_name']), true === $row['production'],
         );
     }
 }

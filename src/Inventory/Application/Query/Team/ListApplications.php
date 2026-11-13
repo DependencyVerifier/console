@@ -10,8 +10,8 @@ use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
 /**
- * The applications of a team the actor sees: of one project or one environment, not attached yet, of one host or one
- * image.
+ * The applications of a team the actor sees: of one project or one environment, attached or not attached yet, of one
+ * host or one image.
  *
  * @implements Query<Page<AppRow>>
  */
@@ -25,6 +25,7 @@ final readonly class ListApplications implements Query
         public ?string $hostId = null,
         public ?string $imageId = null,
         public ?string $environmentId = null,
+        public bool $attachedOnly = false,
     ) {
     }
 }

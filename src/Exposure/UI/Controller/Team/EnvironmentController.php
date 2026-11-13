@@ -54,6 +54,7 @@ final readonly class EnvironmentController
             'severity_chart' => $this->charts->severities($summary),
             'trend_chart' => $this->charts->trend($summary),
             'criteria' => $criteria,
+            'hosts' => $this->filters->hosts($teamId, ExposureScope::Environment, $environmentId),
         ], 'exposure/project/environment.html.twig');
     }
 }

@@ -125,9 +125,12 @@ final class RepositoriesTest extends KernelTestCase
         $today = new \DateTimeImmutable('2026-11-12 08:00:00');
         $team = Uuid::fromString(self::TEAM);
         [$shop, $blog, $shopEnv, $blogEnv] = [Uuid::v7(), Uuid::v7(), Uuid::v7(), Uuid::v7()];
-        $add = static function (string $name, ?Uuid $env, ?Uuid $project, FindingFacts $facts, string $seen, SubjectType $type = SubjectType::Application, ?Uuid $subject = null) use ($findings, $team): Finding {
+        [$host, $otherHost] = [Uuid::v7(), Uuid::v7()];
+        $hosts = ['shop' => [$host, 'web-01', true], 'web-01' => [$host, 'web-01', true], 'blog' => [$otherHost, 'web-02', false]];
+        $add = static function (string $name, ?Uuid $env, ?Uuid $project, FindingFacts $facts, string $seen, SubjectType $type = SubjectType::Application, ?Uuid $subject = null) use ($findings, $team, $hosts): Finding {
             $finding = Finding::detect(Uuid::v7(), $team, $type, $subject ?? Uuid::v5(Uuid::fromString(self::TEAM), $name), $facts, new \DateTimeImmutable($seen));
-            $finding->place(new SubjectPlacement($name, $env, $project));
+            [$hostId, $hostName, $production] = $hosts[$name] ?? [null, null, false];
+            $finding->place(new SubjectPlacement($name, $env, $project, $hostId, $hostName, $production));
             $findings->add($finding);
 
             return $finding;
@@ -143,7 +146,6 @@ final class RepositoriesTest extends KernelTestCase
         $fixed = $add('blog', $blogEnv, $blog, $vulnerability('f', 'medium'), '2026-11-01');
         $fixed->resolve(new \DateTimeImmutable('2026-11-11 10:00'));
         $add('blog', $blogEnv, $blog, new FindingFacts(FindingKind::Outdated, 'npm x', 'minor', 'x', '1', null, null, null, false, null, null, null, '2', []), '2026-11-01');
-        $host = Uuid::v7();
         $add('web-01', null, null, $eol('debian 11', '2026-08-31', 'expired', '13'), '2026-11-01', SubjectType::Host, $host);
         $add('loose', null, null, $vulnerability('g', 'low'), '2026-11-01');
         $acceptances->add(RiskAcceptance::accept(Uuid::v7(), $accepted, 'Accepted.', new \DateTimeImmutable('2027-01-01'), Uuid::v7(), $today));
@@ -175,6 +177,25 @@ final class RepositoriesTest extends KernelTestCase
         self::assertSame(['debian 11', 'php 8.2'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria('eol'), $today, new PageRequest())));
         self::assertSame(['Title c', 'Title d', 'minor'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(projectId: $blog->toRfc4122()), $today, new PageRequest())));
         self::assertSame(['Title a', 'Title b', 'php 8.2'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(environmentId: $shopEnv->toRfc4122()), $today, new PageRequest())));
+        self::assertSame(['Title a', 'Title b', 'debian 11', 'php 8.2'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(production: true), $today, new PageRequest())));
+        self::assertSame(['Title c', 'Title g', 'Title d', 'minor'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(production: false), $today, new PageRequest())));
+        self::assertSame(['Title a', 'Title b', 'debian 11', 'php 8.2'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(hostId: $host->toRfc4122()), $today, new PageRequest())), 'The host and the applications on it.');
+        self::assertSame(['Title c', 'Title d', 'minor'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(hostId: $otherHost->toRfc4122()), $today, new PageRequest())));
+        $production = $read->summary(new ExposureFilter(self::TEAM, production: true), $today);
+        self::assertSame([['critical' => 1, 'high' => 1], ['soon' => 1, 'expired' => 1]], [array_filter($production->severities), array_filter($production->eolLevels)], 'The production dashboards.');
+        self::assertSame([$host->toRfc4122() => 'web-01', $otherHost->toRfc4122() => 'web-02'], $read->hosts(new ExposureFilter(self::TEAM)), 'By name.');
+        self::assertSame([$host->toRfc4122() => 'web-01'], $read->hosts(new ExposureFilter(self::TEAM, [$shop->toRfc4122()])), 'A guest: the hosts of its projects.');
+        self::assertSame([$host->toRfc4122() => 'web-01'], $read->hosts(new ExposureFilter(self::TEAM, production: true)));
+        self::assertSame(['Title a', 'Title b', 'Title c', 'debian 11', 'php 8.2'], self::titles(new Page($read->urgent(new ExposureFilter(self::TEAM), $today, 5), 0, 0)), 'Exploited, critical, high, then ends of life; never accepted, fixed or outdated.');
+        self::assertSame(['Title a', 'Title b', 'Title c', 'debian 11', 'php 8.2', 'Title d', 'Title g'], self::titles(new Page($read->urgent(new ExposureFilter(self::TEAM), $today, 20), 0, 0)));
+        self::assertSame(['Title a', 'Title b', 'debian 11', 'php 8.2'], self::titles(new Page($read->urgent(new ExposureFilter(self::TEAM, production: true), $today, 5), 0, 0)));
+        self::assertEquals([
+            $shop->toRfc4122() => ['knownExploited' => 1, 'critical' => 1, 'high' => 1, 'endsOfLife' => 1],
+            $blog->toRfc4122() => ['knownExploited' => 0, 'critical' => 0, 'high' => 1, 'endsOfLife' => 0],
+        ], $read->projectFigures(new ExposureFilter(self::TEAM), $today), 'Open, not accepted; the fleet left out.');
+        self::assertSame([$shop->toRfc4122()], array_keys($read->projectFigures(new ExposureFilter(self::TEAM, production: true), $today)));
+        $first = $read->list(new ExposureFilter(self::TEAM), new FindingCriteria(), $today, new PageRequest())->items[0];
+        self::assertSame([$host->toRfc4122(), 'web-01', true], [$first->hostId, $first->hostName, $first->production]);
         $searched = $read->list(new ExposureFilter(self::TEAM), new FindingCriteria(), $today, new PageRequest(search: 'web-01'));
         self::assertSame([['debian 11'], 1, 8, 'web-01', '13'], [$titles($searched), $searched->filtered, $searched->total, $searched->items[0]->subjectName, $searched->items[0]->suggested], 'The subject is searched too.');
     }

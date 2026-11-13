@@ -23,6 +23,8 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Index(name: 'exposure_finding_team_status', columns: ['team_id', 'status'])]
 #[ORM\Index(name: 'exposure_finding_project', columns: ['team_id', 'project_id'])]
 #[ORM\Index(name: 'exposure_finding_environment', columns: ['team_id', 'environment_id'])]
+#[ORM\Index(name: 'exposure_finding_host', columns: ['team_id', 'host_id'])]
+#[ORM\Index(name: 'exposure_finding_production', columns: ['team_id', 'production', 'status'])]
 class Finding implements RecordsEvents
 {
     use EventRecording;
@@ -87,6 +89,12 @@ class Finding implements RecordsEvents
         private ?Uuid $environmentId = null,
         #[ORM\Column(type: 'uuid', nullable: true)]
         private ?Uuid $projectId = null,
+        #[ORM\Column(type: 'uuid', nullable: true)]
+        private ?Uuid $hostId = null,
+        #[ORM\Column(type: 'text', nullable: true)]
+        private ?string $hostName = null,
+        #[ORM\Column(options: ['default' => false])]
+        private bool $production = false,
     ) {
     }
 
@@ -185,11 +193,14 @@ class Finding implements RecordsEvents
         $this->subjectName = $placement->name;
         $this->environmentId = $placement->environmentId;
         $this->projectId = $placement->projectId;
+        $this->hostId = $placement->hostId;
+        $this->hostName = $placement->hostName;
+        $this->production = $placement->production;
     }
 
     public function placement(): SubjectPlacement
     {
-        return new SubjectPlacement($this->subjectName, $this->environmentId, $this->projectId);
+        return new SubjectPlacement($this->subjectName, $this->environmentId, $this->projectId, $this->hostId, $this->hostName, $this->production);
     }
 
     public function status(): FindingStatus

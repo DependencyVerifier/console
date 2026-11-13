@@ -56,11 +56,14 @@ final class RecordingReadModel implements OrganizationReadModel
         return null;
     }
 
+    /** @var array<string, string> the teams it knows, by id */
+    public array $teamNames = ['019a6b2c-2f00-7a11-8b22-3c44d55e6f01' => 'Platform'];
+
     public function teamNames(array $teamIds): array
     {
         $this->calls[] = ['teamNames', $teamIds];
 
-        return array_intersect_key(['019a6b2c-2f00-7a11-8b22-3c44d55e6f01' => 'Platform'], array_flip($teamIds));
+        return array_intersect_key($this->teamNames, array_flip($teamIds));
     }
 
     public function activeMembers(string $teamId): int

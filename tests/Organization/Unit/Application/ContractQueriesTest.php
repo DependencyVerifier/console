@@ -10,6 +10,7 @@ use Organization\Application\Query\Contract\Handler\FindTeamNamesHandler;
 use Organization\Application\Query\Contract\Handler\GetTeamAccessHandler;
 use Organization\Application\Query\Contract\Handler\GetTeamQuotaHandler;
 use Organization\Application\Query\Contract\Handler\GetVisibleProjectsHandler;
+use Organization\Application\Query\Contract\Handler\ListActorTeamsHandler;
 use Organization\Application\Query\Contract\Handler\ListTeamEnvironmentsHandler;
 use Organization\Domain\Authorization\EffectivePermissions;
 use Organization\Domain\Authorization\ProjectGrant;
@@ -23,17 +24,20 @@ use Organization\Domain\Model\TeamRole;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Authorization\ResourceNotFound;
+use Shared\Application\Contract\Organization\ActorTeam;
 use Shared\Application\Contract\Organization\FilterRecipients;
 use Shared\Application\Contract\Organization\FindTeamEnvironment;
 use Shared\Application\Contract\Organization\FindTeamNames;
 use Shared\Application\Contract\Organization\GetTeamAccess;
 use Shared\Application\Contract\Organization\GetTeamQuota;
 use Shared\Application\Contract\Organization\GetVisibleProjects;
+use Shared\Application\Contract\Organization\ListActorTeams;
 use Shared\Application\Contract\Organization\ListTeamEnvironments;
 use Shared\Application\Contract\Organization\TeamAccess;
 use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Application\Contract\Organization\VisibleProjects;
 use Tests\Organization\Support\FixedMembers;
+use Tests\Organization\Support\FixedPermissions;
 use Tests\Organization\Support\RecordingReadModel;
 use Tests\Organization\Support\Teams;
 use Tests\Organization\Support\World;
@@ -122,6 +126,23 @@ final class ContractQueriesTest extends TestCase
         $this->assertNotFound($handler);
         $this->assertNotFound(static fn () => new GetVisibleProjectsHandler($world->asSuperAdmin()->permissions, $world->teams)(new GetVisibleProjects(Teams::OTHER_TEAM)));
         self::assertEquals(new VisibleProjects(true), new GetVisibleProjectsHandler($world->permissions, $world->teams)(new GetVisibleProjects(Teams::TEAM)), 'The super admin sees every project.');
+    }
+
+    #[Test]
+    public function it_should_list_the_teams_of_the_actor_by_name(): void
+    {
+        $read = new RecordingReadModel();
+        $third = '019a6b2c-2f00-7a11-8b22-3c44d55e6f03';
+        $fourth = '019a6b2c-2f00-7a11-8b22-3c44d55e6f04';
+        $read->teamNames = [Teams::TEAM => 'platform', Teams::OTHER_TEAM => 'Alpha', $third => 'Platform', $fourth => 'Gone'];
+        $permissions = new FixedPermissions(false, [new TeamGrant(Teams::TEAM, TeamRole::Admin), new TeamGrant(Teams::OTHER_TEAM, TeamRole::Guest), new TeamGrant($third, TeamRole::Viewer)]);
+        self::assertEquals([
+            new ActorTeam(Teams::OTHER_TEAM, 'Alpha', 'team_guest'), new ActorTeam(Teams::TEAM, 'platform', 'team_admin'), new ActorTeam($third, 'Platform', 'team_viewer'),
+        ], new ListActorTeamsHandler($permissions, $read)(new ListActorTeams()), 'By name whatever the case, then by id; only its teams.');
+
+        $none = new RecordingReadModel();
+        self::assertSame([], new ListActorTeamsHandler(FixedPermissions::superAdmin(), $none)(new ListActorTeams()), 'A super admin: its own teams only.');
+        self::assertSame([], $none->calls, 'Nothing to ask.');
     }
 
     #[Test]
