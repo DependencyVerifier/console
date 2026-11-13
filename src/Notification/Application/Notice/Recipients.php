@@ -34,12 +34,12 @@ final readonly class Recipients
     }
 
     /**
-     * Its subscription to the scope, if not off and if it still sees the scope.
+     * Its subscription to the scope, if confirmed, not off, and if it still sees the scope.
      */
     public function subscription(string $userId, Uuid $teamId, ?Uuid $projectId): ?Subscription
     {
         $subscription = $this->subscriptions->of(Uuid::fromString($userId), $teamId, $projectId);
-        if (null === $subscription || Frequency::Off === $subscription->frequency()) {
+        if (null === $subscription || !$subscription->isConfirmed() || Frequency::Off === $subscription->frequency()) {
             return null;
         }
 

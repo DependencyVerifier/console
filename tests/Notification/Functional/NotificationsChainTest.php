@@ -16,6 +16,7 @@ use Notification\Domain\Model\WebhookSecretBinding;
 use Organization\Domain\Model\TeamRole;
 use PHPUnit\Framework\Attributes\Test;
 use Shared\Application\Crypto\SecretBox;
+use Shared\Application\Crypto\TokenHasher;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\DomCrawler\Crawler;
@@ -122,6 +123,36 @@ final class NotificationsChainTest extends IdentityWebTestCase
 
         $tester->execute([]);
         self::assertStringContainsString('0 digests queued.', $tester->getDisplay());
+    }
+
+    #[Test]
+    public function it_should_confirm_a_recipient_from_its_link_only_with_a_post(): void
+    {
+        $team = Seed::team(self::getContainer(), 'Alpha', []);
+        $token = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ';
+        $hasher = self::getContainer()->get(TokenHasher::class);
+        $subscription = Subscription::attach(Uuid::v7(), Uuid::fromString($team->id()->toString()), Uuid::v7(), Uuid::v7(), Frequency::Daily, Uuid::v7(), $token, $hasher->hash($token), new \DateTimeImmutable());
+        $manager = $this->manager();
+        $manager->persist($subscription);
+        $manager->flush();
+        $id = $subscription->id()->toRfc4122();
+
+        $this->client->request('GET', '/notifications/confirm/'.$token);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form[method="post"] button[type="submit"]');
+        self::assertNull($this->connection()->fetchOne('SELECT confirmed_at FROM notification_subscription WHERE id = ?', [$id]), 'Opening the link confirms nothing.');
+
+        $this->client->request('POST', '/notifications/confirm/'.$token);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('main', 'Confirmed');
+        self::assertNotNull($this->connection()->fetchOne('SELECT confirmed_at FROM notification_subscription WHERE id = ?', [$id]));
+        self::assertSame(['success'], array_column(AuditLog::entries($this->connection(), 'notification.confirm_recipient'), 'outcome'));
+
+        $this->client->request('POST', '/notifications/confirm/'.$token);
+        self::assertResponseStatusCodeSame(422, 'Spent.');
+        self::assertSelectorTextContains('main', 'expired or was already used');
+        $this->client->request('GET', '/notifications/confirm/short');
+        self::assertResponseStatusCodeSame(404);
     }
 
     #[Test]

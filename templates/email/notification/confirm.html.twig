@@ -1,0 +1,7 @@
+{% extends 'email/layout.html.twig' %}
+{% block content %}
+    <p>{{ 'notification.confirm.intro'|trans({team: team}, 'email') }}</p>
+    <p><a href="{{ url }}" style="display:inline-block;padding:8px 14px;background:#18181b;color:#ffffff;border-radius:6px;text-decoration:none">{{ 'notification.confirm.action'|trans({}, 'email') }}</a></p>
+    <p>{{ 'notification.confirm.validity'|trans({days: validity_days}, 'email') }}</p>
+    <p style="color:#71717a">{{ 'notification.confirm.ignore'|trans({}, 'email') }}</p>
+{% endblock %}

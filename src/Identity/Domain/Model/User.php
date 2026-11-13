@@ -121,6 +121,15 @@ class User implements RecordsEvents
         return $user;
     }
 
+    /**
+     * A notification recipient added by email (decision 16): no password, no `account.login`. It never signs in, until
+     * promoted by an invitation.
+     */
+    public static function notificationOnly(UserId $id, EmailAddress $email, \DateTimeImmutable $now): self
+    {
+        return new self($id->value, $email, $now);
+    }
+
     public function id(): UserId
     {
         return UserId::of($this->id);

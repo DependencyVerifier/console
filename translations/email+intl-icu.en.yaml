@@ -69,3 +69,9 @@ notification:
     open: Open in DependencyVerifier
     unsubscribe: Unsubscribe
     unsubscribe_from: "Unsubscribe ({team})"
+    confirm:
+        subject: "Confirm the notifications of {team} on DependencyVerifier"
+        intro: "You were added as a recipient of the security notifications of the team {team} on DependencyVerifier. Nothing is sent before you confirm this address."
+        action: "Confirm my address"
+        validity: "This link works for {days} days."
+        ignore: "If you did not expect it, ignore this email: you will receive nothing."

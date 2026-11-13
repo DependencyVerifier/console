@@ -29,6 +29,20 @@ final readonly class DoctrineSubscriptionRepository implements SubscriptionRepos
         return $this->manager->get()->getRepository(Subscription::class)->findBy(['teamId' => $teamId, 'scopeKey' => Subscription::scopeKey($projectId)], ['createdAt' => 'ASC', 'id' => 'ASC']);
     }
 
+    public function findByConfirmationHash(string $hash): ?Subscription
+    {
+        return $this->manager->get()->getRepository(Subscription::class)->findOneBy(['confirmationHash' => $hash]);
+    }
+
+    public function attachedRecipients(Uuid $teamId): array
+    {
+        /** @var list<string> */
+        return $this->manager->get()->getConnection()->fetchFirstColumn(
+            'SELECT DISTINCT CAST(user_id AS TEXT) FROM notification_subscription WHERE team_id = :team AND added_by IS NOT NULL ORDER BY 1',
+            ['team' => $teamId->toRfc4122()],
+        );
+    }
+
     public function add(Subscription $subscription): void
     {
         $this->manager->get()->persist($subscription);

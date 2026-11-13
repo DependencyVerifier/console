@@ -117,6 +117,33 @@ final class RepositoriesTest extends KernelTestCase
     }
 
     #[Test]
+    public function it_should_find_a_recipient_by_its_link_and_count_the_attached_accounts(): void
+    {
+        $team = Uuid::fromString(self::TEAM);
+        $ops = Uuid::v7();
+        $attach = fn (Uuid $user, string $project, string $hash): Subscription => Subscription::attach(Uuid::v7(), $team, Uuid::fromString($project), $user, Frequency::Daily, Uuid::v7(), 'token', $hash, $this->now);
+        $this->subscriptions->add($first = $attach($ops, self::PROJECT, 'h:1'));
+        $this->subscriptions->add($attach($ops, Uuid::v7()->toRfc4122(), 'h:2'));
+        $this->subscriptions->add(Subscription::subscribe(Uuid::v7(), $team, null, Uuid::v7(), Frequency::Daily, $this->now));
+        $this->subscriptions->add(Subscription::attach(Uuid::v7(), Uuid::fromString(self::OTHER), Uuid::fromString(self::PROJECT), Uuid::v7(), Frequency::Daily, Uuid::v7(), 'token', 'h:3', $this->now));
+        $this->flush();
+
+        self::assertSame($first->id()->toRfc4122(), $this->subscriptions->findByConfirmationHash('h:1')?->id()->toRfc4122());
+        self::assertNull($this->subscriptions->findByConfirmationHash('h:9'));
+        self::assertSame([$ops->toRfc4122()], $this->subscriptions->attachedRecipients($team), 'Each account once; not the self-subscribed; not another team.');
+
+        $found = $this->subscriptions->findByConfirmationHash('h:1');
+        $found?->confirm($this->now);
+        $this->flush();
+        self::assertNull($this->subscriptions->findByConfirmationHash('h:1'), 'Spent.');
+        self::assertTrue($this->subscriptions->find($first->id())?->isConfirmed());
+
+        $this->subscriptions->add(Subscription::attach(Uuid::v7(), $team, Uuid::fromString(self::PROJECT), Uuid::v7(), Frequency::Daily, Uuid::v7(), 'token', 'h:2', $this->now));
+        $this->expectException(UniqueConstraintViolationException::class);
+        $this->flush();
+    }
+
+    #[Test]
     public function it_should_tell_an_occurrence_once_and_list_the_due_deliveries(): void
     {
         $rule = $this->rule([NotificationEvent::VulnerabilityOpened], self::PROJECT);

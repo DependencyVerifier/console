@@ -22,7 +22,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * An occurrence to the outbox: one notice per rule retaining it (never twice), one delivery per webhook of the rule
- * still in the team, and per subscriber of its scope who is active, still sees it, and did not turn it off.
+ * still in the team, and per subscriber of its scope who confirmed, is active, still sees it, and did not turn it off.
  */
 final readonly class NoticeWriter
 {
@@ -80,7 +80,7 @@ final readonly class NoticeWriter
     {
         $frequencies = [];
         foreach ($this->subscriptions->ofScope($team, $project) as $subscription) {
-            if (Frequency::Off !== $subscription->frequency()) {
+            if ($subscription->isConfirmed() && Frequency::Off !== $subscription->frequency()) {
                 $frequencies[$subscription->userId()->toRfc4122()] = $subscription->frequency();
             }
         }

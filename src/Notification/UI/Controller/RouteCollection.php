@@ -9,6 +9,7 @@ use Shared\UI\Routing\RouteCollectionInterface;
 enum RouteCollection: string implements RouteCollectionInterface
 {
     case UNSUBSCRIBE = 'unsubscribe';
+    case CONFIRM_RECIPIENT = 'confirm_recipient';
 
     public function prefixed(): string
     {
