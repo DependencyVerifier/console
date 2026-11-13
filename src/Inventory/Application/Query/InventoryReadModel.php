@@ -8,6 +8,7 @@ use Inventory\Application\Query\View\AppRow;
 use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
+use Inventory\Application\Query\View\MatrixEntry;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Domain\Model\SnapshotSubject;
 use Shared\Application\Contract\Inventory\TeamSubject;
@@ -66,6 +67,14 @@ interface InventoryReadModel
     public function history(array $subjects, string $subjectId, PageRequest $page): Page;
 
     public function host(string $hostId): ?HostView;
+
+    /**
+     * The components of the applications present in an environment: their runtime, their OS (of their image, else of
+     * their host) and their direct dependencies, one entry per application.
+     *
+     * @return list<MatrixEntry>
+     */
+    public function matrixEntries(string $teamId, string $environmentId): array;
 
     /**
      * The label of a host (Fleet's, copied), for a host never inventoried yet.

@@ -11,12 +11,17 @@ use Fleet\Application\Command\Maintenance\MaintenanceReport;
 use Fleet\Application\Command\Order\ConfigureAgent;
 use Fleet\Application\Command\Order\Handler\ConfigureAgentHandler;
 use Fleet\Application\Command\Order\Handler\RequestScanHandler;
+use Fleet\Application\Command\Order\Handler\UpgradeAgentHandler;
 use Fleet\Application\Command\Order\RequestScan;
+use Fleet\Application\Command\Order\UpgradeAgent;
 use Fleet\Application\Query\Team\Handler\ListAgentOrdersHandler;
 use Fleet\Application\Query\Team\ListAgentOrders;
 use Fleet\Application\Query\View\OrderRow;
+use Fleet\Application\Release\AgentRelease;
+use Fleet\Domain\Model\Agent;
 use Fleet\Domain\Model\AgentConfig;
 use Fleet\Domain\Model\AgentNotApproved;
+use Fleet\Domain\Model\AgentNotUpgradable;
 use Fleet\Domain\Model\AgentOrder;
 use Fleet\Domain\Model\AgentOrderId;
 use Fleet\Domain\Model\AgentStatus;
@@ -29,10 +34,14 @@ use PHPUnit\Framework\TestCase;
 use Shared\Application\Audit\Target;
 use Shared\Application\Authorization\PermissionDenied;
 use Shared\Application\Authorization\ResourceNotFound;
+use Shared\Application\Contract\Organization\TeamAccess;
 use Shared\Application\Query\Page;
 use Shared\Domain\Authorization\Permission;
+use Symfony\Component\Uid\Uuid;
+use Tests\Fleet\Support\FixedReleases;
 use Tests\Fleet\Support\Fleet;
 use Tests\Fleet\Support\FleetWorld;
+use Tests\Fleet\Support\InMemoryOrders;
 use Tests\Fleet\Support\RecordingFleetReadModel;
 
 final class OrdersAndMaintenanceTest extends TestCase
@@ -212,6 +221,71 @@ final class OrdersAndMaintenanceTest extends TestCase
         $this->assertRefused(ResourceNotFound::class, static fn () => $handler(new ListAgentOrders(Fleet::HOST)));
         $world->as('team_guest');
         $this->assertRefused(PermissionDenied::class, static fn () => $handler(new ListAgentOrders(Fleet::AGENT)));
+    }
+
+    #[Test]
+    public function it_should_queue_an_upgrade_for_the_host_agents_behind_the_release(): void
+    {
+        $world = new FleetWorld()->as('team_admin', Permission::HostOrder);
+        $releases = new FixedReleases(new AgentRelease('0.2.0', []));
+        $upgrade = new UpgradeAgentHandler($world->access(), $world->agents, $world->orders, $releases, $world->actor, $world->clock);
+        $approved = static function (string $version = '0.1.0'): Agent {
+            $agent = Fleet::hostAgent($version);
+            $agent->approve(Uuid::fromString(Fleet::ADMIN), Fleet::now());
+
+            return $agent;
+        };
+        [$current, $behind, $alsoBehind] = [$approved('0.2.0'), $approved(), $approved()];
+        $pending = Fleet::hostAgent();
+        $container = Fleet::approved();
+        foreach ([$current, $behind, $pending, $container, $alsoBehind] as $agent) {
+            $world->agents->add($agent);
+        }
+        $order = static fn (Agent $agent): string => $agent->id()->toString().' UPGRADE_AGENT {"version":"0.2.0"}';
+
+        $upgrade(new UpgradeAgent(Fleet::TEAM, $behind->id()->toString()));
+        self::assertSame([$order($behind)], self::queued($world->orders), 'One agent.');
+        $upgrade(new UpgradeAgent(Fleet::TEAM));
+        self::assertSame([$order($behind), $order($alsoBehind)], self::queued($world->orders), 'The approved host agents behind the release, but the one already waiting.');
+        $first = array_first($world->orders->orders);
+        self::assertNotNull($first);
+        $first->cancel();
+        $upgrade(new UpgradeAgent(Fleet::TEAM, $behind->id()->toString()));
+        self::assertSame([$order($behind), $order($alsoBehind), $order($behind)], self::queued($world->orders), 'Once the first one is no longer waiting.');
+        self::assertEquals(Uuid::fromString(Fleet::ADMIN), array_values($world->orders->orders)[2]->requestedBy());
+
+        foreach ([$current, $container] as $refused) {
+            $this->assertRefused(AgentNotUpgradable::class, static fn () => $upgrade(new UpgradeAgent(Fleet::TEAM, $refused->id()->toString())));
+        }
+        $this->assertRefused(AgentNotApproved::class, static fn () => $upgrade(new UpgradeAgent(Fleet::TEAM, $pending->id()->toString())));
+        $this->assertRefused(ResourceNotFound::class, static fn () => $upgrade(new UpgradeAgent(Fleet::TEAM, 'not-a-uuid')));
+        $world->teams[Fleet::OTHER_TEAM] = new TeamAccess(Fleet::OTHER_TEAM, 'Other', 'team_admin', false);
+        $world->permissions->team[Fleet::OTHER_TEAM] = [Permission::HostOrder];
+        $this->assertRefused(ResourceNotFound::class, static fn () => $upgrade(new UpgradeAgent(Fleet::OTHER_TEAM, $alsoBehind->id()->toString())));
+        self::assertCount(3, $world->orders->orders, 'An agent of another team, even to an actor of both.');
+        $releases->latest = null;
+        $this->assertRefused(AgentNotUpgradable::class, static fn () => $upgrade(new UpgradeAgent(Fleet::TEAM)));
+        $releases->latest = new AgentRelease('0.2.0', []);
+        $world->as('team_member');
+        $this->assertRefused(PermissionDenied::class, static fn () => $upgrade(new UpgradeAgent(Fleet::TEAM)));
+        try {
+            AgentOrder::upgradeAgent(AgentOrderId::of(Uuid::v7()), $behind, '0.2', null, Fleet::now());
+            self::fail('Not a version.');
+        } catch (AgentNotUpgradable $refused) {
+            self::assertSame('agent_not_upgradable', $refused->ruleKey());
+        }
+
+        $command = new UpgradeAgent(Fleet::TEAM, $behind->id()->toString());
+        self::assertSame(['fleet.upgrade_agent', []], [$command->auditAction()->name, $command->auditContext()->values]);
+        self::assertEquals([Target::of('agent', $behind->id()->toString()), Target::of('team', Fleet::TEAM)], [$command->auditTarget(), new UpgradeAgent(Fleet::TEAM)->auditTarget()]);
+    }
+
+    /**
+     * @return list<string> agent, type and payload of each order, in creation order
+     */
+    private static function queued(InMemoryOrders $orders): array
+    {
+        return array_values(array_map(static fn (AgentOrder $o): string => $o->agentId()->toString().' '.$o->type()->value.' '.json_encode($o->payload()), $orders->orders));
     }
 
     private function scan(FleetWorld $world): RequestScanHandler

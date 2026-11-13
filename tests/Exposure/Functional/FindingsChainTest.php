@@ -87,7 +87,19 @@ final class FindingsChainTest extends IdentityWebTestCase
         $page = $this->client->request('GET', $findingUrl);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Command Injection in lodash');
-        self::assertCount(1, $page->filter('a[href="https://osv.dev/vulnerability/CVE-2021-23337"]'));
+        self::assertCount(1, $page->filter(\sprintf('a[href="/teams/%s/advisories/CVE-2021-23337"]', $teamId)), 'Each alias leads to its advisory.');
+        self::assertCount(1, $page->filter('a[href="https://osv.dev/vulnerability/GHSA-35jh-r3h4-6jhm"]'));
+
+        $advisoryUrl = \sprintf('/teams/%s/advisories/CVE-2021-23337', $teamId);
+        $advisory = $this->client->request('GET', $advisoryUrl);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('[data-advisory]', 'GHSA-35jh-r3h4-6jhm', 'Found by its CVE.');
+        self::assertStringContainsString('Command Injection in lodash', $advisory->filter('main')->text());
+        self::assertStringContainsString('lodash', $advisory->filter('section[aria-labelledby="advisory-affected"]')->text());
+        self::assertCount(1, DataTables::draw($this->client, $advisoryUrl, 'findings')['data'], 'The findings of the team it causes.');
+        $this->client->request('GET', \sprintf('/teams/%s/advisories/GHSA-unknown', $teamId));
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('GET', $findingUrl);
         self::assertSelectorExists('turbo-frame#accept-risk-form');
 
         $frame = ['HTTP_TURBO_FRAME' => 'accept-risk-form'];
@@ -206,6 +218,13 @@ final class FindingsChainTest extends IdentityWebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h2[data-environment]', 'production');
         self::assertCount(1, DataTables::draw($this->client, $environmentUrl, 'applications')['data']);
+        $components = DataTables::draw($this->client, $environmentUrl, 'components')['data'];
+        self::assertNotEmpty($components);
+        self::assertStringContainsString('lodash', implode(' ', array_map(static fn (array $c): string => (string) $c['component'], $components)), 'The components of the environment.');
+        self::assertStringContainsString('shop / php', (string) $components[0]['where']);
+        self::assertSame([], DataTables::draw($this->client, $environmentUrl.'?drift=1', 'components')['data'], 'One application: no drift.');
+        $this->client->request('GET', $environmentUrl.'?drift=1');
+        self::assertSelectorExists('input[name="drift"][checked]');
         self::assertCount(2, DataTables::draw($this->client, $environmentUrl.'?kind=vulnerability', 'findings')['data']);
         $this->client->request('GET', \sprintf('/teams/%s/projects/%s/environments/%s', $teamId, $projectId, Uuid::v7()->toRfc4122()));
         self::assertResponseStatusCodeSame(404);

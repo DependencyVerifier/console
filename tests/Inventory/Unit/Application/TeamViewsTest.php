@@ -17,10 +17,12 @@ use Inventory\Application\EventHandler\CopyHostLabel;
 use Inventory\Application\Query\OsName;
 use Inventory\Application\Query\Team\CountInventory;
 use Inventory\Application\Query\Team\GetApplication;
+use Inventory\Application\Query\Team\GetEnvironmentMatrix;
 use Inventory\Application\Query\Team\GetHostInventory;
 use Inventory\Application\Query\Team\GetImage;
 use Inventory\Application\Query\Team\Handler\CountInventoryHandler;
 use Inventory\Application\Query\Team\Handler\GetApplicationHandler;
+use Inventory\Application\Query\Team\Handler\GetEnvironmentMatrixHandler;
 use Inventory\Application\Query\Team\Handler\GetHostInventoryHandler;
 use Inventory\Application\Query\Team\Handler\GetImageHandler;
 use Inventory\Application\Query\Team\Handler\InventoryVisibility;
@@ -37,6 +39,8 @@ use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
 use Inventory\Application\Query\View\InventoryCounts;
 use Inventory\Application\Query\View\KeyPackage;
+use Inventory\Application\Query\View\MatrixEntry;
+use Inventory\Application\Query\View\MatrixRow;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Application\Security\InventoryAccess;
 use Inventory\Application\Security\InventoryScope;
@@ -58,6 +62,7 @@ use Shared\Application\Contract\Organization\GetVisibleProjects;
 use Shared\Application\Contract\Organization\ListTeamEnvironments;
 use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Application\Contract\Organization\VisibleProjects;
+use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 use Shared\Domain\Authorization\Permission;
 use Symfony\Component\Uid\Uuid;
@@ -279,6 +284,47 @@ final class TeamViewsTest extends TestCase
         self::assertSame('Ubuntu 24.04 LTS', $get(self::LOOSE_APP)->os, 'No image: the OS of its host.');
         $this->read->packages[Inv::TEAM.' sha256:app'] = [];
         self::assertSame([], $get(self::LOOSE_APP)->frameworks);
+    }
+
+    #[Test]
+    public function it_should_lay_out_the_components_of_an_environment(): void
+    {
+        $entry = static fn (string $kind, string $ecosystem, string $component, string $version, string $app, string $host = 'web-01'): MatrixEntry => new MatrixEntry($kind, $ecosystem, $component, $version, $app.'-id', $app, $host.'-id', $host);
+        $this->read->matrix = [
+            $entry('package', 'composer', 'symfony/http-kernel', '6.4.10', 'front'),
+            $entry('package', 'composer', 'symfony/http-kernel', '6.4.3', 'api', 'web-02'),
+            $entry('package', 'composer', 'symfony/http-kernel', '6.4.3', 'worker', 'web-03'),
+            $entry('runtime', 'php', 'php', '8.3.14', 'front'),
+            $entry('os', 'debian', 'Debian', '12', 'front'),
+            $entry('package', 'npm', 'React', '19.0.0', 'front'),
+            $entry('package', 'composer', 'Monolog/monolog', '3.0.0', 'front'),
+            $entry('package', 'npm', 'symfony/http-kernel', '1.0.0', 'front'),
+        ];
+        $matrix = fn (bool $drift = false, string $search = '', int $offset = 0, int $limit = 25, string $environment = Inv::ENVIRONMENT) => (new GetEnvironmentMatrixHandler($this->access(), $this->read))(new GetEnvironmentMatrix(Inv::TEAM, $environment, new PageRequest($offset, $limit, search: $search), $drift));
+        $lines = self::matrixLines(...);
+
+        $all = $matrix();
+        self::assertSame([
+            'runtime php php 8.3.14 1 front@web-01',
+            'os debian Debian 12 1 front@web-01',
+            'package composer Monolog/monolog 3.0.0 1 front@web-01',
+            'package npm React 19.0.0 1 front@web-01',
+            'package composer symfony/http-kernel 6.4.3 2 api@web-02,worker@web-03',
+            'package composer symfony/http-kernel 6.4.10 2 front@web-01',
+            'package npm symfony/http-kernel 1.0.0 1 front@web-01',
+        ], $lines($all), 'Runtimes, OS, then packages by name whatever the case, then ecosystem; versions in their order.');
+        self::assertSame([7, 7], [$all->filtered, $all->total]);
+        self::assertSame(['matrix' => [Inv::TEAM, Inv::ENVIRONMENT]], $this->read->lastFilter);
+        self::assertSame([Inv::TEAM, true, false], [$all->items[4]->teamId, $all->items[4]->drifts(), $all->items[0]->drifts()]);
+        self::assertSame(['package composer symfony/http-kernel 6.4.3 2 api@web-02,worker@web-03', 'package composer symfony/http-kernel 6.4.10 2 front@web-01'], $lines($drifts = $matrix(true)), 'The drifts only.');
+        self::assertSame([2, 7], [$drifts->filtered, $drifts->total]);
+        self::assertSame(['package composer Monolog/monolog 3.0.0 1 front@web-01'], $lines($matrix(search: ' MONOLOG ')));
+        self::assertSame(['package npm React 19.0.0 1 front@web-01', 'package composer symfony/http-kernel 6.4.3 2 api@web-02,worker@web-03'], $lines($matrix(offset: 3, limit: 2)));
+        self::assertFalse(new GetEnvironmentMatrix(Inv::TEAM, Inv::ENVIRONMENT)->driftOnly);
+        $this->assertNotFound(static fn () => $matrix(environment: '019a6b2c-4f00-7a11-8b22-3c44d55e6f09'), 'Not an environment of the team.');
+        $this->guest = true;
+        $this->assertNotFound(static fn () => $matrix(environment: self::BLOG_ENV), 'An environment of a project it does not see.');
+        self::assertCount(7, $matrix()->items);
     }
 
     #[Test]
@@ -543,6 +589,16 @@ final class TeamViewsTest extends TestCase
     private function assertNotFound(\Closure $call, string $message = ''): void
     {
         $this->assertRefused(ResourceNotFound::class, $call, $message);
+    }
+
+    /**
+     * @param Page<MatrixRow> $page
+     *
+     * @return list<string>
+     */
+    private static function matrixLines(Page $page): array
+    {
+        return array_map(static fn (MatrixRow $r): string => \sprintf('%s %s %s %s %d %s', $r->kind, $r->ecosystem, $r->component, $r->version, $r->versions, implode(',', array_map(static fn (array $p): string => $p['application'].'@'.$p['host'], $r->places))), $page->items);
     }
 
     private function assertDenied(string $permission, \Closure $call, string $message = ''): void

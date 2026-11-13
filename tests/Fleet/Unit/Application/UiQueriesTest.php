@@ -20,6 +20,7 @@ use Fleet\Application\Query\View\AgentRow;
 use Fleet\Application\Query\View\FleetView;
 use Fleet\Application\Query\View\HostRow;
 use Fleet\Application\Query\View\TokenRow;
+use Fleet\Application\Release\AgentRelease;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Authorization\PermissionDenied;
@@ -28,6 +29,8 @@ use Shared\Application\Contract\Organization\TeamAccess;
 use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Application\Query\Page;
 use Shared\Domain\Authorization\Permission;
+use Symfony\Component\Uid\Uuid;
+use Tests\Fleet\Support\FixedReleases;
 use Tests\Fleet\Support\Fleet;
 use Tests\Fleet\Support\FleetWorld;
 use Tests\Fleet\Support\RecordingFleetReadModel;
@@ -100,8 +103,18 @@ final class UiQueriesTest extends TestCase
     {
         $world = new FleetWorld()->as('team_viewer');
         $world->agents->add(Fleet::agent());
-        $handler = new GetAgentHandler($world->access(), $world->agents, $world->hosts);
-        self::assertEquals(new AgentRow(Fleet::AGENT, Fleet::TEAM, 'pending', Fleet::FINGERPRINT, 'container', 'compose', 'shop', '0.1.0', Fleet::HOST, '', Fleet::now(), Fleet::now()), $handler(new GetAgent(Fleet::AGENT)));
+        $releases = new FixedReleases(new AgentRelease('0.2.0', []));
+        $handler = new GetAgentHandler($world->access(), $world->agents, $world->hosts, $releases);
+        self::assertEquals(new AgentRow(Fleet::AGENT, Fleet::TEAM, 'pending', Fleet::FINGERPRINT, 'container', 'compose', 'shop', '0.1.0', Fleet::HOST, '', Fleet::now(), Fleet::now()), $handler(new GetAgent(Fleet::AGENT)), 'A container agent: upgraded by its image.');
+        $host = Fleet::hostAgent();
+        $world->agents->add($host);
+        self::assertNull($handler(new GetAgent($host->id()->toString()))->upgradeTo, 'Pending.');
+        $host->approve(Uuid::v7(), Fleet::now());
+        self::assertSame('0.2.0', $handler(new GetAgent($host->id()->toString()))->upgradeTo);
+        $releases->latest = new AgentRelease('0.1.0', []);
+        self::assertNull($handler(new GetAgent($host->id()->toString()))->upgradeTo, 'Already there.');
+        $releases->latest = null;
+        self::assertNull($handler(new GetAgent($host->id()->toString()))->upgradeTo, 'No release.');
         $world->hosts->add(Fleet::host());
         self::assertSame('web-01', $handler(new GetAgent(Fleet::AGENT))->hostname);
 

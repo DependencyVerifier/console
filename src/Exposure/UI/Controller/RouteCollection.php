@@ -9,6 +9,7 @@ use Shared\UI\Routing\RouteCollectionInterface;
 enum RouteCollection: string implements RouteCollectionInterface
 {
     case FINDING = 'finding';
+    case ADVISORY = 'advisory';
     case FINDING_ACCEPT = 'finding_accept';
     case FINDING_REVOKE = 'finding_revoke';
     case TEAM_FINDINGS = 'team_findings';

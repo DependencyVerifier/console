@@ -135,7 +135,7 @@ final class RepositoriesTest extends KernelTestCase
 
             return $finding;
         };
-        $vulnerability = static fn (string $key, ?string $severity, bool $kev = false): FindingFacts => new FindingFacts(FindingKind::Vulnerability, $key, 'Title '.$key, 'pkg', '1', '2', $severity, null, $kev, null, null, null, null, []);
+        $vulnerability = static fn (string $key, ?string $severity, bool $kev = false): FindingFacts => new FindingFacts(FindingKind::Vulnerability, $key, 'Title '.$key, 'pkg', '1', '2', $severity, null, $kev, null, null, null, null, ['GHSA-'.$key, 'CVE-'.$key]);
         $eol = static fn (string $cycle, string $end, string $level, ?string $suggested): FindingFacts => new FindingFacts(FindingKind::EndOfLife, $cycle, $cycle, 'php', '8', null, null, null, false, null, $level, new \DateTimeImmutable($end), null, [], $suggested);
         $add('shop', $shopEnv, $shop, $vulnerability('a', 'critical', true), '2026-11-10');
         $add('shop', $shopEnv, $shop, $vulnerability('b', 'high'), '2026-11-10');
@@ -194,6 +194,8 @@ final class RepositoriesTest extends KernelTestCase
             $blog->toRfc4122() => ['knownExploited' => 0, 'critical' => 0, 'high' => 1, 'endsOfLife' => 0],
         ], $read->projectFigures(new ExposureFilter(self::TEAM), $today), 'Open, not accepted; the fleet left out.');
         self::assertSame([$shop->toRfc4122()], array_keys($read->projectFigures(new ExposureFilter(self::TEAM, production: true), $today)));
+        self::assertSame(['Title a'], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(advisory: 'CVE-a'), $today, new PageRequest())), 'By an alias of its advisory.');
+        self::assertSame([], $titles($read->list(new ExposureFilter(self::TEAM), new FindingCriteria(advisory: 'CVE-z'), $today, new PageRequest())));
         $first = $read->list(new ExposureFilter(self::TEAM), new FindingCriteria(), $today, new PageRequest())->items[0];
         self::assertSame([$host->toRfc4122(), 'web-01', true], [$first->hostId, $first->hostName, $first->production]);
         $searched = $read->list(new ExposureFilter(self::TEAM), new FindingCriteria(), $today, new PageRequest(search: 'web-01'));

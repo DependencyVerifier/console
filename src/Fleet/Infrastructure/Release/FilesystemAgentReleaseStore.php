@@ -52,6 +52,10 @@ final readonly class FilesystemAgentReleaseStore implements AgentReleaseStore
             return null;
         }
 
+        if (\in_array($name, [AgentRelease::CHECKSUMS, AgentRelease::SIGNATURE], true)) {
+            return is_file($this->directory.'/'.$version.'/'.$name) ? $this->directory.'/'.$version.'/'.$name : null;
+        }
+
         foreach ($release->binaries as $binary) {
             if ($binary['name'] === $name) {
                 return $this->directory.'/'.$version.'/'.$name;

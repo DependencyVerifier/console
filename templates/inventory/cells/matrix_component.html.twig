@@ -1,0 +1,5 @@
+{#- A component of the matrix (row: MatrixRow): its name, and what it is (runtime, OS, or its ecosystem). -#}
+<span class="flex items-center gap-2">
+    <span class="font-mono text-xs">{{ row.component }}</span>
+    <twig:Badge variant="outline">{{ row.kind == 'package' ? row.ecosystem : ('inventory.matrix.kind.' ~ row.kind)|trans }}</twig:Badge>
+</span>

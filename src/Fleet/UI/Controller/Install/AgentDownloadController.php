@@ -15,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * The mirror of the verified binaries (install.sh checks their SHA-256 again on the host). Only the files of a stored
  * release: anything else is a 404.
  */
-#[Route(path: '/downloads/agent/{version}/{name}', name: RouteCollection::AGENT_DOWNLOAD->value, requirements: ['version' => '\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?', 'name' => 'depverify-agent-[a-z0-9_]+-linux'], methods: ['GET'])]
+#[Route(path: '/downloads/agent/{version}/{name}', name: RouteCollection::AGENT_DOWNLOAD->value, requirements: ['version' => '\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?', 'name' => 'depverify-agent-[a-z0-9_]+-linux|SHA256SUMS(\.minisig)?'], methods: ['GET'])]
 final readonly class AgentDownloadController
 {
     public function __construct(private AgentReleaseStore $releases)

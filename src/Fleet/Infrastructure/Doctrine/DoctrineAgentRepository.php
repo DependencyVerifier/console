@@ -69,6 +69,12 @@ final readonly class DoctrineAgentRepository implements AgentRepository
             ->getQuery()->getSingleScalarResult();
     }
 
+    public function ofTeam(Uuid $teamId): array
+    {
+        /** @var list<Agent> */
+        return $this->manager->get()->getRepository(Agent::class)->findBy(['teamId' => $teamId], ['enrolledAt' => 'ASC']);
+    }
+
     public function ofHost(HostId $hostId): array
     {
         /** @var list<Agent> */

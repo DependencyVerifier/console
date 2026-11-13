@@ -73,6 +73,20 @@ class AgentOrder
         return self::queue($id, $agent, OrderType::SetConfig, $config->toPayload(), $requestedBy, $now);
     }
 
+    /**
+     * Runs a newer release (protocol §7.3): a host agent only (an image is upgraded by its tag); the agent verifies
+     * the release with the key embedded in it, never with the console's.
+     */
+    public static function upgradeAgent(AgentOrderId $id, Agent $agent, string $version, ?Uuid $requestedBy, \DateTimeImmutable $now): self
+    {
+        $runtime = $agent->runtime();
+        if (AgentMode::Host !== $runtime->mode || [] === u($version)->match('/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/') || !version_compare($version, $runtime->version, '>')) {
+            throw new AgentNotUpgradable();
+        }
+
+        return self::queue($id, $agent, OrderType::UpgradeAgent, ['version' => $version], $requestedBy, $now);
+    }
+
     public function id(): AgentOrderId
     {
         return AgentOrderId::of($this->id);

@@ -9,10 +9,13 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Inventory\Application\Query\InventoryReadModel;
+use Inventory\Application\Query\OsName;
 use Inventory\Application\Query\View\AppRow;
 use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
+use Inventory\Application\Query\View\MatrixEntry;
+use Inventory\Application\Query\View\MatrixRow;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Domain\Model\SnapshotSubject;
 use Shared\Application\Contract\Inventory\TeamSubject;
@@ -172,6 +175,54 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
             Row::nullableString($row['packages_digest']), null === Row::nullableString($row['inventoried_at']) ? null : new \DateTimeImmutable(Row::string($row['inventoried_at'])), Row::int($row['packages']),
             Row::nullableString($row['display_name']), array_values(array_filter(self::json($row['addresses']), \is_string(...))),
         );
+    }
+
+    public function matrixEntries(string $teamId, string $environmentId): array
+    {
+        $parameters = ['team' => $teamId, 'environment' => $environmentId];
+        $apps = 'FROM inventory_app_instance a LEFT JOIN inventory_host h ON h.host_id = a.host_id LEFT JOIN inventory_host_label l ON l.host_id = a.host_id
+            WHERE a.team_id = :team AND a.environment_id = :environment AND a.present';
+        $entries = [];
+        foreach ($this->connection->fetchAllAssociative(
+            'SELECT a.id, a.fields, a.subject_key, a.host_id, a.image_id, '.self::HOST_NAME." AS hostname, h.facts->'os'->>'id' AS os_id, h.facts->'os'->>'version_id' AS os_version,
+                (SELECT SUBSTRING(p.purl FROM '[?&]distro=([^&#]+)') FROM inventory_container_image i JOIN inventory_blob b ON b.team_id = i.team_id AND b.digest = i.sbom_digest
+                    JOIN inventory_package p ON p.blob_id = b.id
+                    WHERE i.team_id = a.team_id AND i.image_id = a.image_id AND p.type IN ('apk', 'deb', 'rpm') AND p.purl ~ '[?&]distro=[^&#]' ORDER BY p.purl LIMIT 1) AS distro
+             $apps ORDER BY a.id",
+            $parameters,
+        ) as $row) {
+            $fields = self::json($row['fields']);
+            $place = [Row::string($row['id']), AppRow::nameOf($fields, Row::string($row['subject_key'])), Row::string($row['host_id']), Row::string($row['hostname'])];
+            $runtime = \is_array($fields['runtime'] ?? null) ? $fields['runtime'] : [];
+            if (\is_string($runtime['name'] ?? null) && \is_string($runtime['version'] ?? null)) {
+                $entries[] = new MatrixEntry(MatrixRow::RUNTIME, $runtime['name'], $runtime['name'], $runtime['version'], ...$place);
+            }
+
+            // The OS of its image; an application without image runs on the OS of its host.
+            $distro = Row::nullableString($row['distro']);
+            $match = null === $distro ? [] : u(rawurldecode($distro))->match('/^(.+?)-(\d[^-]*)$/');
+            $osId = null === Row::nullableString($row['image_id']) ? Row::nullableString($row['os_id']) : ($match[1] ?? null);
+            $osVersion = null === Row::nullableString($row['image_id']) ? Row::nullableString($row['os_version']) : ($match[2] ?? null);
+            if (\is_string($osId) && \is_string($osVersion)) {
+                $entries[] = new MatrixEntry(MatrixRow::OS, $osId, OsName::of($osId), $osVersion, ...$place);
+            }
+        }
+
+        foreach ($this->connection->fetchAllAssociative(
+            'SELECT a.id, a.fields, a.subject_key, a.host_id, '.self::HOST_NAME." AS hostname, p.type, p.namespace, p.name, p.version
+             FROM inventory_app_instance a JOIN inventory_blob b ON b.team_id = a.team_id AND b.digest = a.sbom_digest JOIN inventory_package p ON p.blob_id = b.id
+             LEFT JOIN inventory_host h ON h.host_id = a.host_id LEFT JOIN inventory_host_label l ON l.host_id = a.host_id
+             WHERE a.team_id = :team AND a.environment_id = :environment AND a.present AND p.dependency = 'direct' AND p.version IS NOT NULL ORDER BY a.id, p.purl",
+            $parameters,
+        ) as $row) {
+            $namespace = Row::nullableString($row['namespace']);
+            $entries[] = new MatrixEntry(
+                MatrixRow::PACKAGE, Row::string($row['type']), (null === $namespace ? '' : $namespace.'/').Row::string($row['name']), Row::string($row['version']),
+                Row::string($row['id']), AppRow::nameOf(self::json($row['fields']), Row::string($row['subject_key'])), Row::string($row['host_id']), Row::string($row['hostname']),
+            );
+        }
+
+        return $entries;
     }
 
     public function hostLabel(string $hostId): ?array

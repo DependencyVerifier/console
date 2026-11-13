@@ -34,6 +34,11 @@ interface AgentRepository
      */
     public function ofToken(EnrollmentTokenId $tokenId): array;
 
+    /**
+     * @return list<Agent> the agents of a team
+     */
+    public function ofTeam(Uuid $teamId): array;
+
     public function add(Agent $agent): void;
 
     public function remove(Agent $agent): void;

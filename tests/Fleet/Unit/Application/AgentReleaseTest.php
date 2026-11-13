@@ -92,7 +92,8 @@ final class AgentReleaseTest extends TestCase
         self::assertSame('0.1.0', $store->saved?->version);
         self::assertSame(['x86_64', 'aarch64'], array_keys($store->saved->binaries));
         self::assertSame(['name' => 'depverify-agent-x86_64-linux', 'sha256' => hash('sha256', $binaries['depverify-agent-x86_64-linux']), 'size' => 13], $store->saved->binaries['x86_64']);
-        self::assertSame(['depverify-agent-x86_64-linux', 'depverify-agent-aarch64-linux'], array_keys($store->binaries));
+        self::assertSame(['depverify-agent-x86_64-linux', 'depverify-agent-aarch64-linux', 'SHA256SUMS', 'SHA256SUMS.minisig'], array_keys($store->binaries), 'The signed sums too: the agents verify an upgrade themselves.');
+        self::assertSame([self::file('SHA256SUMS'), self::file('SHA256SUMS.minisig')], [$store->binaries['SHA256SUMS'], $store->binaries['SHA256SUMS.minisig']]);
 
         self::import($store, ['depverify-agent-aarch64-linux' => $binaries['depverify-agent-aarch64-linux']]);
         self::assertSame(['aarch64'], array_keys($store->saved->binaries ?? []), 'One architecture is enough.');

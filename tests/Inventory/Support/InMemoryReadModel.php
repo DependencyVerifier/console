@@ -9,6 +9,7 @@ use Inventory\Application\Query\View\AppRow;
 use Inventory\Application\Query\View\HistoryRow;
 use Inventory\Application\Query\View\HostView;
 use Inventory\Application\Query\View\ImageView;
+use Inventory\Application\Query\View\MatrixEntry;
 use Inventory\Application\Query\View\PackageRow;
 use Inventory\Domain\Model\SnapshotSubject;
 use Shared\Application\Contract\Inventory\TeamSubject;
@@ -76,6 +77,16 @@ final class InMemoryReadModel implements InventoryReadModel
         $rows = $this->packages[$teamId.' '.$digest] ?? [];
 
         return new Page($rows, \count($rows), \count($rows));
+    }
+
+    /** @var list<MatrixEntry> */
+    public array $matrix = [];
+
+    public function matrixEntries(string $teamId, string $environmentId): array
+    {
+        $this->lastFilter = ['matrix' => [$teamId, $environmentId]];
+
+        return $this->matrix;
     }
 
     public function hostLabel(string $hostId): ?array

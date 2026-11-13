@@ -68,6 +68,9 @@ final readonly class ImportAgentReleaseHandler implements CommandHandler
             throw new InvalidAgentRelease('No binary of a supported architecture.');
         }
 
+        // The agents verify an upgrade themselves: they download the signed checksums too.
+        $kept[AgentRelease::CHECKSUMS] = $command->checksums;
+        $kept[AgentRelease::SIGNATURE] = $command->signature;
         $this->store->save(new AgentRelease($version, $binaries), $kept);
     }
 }

@@ -74,6 +74,17 @@ final class Fleet
         return $agent;
     }
 
+    /**
+     * A pending agent in host mode (the only one an upgrade reaches), on its own host and with its own key.
+     */
+    public static function hostAgent(string $version = '0.1.0'): Agent
+    {
+        $agent = Agent::enroll(AgentId::of(Uuid::v7()), self::single(), self::host(), AgentPublicKey::fromText('ed25519:11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo='), new AgentRuntime(AgentMode::Host, null, null, $version), self::now());
+        $agent->releaseEvents();
+
+        return $agent;
+    }
+
     public static function approvedWithId(string $id): Agent
     {
         $agent = self::agent(id: $id);

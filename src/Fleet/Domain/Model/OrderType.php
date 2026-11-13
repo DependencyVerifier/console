@@ -11,4 +11,5 @@ enum OrderType: string
 {
     case ScanNow = 'SCAN_NOW';
     case SetConfig = 'SET_CONFIG';
+    case UpgradeAgent = 'UPGRADE_AGENT';
 }

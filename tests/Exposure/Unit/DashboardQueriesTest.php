@@ -50,6 +50,8 @@ use Tests\Organization\Support\FixedQueries;
  * What a dashboard or a list of findings reads: the whole team for a member, the projects of a TEAM_GUEST (never the
  * fleet), a project or an environment it sees, a host for whom sees every project; 404 otherwise.
  */
+use function Symfony\Component\String\u;
+
 final class DashboardQueriesTest extends TestCase
 {
     private const string TEAM = '019a6b2c-1f00-7a11-8b22-3c44d55e6f01';
@@ -208,8 +210,11 @@ final class DashboardQueriesTest extends TestCase
         $host = '019a6b2c-7f00-7a11-8b22-3c44d55e6f01';
         $where = new FindingCriteria(projectId: self::SHOP, environmentId: self::SHOP_ENV, hostId: $host, production: false);
         self::assertSame([self::SHOP, self::SHOP_ENV, $host, false], [$where->projectId, $where->environmentId, $where->hostId, $where->production]);
-        $garbage = new FindingCriteria(projectId: "x' OR 1=1", environmentId: 'nope', hostId: '');
-        self::assertSame([null, null, null, null], [$garbage->projectId, $garbage->environmentId, $garbage->hostId, $garbage->production], 'Not an id: no filter, never an SQL error.');
+        $garbage = new FindingCriteria(projectId: "x' OR 1=1", environmentId: 'nope', hostId: '', advisory: '"]} OR 1=1');
+        self::assertSame([null, null, null, null, null], [$garbage->projectId, $garbage->environmentId, $garbage->hostId, $garbage->production, $garbage->advisory], 'Not an id: no filter, never an SQL error.');
+        self::assertSame(['GHSA-35jh-r3h4-6jhm', 'CVE-2021-23337', 'DEBIAN-CVE-2023-5678', 'RHSA-2024:1234', 'a'], array_map(static fn (string $id): ?string => new FindingCriteria(advisory: $id)->advisory, ['GHSA-35jh-r3h4-6jhm', 'CVE-2021-23337', 'DEBIAN-CVE-2023-5678', 'RHSA-2024:1234', 'a']));
+        self::assertSame([null, null, null], array_map(static fn (string $id): ?string => new FindingCriteria(advisory: $id)->advisory, ['', '-CVE', 'A'.u('b')->repeat(100)->toString()]));
+        self::assertSame('A'.u('b')->repeat(99)->toString(), new FindingCriteria(advisory: 'A'.u('b')->repeat(99)->toString())->advisory, '100 characters at most.');
 
         $defaults = new ListTeamFindings(self::TEAM);
         self::assertSame([ExposureScope::Team, null, 'open', null, null], [$defaults->scope, $defaults->id, $defaults->criteria->status, $defaults->criteria->kind, $defaults->criteria->severity]);

@@ -65,6 +65,10 @@ final readonly class DbalFindingReadModel implements FindingReadModel
             $base->andWhere('f.host_id = :criteria_host')->setParameter('criteria_host', $criteria->hostId);
         }
 
+        if (null !== $criteria->advisory) {
+            $base->andWhere('CAST(f.aliases AS jsonb) @> CAST(:criteria_advisory AS jsonb)')->setParameter('criteria_advisory', json_encode([$criteria->advisory], \JSON_THROW_ON_ERROR));
+        }
+
         if (null !== $criteria->production) {
             $base->andWhere($criteria->production ? 'f.production' : 'NOT f.production');
         }

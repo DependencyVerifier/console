@@ -57,6 +57,11 @@ final class InMemoryAgents implements AgentRepository
         return \count(array_filter($this->agents, static fn (Agent $a): bool => $a->teamId()->equals($teamId) && $a->status()->countsInQuota()));
     }
 
+    public function ofTeam(Uuid $teamId): array
+    {
+        return array_values(array_filter($this->agents, static fn (Agent $a): bool => $a->teamId()->equals($teamId)));
+    }
+
     public function ofHost(HostId $hostId): array
     {
         return array_values(array_filter($this->agents, static fn (Agent $a): bool => $a->hostId()->value->equals($hostId->value)));

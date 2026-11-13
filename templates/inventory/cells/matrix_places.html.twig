@@ -1,0 +1,10 @@
+{#- Where a version runs (row: MatrixRow): each application, on its host. -#}
+<ul class="flex flex-col gap-0.5 text-xs">
+    {%- for place in row.places %}
+        <li>
+            <a href="{{ path('inventory_application', {teamId: row.teamId, appId: place.appId}) }}" class="underline-offset-4 hover:underline">{{ place.application }}</a>
+            <span class="text-muted-foreground">{{ 'inventory.matrix.on'|trans }}</span>
+            <a href="{{ path('inventory_host', {teamId: row.teamId, hostId: place.hostId}) }}" class="underline-offset-4 hover:underline">{{ place.host }}</a>
+        </li>
+    {%- endfor %}
+</ul>

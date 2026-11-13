@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Fleet\Application\Query\Team\Handler;
 
+use Fleet\Application\Port\AgentReleaseStore;
 use Fleet\Application\Query\Team\GetAgent;
 use Fleet\Application\Query\View\AgentRow;
 use Fleet\Application\Security\FleetAccess;
+use Fleet\Domain\Model\Agent;
 use Fleet\Domain\Model\AgentId;
+use Fleet\Domain\Model\AgentMode;
 use Fleet\Domain\Repository\AgentRepository;
 use Fleet\Domain\Repository\HostRepository;
 use Shared\Application\Authorization\ResourceNotFound;
@@ -16,7 +19,7 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class GetAgentHandler implements QueryHandler
 {
-    public function __construct(private FleetAccess $access, private AgentRepository $agents, private HostRepository $hosts)
+    public function __construct(private FleetAccess $access, private AgentRepository $agents, private HostRepository $hosts, private AgentReleaseStore $releases)
     {
     }
 
@@ -30,7 +33,18 @@ final readonly class GetAgentHandler implements QueryHandler
             $agent->id()->toString(), $agent->teamId()->toRfc4122(), $agent->status()->value, $agent->fingerprint(), $runtime->mode->value,
             $runtime->scope?->value, $runtime->composeProject, $runtime->version, $agent->hostId()->toString(),
             $this->hosts->find($agent->hostId())?->name() ?? '', $agent->enrolledAt(), $agent->lastSeenAt(),
-            '', $agent->desiredConfig()?->toPayload(), $agent->appliedConfigVersion(),
+            '', $agent->desiredConfig()?->toPayload(), $agent->appliedConfigVersion(), $this->upgradeTo($agent),
         );
+    }
+
+    /**
+     * The release an approved host agent behind it may be upgraded to.
+     */
+    private function upgradeTo(Agent $agent): ?string
+    {
+        $latest = $this->releases->latest()?->version;
+        $runtime = $agent->runtime();
+
+        return null !== $latest && $agent->isApproved() && AgentMode::Host === $runtime->mode && version_compare($latest, $runtime->version, '>') ? $latest : null;
     }
 }

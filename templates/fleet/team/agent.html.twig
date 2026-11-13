@@ -32,6 +32,12 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
+            {%- if fleet.can('host.order') and agent.upgradeTo %}
+                <form method="post" action="{{ path('fleet_agent_upgrade', {teamId: team.id, agentId: agent.id}) }}">
+                    <input type="hidden" name="action[_token]" value="{{ csrf_token('agent_upgrade:' ~ agent.id) }}">
+                    <twig:Button type="submit">{{ 'fleet.agents.upgrade'|trans({version: agent.upgradeTo}) }}</twig:Button>
+                </form>
+            {%- endif %}
             {%- if fleet.can('host.order') and agent.status == 'approved' %}
                 <form method="post" action="{{ path('fleet_agent_scan', {teamId: team.id, agentId: agent.id}) }}">
                     <input type="hidden" name="action[_token]" value="{{ csrf_token('agent_scan:' ~ agent.id) }}">

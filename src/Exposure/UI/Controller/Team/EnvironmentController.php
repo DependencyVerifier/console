@@ -10,6 +10,7 @@ use Exposure\UI\Chart\ExposureCharts;
 use Exposure\UI\Controller\RouteCollection;
 use Exposure\UI\DataTable\TeamFindingsTable;
 use Inventory\UI\DataTable\ApplicationsTable;
+use Inventory\UI\DataTable\EnvironmentMatrixTable;
 use Omines\DataTablesBundle\DataTableFactory;
 use Organization\UI\Controller\Project\ProjectPage;
 use Shared\Application\Bus\QueryBus;
@@ -21,7 +22,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 
 /**
- * The page of an environment, in its project's frame: its dashboard, its applications (Inventory) and its findings.
+ * The page of an environment, in its project's frame: its dashboard, its applications and their components (Inventory),
+ * and its findings.
  */
 #[Route(path: '/teams/{teamId}/projects/{projectId}/environments/{environmentId}', name: RouteCollection::ENVIRONMENT->value, requirements: ['teamId' => Requirement::UUID, 'projectId' => Requirement::UUID, 'environmentId' => Requirement::UUID], methods: ['GET', 'POST'])]
 final readonly class EnvironmentController
@@ -38,6 +40,7 @@ final readonly class EnvironmentController
         $criteria = $this->filters->criteria($request);
         $tables = [
             'applications' => $this->tables->createFromType(ApplicationsTable::class, ['teamId' => $teamId, 'environmentId' => $environmentId])->handleRequest($request),
+            'components' => $this->tables->createFromType(EnvironmentMatrixTable::class, ['teamId' => $teamId, 'environmentId' => $environmentId, 'driftOnly' => '1' === $request->query->get('drift')])->handleRequest($request),
             'findings' => $this->tables->createFromType(TeamFindingsTable::class, ['teamId' => $teamId, 'scope' => ExposureScope::Environment, 'id' => $environmentId, 'criteria' => $criteria])->handleRequest($request),
         ];
         foreach ($tables as $table) {
@@ -54,6 +57,7 @@ final readonly class EnvironmentController
             'severity_chart' => $this->charts->severities($summary),
             'trend_chart' => $this->charts->trend($summary),
             'criteria' => $criteria,
+            'drift_only' => '1' === $request->query->get('drift'),
             'hosts' => $this->filters->hosts($teamId, ExposureScope::Environment, $environmentId),
         ], 'exposure/project/environment.html.twig');
     }

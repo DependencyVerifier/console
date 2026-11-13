@@ -59,6 +59,13 @@ final class AgentInstallTest extends IdentityWebTestCase
         self::assertResponseStatusCodeSame(404);
         $this->client->request('GET', '/downloads/agent/0.0.1/depverify-agent-x86_64-linux');
         self::assertResponseStatusCodeSame(404);
+        foreach (['SHA256SUMS', 'SHA256SUMS.minisig'] as $signed) {
+            $this->client->request('GET', '/downloads/agent/0.1.0/'.$signed);
+            self::assertResponseIsSuccessful($signed.': the agents verify an upgrade themselves.');
+            self::assertStringContainsString($signed, (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+        }
+        $this->client->request('GET', '/downloads/agent/0.1.0/manifest.json');
+        self::assertResponseStatusCodeSame(404, 'Nothing else of the store.');
     }
 
     #[Test]

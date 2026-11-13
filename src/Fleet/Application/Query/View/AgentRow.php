@@ -25,6 +25,7 @@ final readonly class AgentRow
         public string $teamName = '',
         public ?array $desiredConfig = null,
         public int $appliedConfigVersion = 0,
+        public ?string $upgradeTo = null,
     ) {
     }
 }

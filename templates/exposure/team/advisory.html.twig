@@ -1,0 +1,70 @@
+{% extends 'organization/team/_layout.html.twig' %}
+{#- An advisory (variables: advisory AdvisoryDigest, tables.findings: the findings of the team it causes). Its texts
+    come from OSV: always escaped, never rendered as HTML or Markdown; its references are links out, never fetched. -#}
+
+{% block title %}{{ advisory.osvId }} · {{ team.name }} · DependencyVerifier{% endblock %}
+
+{% block tab %}
+    <header class="flex flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <h2 class="font-mono text-lg font-semibold" data-advisory="{{ advisory.osvId }}">{{ advisory.osvId }}</h2>
+            {{ include('exposure/cells/finding_severity.html.twig', {row: {severity: advisory.severity, kind: 'vulnerability', cvss: advisory.cvssScore, knownExploited: advisory.knownExploited, epss: advisory.epss}}) }}
+            {%- if advisory.withdrawn %}<twig:Badge variant="outline">{{ 'exposure.advisory.withdrawn'|trans }}</twig:Badge>{% endif %}
+        </div>
+        {%- if advisory.summary %}<p class="text-base">{{ advisory.summary }}</p>{% endif %}
+    </header>
+    <section class="rounded-lg border p-4">
+        <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.advisory.cvss'|trans }}</dt>
+                <dd>{% if advisory.cvssScore is not null %}<span class="tabular-nums">{{ advisory.cvssScore }}</span>{% if advisory.cvssVector %} <span class="block font-mono text-xs break-all text-muted-foreground">{{ advisory.cvssVector }}</span>{% endif %}{% else %}—{% endif %}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.advisory.epss'|trans }}</dt>
+                <dd class="tabular-nums">{{ advisory.epss is not null ? (advisory.epss * 100)|round(1) ~ ' %' : '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.advisory.published'|trans }}</dt>
+                <dd>{{ include('fleet/cells/time.html.twig', {value: advisory.publishedAt}) }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted-foreground">{{ 'exposure.advisory.modified'|trans }}</dt>
+                <dd>{{ include('fleet/cells/time.html.twig', {value: advisory.modifiedAt}) }}</dd>
+            </div>
+            {%- if advisory.aliases is not empty %}
+                <div class="sm:col-span-2 lg:col-span-4">
+                    <dt class="text-muted-foreground">{{ 'exposure.field.aliases'|trans }}</dt>
+                    <dd class="flex flex-wrap gap-2 font-mono text-xs">{% for alias in advisory.aliases %}<span>{{ alias }}</span>{% endfor %}</dd>
+                </div>
+            {%- endif %}
+        </dl>
+    </section>
+    {%- if advisory.details %}
+        <section class="flex flex-col gap-2" aria-labelledby="advisory-details">
+            <h3 id="advisory-details" class="text-sm font-semibold">{{ 'exposure.advisory.details'|trans }}</h3>
+            <div class="max-h-96 overflow-y-auto rounded-lg border bg-muted/30 p-4 text-sm whitespace-pre-line break-words">{{ advisory.details }}</div>
+        </section>
+    {%- endif %}
+    {%- if advisory.affected is not empty %}
+        <section class="flex flex-col gap-2" aria-labelledby="advisory-affected">
+            <h3 id="advisory-affected" class="text-sm font-semibold">{{ 'exposure.advisory.affected'|trans }}</h3>
+            <ul class="divide-y rounded-lg border text-sm">
+                {%- for package in advisory.affected %}
+                    <li class="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+                        <span><span class="font-mono">{{ package.name }}</span> <twig:Badge variant="outline">{{ package.ecosystem }}</twig:Badge></span>
+                        <span class="font-mono text-xs text-muted-foreground">{{ package.ranges|join(' · ') }}{% if package.versions > 0 %} · {{ 'exposure.advisory.versions'|trans({count: package.versions}) }}{% endif %}</span>
+                    </li>
+                {%- endfor %}
+            </ul>
+        </section>
+    {%- endif %}
+    {%- set references = advisory.references|filter(r => r starts with 'https://' or r starts with 'http://') %}
+    <section class="flex flex-col gap-2" aria-labelledby="advisory-references">
+        <h3 id="advisory-references" class="text-sm font-semibold">{{ 'exposure.advisory.references'|trans }}</h3>
+        <ul class="flex flex-col gap-1 text-sm">
+            <li><a href="https://osv.dev/vulnerability/{{ advisory.osvId|url_encode }}" target="_blank" rel="noopener noreferrer nofollow" class="break-all underline-offset-4 hover:underline">osv.dev/vulnerability/{{ advisory.osvId }}</a></li>
+            {%- for reference in references %}<li><a href="{{ reference }}" target="_blank" rel="noopener noreferrer nofollow" class="break-all underline-offset-4 hover:underline">{{ reference }}</a></li>{% endfor %}
+        </ul>
+    </section>
+    <twig:DataTable :table="tables.findings" :title="'exposure.advisory.findings'|trans" />
+{% endblock %}

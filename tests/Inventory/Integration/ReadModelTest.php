@@ -174,6 +174,46 @@ final class ReadModelTest extends KernelTestCase
         self::assertSame(['Shop front'], array_map(static fn ($s): string => $s->name, $hosts));
     }
 
+    #[Test]
+    public function it_should_read_the_components_of_an_environment(): void
+    {
+        [$teamId, $environmentId] = $this->environment();
+        $team = Uuid::fromString($teamId);
+        $apps = new DoctrineAppInstanceRepository($this->manager);
+        $container = AppInstance::discover(Uuid::v7(), $team, Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::compose(sbom: 1), Inv::now());
+        $path = AppInstance::discover(Uuid::v7(), $team, Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::path(sbom: 3), Inv::now());
+        $elsewhere = AppInstance::discover(Uuid::v7(), $team, Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::AGENT), Inv::path('/srv/other', 3), Inv::now());
+        $container->assign(Uuid::fromString($environmentId));
+        $path->assign(Uuid::fromString($environmentId));
+        array_map($apps->add(...), [$container, $path, $elsewhere]);
+        $images = new DoctrineContainerImageRepository($this->manager);
+        $images->add(ContainerImage::discover(Uuid::v7(), $team, Inv::image(2), Inv::now()));
+        $this->connection()->executeStatement('INSERT INTO inventory_host (host_id, team_id, facts) VALUES (?, ?, ?)', [Inv::HOST, $teamId, '{"hostname": "web-01", "os": {"id": "ubuntu", "version_id": "24.04"}}']);
+        $this->manager->get()->flush();
+        $blob = function (int $digest, array $packages) use ($teamId): void {
+            /** @var list<array{string, string, ?string, string, ?string, ?string}> $packages */
+            $id = Uuid::v7()->toRfc4122();
+            $this->connection()->executeStatement("INSERT INTO inventory_blob (id, team_id, digest, media_type, size, content, stored_at) VALUES (?, ?, ?, 'application/json', 0, '', NOW())", [$id, $teamId, Inv::digest($digest)->value]);
+            foreach ($packages as [$purl, $type, $namespace, $name, $version, $dependency]) {
+                $this->connection()->executeStatement('INSERT INTO inventory_package (id, team_id, blob_id, purl, type, namespace, name, version, dependency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [Uuid::v7()->toRfc4122(), $teamId, $id, $purl, $type, $namespace, $name, $version, $dependency]);
+            }
+        };
+        $blob(1, [['pkg:composer/symfony/http-kernel@6.4.3', 'composer', 'symfony', 'http-kernel', '6.4.3', 'direct'], ['pkg:composer/psr/log@3.0.0', 'composer', 'psr', 'log', '3.0.0', 'transitive'], ['pkg:npm/react', 'npm', null, 'react', null, 'direct']]);
+        $blob(2, [['pkg:apk/alpine/musl@1.2.5?arch=x86_64&distro=alpine-3.21', 'apk', 'alpine', 'musl', '1.2.5', null]]);
+        $blob(3, [['pkg:npm/lodash@4.17.21', 'npm', null, 'lodash', '4.17.21', 'direct']]);
+
+        $entries = array_map(static fn ($e): string => \sprintf('%s %s %s %s %s %s', $e->kind, $e->ecosystem, $e->component, $e->version, $e->application, $e->host), $this->read->matrixEntries($teamId, $environmentId));
+        sort($entries);
+        self::assertSame([
+            'os alpine Alpine 3.21 shop / php web-01',
+            'os ubuntu Ubuntu 24.04 /opt/legacy-app web-01',
+            'package composer symfony/http-kernel 6.4.3 shop / php web-01',
+            'package npm lodash 4.17.21 /opt/legacy-app web-01',
+            'runtime php php 8.2.26 /opt/legacy-app web-01',
+        ], $entries, 'Direct dependencies with a version; the OS of the image, else of the host; nothing of another environment.');
+        self::assertSame([], $this->read->matrixEntries($teamId, Uuid::v7()->toRfc4122()));
+    }
+
     private function inventory(string $trigger): Uuid
     {
         $id = Uuid::v7();

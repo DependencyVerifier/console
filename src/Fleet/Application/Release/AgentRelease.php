@@ -10,6 +10,8 @@ namespace Fleet\Application\Release;
 final readonly class AgentRelease
 {
     public const array ARCHITECTURES = ['x86_64', 'aarch64'];
+    public const string CHECKSUMS = 'SHA256SUMS';
+    public const string SIGNATURE = 'SHA256SUMS.minisig';
 
     /**
      * @param array<string, array{name: string, sha256: string, size: int}> $binaries by architecture

@@ -1,0 +1,5 @@
+{#- A version of the matrix (row: MatrixRow), flagged when the component runs in several versions. -#}
+<span class="flex items-center gap-2">
+    <span class="font-mono text-xs">{{ row.version }}</span>
+    {%- if row.drifts %}<twig:Badge variant="destructive" title="{{ 'inventory.matrix.drift_help'|trans({count: row.versions}) }}">{{ 'inventory.matrix.drift'|trans }}</twig:Badge>{% endif -%}
+</span>
