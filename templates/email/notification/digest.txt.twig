@@ -1,0 +1,10 @@
+{{ 'notification.digest.intro'|trans({frequency: frequency, count: items|length}, 'email') }}
+
+{% for item in items %}
+{{ include('email/notification/_item.txt.twig', {item: item}) }}
+
+{% endfor %}
+{{ 'notification.digest.unsubscribe'|trans({}, 'email') }}
+{% for unsubscribe in unsubscribes %}
+{{ 'notification.unsubscribe_from'|trans({team: unsubscribe.team}, 'email') }}: {{ unsubscribe.url }}
+{% endfor %}

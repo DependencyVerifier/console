@@ -1,0 +1,4 @@
+{{ ('notification.event.' ~ item.event)|trans({}, 'email') }} · {{ item.title }}
+{{ item.team }}{% if item.subject %} · {{ item.subject }}{% endif %}{% if item.details.installed is defined and item.details.installed %} · {{ item.details.package ?? '' }} {{ item.details.installed }}{% endif %}{% if item.details.fixed is defined and item.details.fixed %} → {{ item.details.fixed }}{% endif %}{% if item.details.severity is defined and item.details.severity %} · {{ item.details.severity }}{% endif %}{% if item.details.cvss is defined and item.details.cvss is not null %} · CVSS {{ item.details.cvss }}{% endif %}
+
+{{ item.url }}

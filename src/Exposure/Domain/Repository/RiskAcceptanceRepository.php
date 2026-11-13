@@ -16,5 +16,12 @@ interface RiskAcceptanceRepository
 
     public function add(RiskAcceptance $acceptance): void;
 
+    /**
+     * Not revoked, expiring between the two days (included).
+     *
+     * @return list<RiskAcceptance>
+     */
+    public function expiringBetween(\DateTimeImmutable $from, \DateTimeImmutable $to): array;
+
     public function deleteTeam(Uuid $teamId): void;
 }

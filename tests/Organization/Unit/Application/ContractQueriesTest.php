@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Organization\Unit\Application;
 
+use Organization\Application\Query\Contract\Handler\FilterRecipientsHandler;
 use Organization\Application\Query\Contract\Handler\FindTeamEnvironmentHandler;
 use Organization\Application\Query\Contract\Handler\FindTeamNamesHandler;
 use Organization\Application\Query\Contract\Handler\GetTeamAccessHandler;
 use Organization\Application\Query\Contract\Handler\GetTeamQuotaHandler;
 use Organization\Application\Query\Contract\Handler\GetVisibleProjectsHandler;
 use Organization\Application\Query\Contract\Handler\ListTeamEnvironmentsHandler;
+use Organization\Domain\Authorization\EffectivePermissions;
+use Organization\Domain\Authorization\ProjectGrant;
+use Organization\Domain\Authorization\TeamGrant;
 use Organization\Domain\Model\ProjectRole;
 use Organization\Domain\Model\Quota;
 use Organization\Domain\Model\QuotaName;
@@ -19,6 +23,7 @@ use Organization\Domain\Model\TeamRole;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Authorization\ResourceNotFound;
+use Shared\Application\Contract\Organization\FilterRecipients;
 use Shared\Application\Contract\Organization\FindTeamEnvironment;
 use Shared\Application\Contract\Organization\FindTeamNames;
 use Shared\Application\Contract\Organization\GetTeamAccess;
@@ -28,6 +33,7 @@ use Shared\Application\Contract\Organization\ListTeamEnvironments;
 use Shared\Application\Contract\Organization\TeamAccess;
 use Shared\Application\Contract\Organization\TeamEnvironment;
 use Shared\Application\Contract\Organization\VisibleProjects;
+use Tests\Organization\Support\FixedMembers;
 use Tests\Organization\Support\RecordingReadModel;
 use Tests\Organization\Support\Teams;
 use Tests\Organization\Support\World;
@@ -127,6 +133,32 @@ final class ContractQueriesTest extends TestCase
         $none = new RecordingReadModel();
         self::assertSame([], new FindTeamNamesHandler($none)(new FindTeamNames(['nope'])));
         self::assertSame([], $none->calls, 'Nothing to ask.');
+    }
+
+    #[Test]
+    public function it_should_keep_the_recipients_who_see_a_project_or_the_fleet(): void
+    {
+        $project = '019a6b2c-4f00-7a11-8b22-3c44d55e6f11';
+        $handler = new FilterRecipientsHandler(new FixedMembers([
+            'viewer' => self::grant([new TeamGrant(Teams::TEAM, TeamRole::Viewer)]),
+            'guest-of-project' => self::grant([new TeamGrant(Teams::TEAM, TeamRole::Guest)], [new ProjectGrant($project, Teams::TEAM, ProjectRole::Viewer)]),
+            'guest' => self::grant([new TeamGrant(Teams::TEAM, TeamRole::Guest)]),
+            'elsewhere' => self::grant([new TeamGrant(Teams::OTHER_TEAM, TeamRole::Admin)], [new ProjectGrant($project, Teams::OTHER_TEAM, ProjectRole::Viewer)]),
+        ]));
+        $everyone = ['stranger', 'viewer', 'guest', 'guest-of-project', 'elsewhere'];
+
+        self::assertSame(['viewer', 'guest-of-project'], $handler(new FilterRecipients(Teams::TEAM, $project, $everyone)));
+        self::assertSame(['viewer'], $handler(new FilterRecipients(Teams::TEAM, null, $everyone)), 'The fleet: who sees every project.');
+        self::assertSame([], $handler(new FilterRecipients(Teams::TEAM, null, [])));
+    }
+
+    /**
+     * @param list<TeamGrant>    $teams
+     * @param list<ProjectGrant> $projects
+     */
+    private static function grant(array $teams, array $projects = []): EffectivePermissions
+    {
+        return EffectivePermissions::resolve(false, $teams, $projects);
     }
 
     private function world(): World

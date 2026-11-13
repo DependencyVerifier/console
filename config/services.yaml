@@ -4,6 +4,8 @@
 # Domain models (entities, value objects) are never services.
 
 parameters:
+    # A webhook never reaches a private network, unless set to 1 (dev, a local receiver; the tests).
+    env(NOTIFICATION_WEBHOOK_ALLOW_PRIVATE): '0'
 
 services:
     _defaults:

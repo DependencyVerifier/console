@@ -173,6 +173,14 @@ findings-refresh: ## Queue the computation of the findings of every inventoried 
 fleet-maintain: ## Fleet maintenance, inactive agents, late orders, request nonces (cron, every few minutes)
 	@$(CONSOLE) app:fleet:maintain
 
+.PHONY: notifications-check
+notifications-check: ## Notify the silent agents and the expiring risk acceptances, queue the deliveries due again (cron: every 5 minutes)
+	@$(CONSOLE) app:notification:check
+
+.PHONY: notifications-digest
+notifications-digest: ## Queue the daily notification digests, and on Monday the weekly ones (cron: daily, 07:00)
+	@$(CONSOLE) app:notification:digest
+
 .PHONY: fleet-fake-agent
 fleet-fake-agent: ## Dev demo agent: a='enroll --token=dvet_…', a=poll, a='run --polls=10', a=inventory (name=… for another one)
 	@$(CONSOLE) app:fleet:fake-agent $(a) $(if $(name),--name=$(name))

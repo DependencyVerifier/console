@@ -47,3 +47,25 @@ organization:
         intro: "You are now the admin of the team {team} on DependencyVerifier."
         action: "Open the team"
         setup: "If your account is new, choose your password first from the other email you received."
+notification:
+    notice:
+        subject: "{event, select, vulnerability_opened {Vulnerability} vulnerability_fixed {Fixed} end_of_life {End of life} outdated {Outdated} agent_silent {Silent agent} agent_pending {Agent to approve} acceptance_expiring {Risk acceptance expiring} other {Notification}}: {title} ({team})"
+    digest:
+        subject: "{frequency, select, weekly {Weekly} other {Daily}} digest: {count, plural, one {# notification} other {# notifications}}"
+        intro: "{frequency, select, weekly {This week} other {Today}}, {count, plural, one {# notification} other {# notifications}} on DependencyVerifier:"
+        unsubscribe: "You receive this digest as a subscriber."
+    event:
+        vulnerability_opened: Vulnerability
+        vulnerability_fixed: Vulnerability fixed
+        end_of_life: End of life
+        outdated: Outdated version
+        agent_silent: Silent agent
+        agent_pending: Agent waiting for approval
+        acceptance_expiring: Risk acceptance expiring
+    known_exploited: known exploited (CISA KEV)
+    end_of_life: "end of life on {date}"
+    last_seen: "last seen {date}"
+    expires_on: "accepted until {date}"
+    open: Open in DependencyVerifier
+    unsubscribe: Unsubscribe
+    unsubscribe_from: "Unsubscribe ({team})"

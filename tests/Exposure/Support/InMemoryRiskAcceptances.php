@@ -23,6 +23,14 @@ final class InMemoryRiskAcceptances implements RiskAcceptanceRepository
         $this->acceptances[] = $acceptance;
     }
 
+    public function expiringBetween(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        $from = $from->format('Y-m-d');
+        $to = $to->format('Y-m-d');
+
+        return array_values(array_filter($this->acceptances, static fn (RiskAcceptance $a): bool => null === $a->revokedAt() && $a->expiresOn()->format('Y-m-d') >= $from && $a->expiresOn()->format('Y-m-d') <= $to));
+    }
+
     public function deleteTeam(Uuid $teamId): void
     {
         $this->acceptances = array_values(array_filter($this->acceptances, static fn (RiskAcceptance $a): bool => !$a->teamId()->equals($teamId)));

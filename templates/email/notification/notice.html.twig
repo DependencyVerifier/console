@@ -1,0 +1,5 @@
+{% extends 'email/layout.html.twig' %}
+{% block content %}
+    {{ include('email/notification/_item.html.twig', {item: item}) }}
+    <p style="color:#71717a;font-size:12px"><a href="{{ unsubscribe }}" style="color:#71717a">{{ 'notification.unsubscribe'|trans({}, 'email') }}</a></p>
+{% endblock %}

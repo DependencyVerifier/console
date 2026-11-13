@@ -45,7 +45,7 @@ final class AgentTest extends TestCase
         self::assertSame(0, $agent->appliedConfigVersion());
         self::assertNull($agent->desiredConfig());
         self::assertFalse($agent->lagsBehindConfig());
-        self::assertEquals([new AgentEnrolled(Fleet::AGENT, Fleet::TEAM)], $agent->releaseEvents());
+        self::assertEquals([new AgentEnrolled(Fleet::AGENT, Fleet::TEAM, true, Fleet::facts()->hostname)], $agent->releaseEvents(), 'Waiting for an approval.');
     }
 
     #[Test]
@@ -59,6 +59,8 @@ final class AgentTest extends TestCase
         self::assertSame(AgentStatus::Approved, $agent->status());
         self::assertEquals(Fleet::now(), $agent->approvedAt());
         self::assertNull($agent->approvedBy(), 'Approved by its token, not by a human.');
+        $enrolled = Agent::enroll(AgentId::fromString(Fleet::AGENT), $token, Fleet::host(), AgentPublicKey::fromText(Fleet::KEY), Fleet::runtime(), Fleet::now());
+        self::assertEquals([new AgentEnrolled(Fleet::AGENT, Fleet::TEAM, false, Fleet::facts()->hostname)], $enrolled->releaseEvents(), 'Nobody to ask.');
     }
 
     #[Test]

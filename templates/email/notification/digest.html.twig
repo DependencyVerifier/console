@@ -1,0 +1,12 @@
+{% extends 'email/layout.html.twig' %}
+{% block content %}
+    <p>{{ 'notification.digest.intro'|trans({frequency: frequency, count: items|length}, 'email') }}</p>
+    {% for item in items %}
+        {{ include('email/notification/_item.html.twig', {item: item}) }}
+    {% endfor %}
+    <p style="color:#71717a;font-size:12px">{{ 'notification.digest.unsubscribe'|trans({}, 'email') }}
+        {% for unsubscribe in unsubscribes %}
+            <br><a href="{{ unsubscribe.url }}" style="color:#71717a">{{ 'notification.unsubscribe_from'|trans({team: unsubscribe.team}, 'email') }}</a>
+        {% endfor %}
+    </p>
+{% endblock %}

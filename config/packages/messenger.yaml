@@ -69,6 +69,15 @@ framework:
                     max_retries: 5
                     delay: 60000
                     multiplier: 3
+            # `notifications`: the sending of emails and webhooks (Notification), apart from the computation.
+            notifications:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    queue_name: notifications
+                retry_strategy:
+                    max_retries: 3
+                    delay: 10000
+                    multiplier: 3
             failed:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
@@ -83,6 +92,10 @@ framework:
             Vulnerability\Application\Command\Sync\SyncEndOfLife: feeds
             Vulnerability\Application\Command\Sync\SyncLatestReleases: feeds
             Exposure\Application\Command\Refresh\RefreshFindings: matching
+            Notification\Application\Command\Notify\NotifyFindingChange: notifications
+            Notification\Application\Command\Notify\NotifyAgentAwaitingApproval: notifications
+            Notification\Application\Command\Send\SendDelivery: notifications
+            Notification\Application\Command\Send\SendDigest: notifications
 
 when@test:
     framework:
@@ -92,3 +105,4 @@ when@test:
                 ingest: 'sync://'
                 matching: 'sync://'
                 feeds: 'sync://'
+                notifications: 'sync://'

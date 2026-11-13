@@ -11,7 +11,10 @@ use Shared\Domain\Event\DomainEvent;
  */
 final readonly class AgentEnrolled implements DomainEvent
 {
-    public function __construct(public string $agentId, public string $teamId)
+    /**
+     * @param bool $pending waiting for a human approval (single-use token)
+     */
+    public function __construct(public string $agentId, public string $teamId, public bool $pending = false, public string $hostname = '')
     {
     }
 }

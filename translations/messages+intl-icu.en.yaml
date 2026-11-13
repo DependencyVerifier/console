@@ -788,3 +788,9 @@ exposure:
         accepted_by: "Accepted by {email} on {date}, until {until}"
         revoked_on: "revoked on {date}"
         expired: expired
+notification:
+    unsubscribe:
+        title: Unsubscribe
+        ask: "Stop the notification emails of this subscription? You can subscribe again from the console."
+        confirm: Unsubscribe
+        done: "Done: this subscription sends no more email."

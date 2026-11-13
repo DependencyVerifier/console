@@ -12,6 +12,7 @@ use Exposure\Application\Content\ExposureTeamContent;
 use Exposure\Application\EventHandler\QueueFindingsRefresh;
 use Exposure\Application\EventHandler\RequestRefreshOnChange;
 use Exposure\Domain\Event\ExposureRefreshRequested;
+use Exposure\Domain\Event\FindingEscalated;
 use Exposure\Domain\Event\FindingFixed;
 use Exposure\Domain\Event\FindingOpened;
 use Exposure\Domain\Model\Finding;
@@ -106,7 +107,7 @@ final class FindingsTest extends TestCase
         self::assertEquals($this->clock->now(), $vulnerability->fixedAt());
         self::assertSame('imminent', $this->findings->findings[1]->facts()->eolLevel);
         self::assertEquals($this->clock->now(), $this->findings->findings[1]->lastSeenAt());
-        self::assertSame([], $this->findings->findings[1]->releaseEvents(), 'Still open: no event.');
+        self::assertEquals([new FindingEscalated($this->findings->findings[1]->id()->toRfc4122(), self::TEAM, 'imminent')], $this->findings->findings[1]->releaseEvents(), 'Still open, closer to its end of life.');
 
         $this->clock->modify('+1 day');
         $this->environment = '019a6b2c-4f00-7a11-8b22-3c44d55e6f09';

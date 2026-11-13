@@ -68,6 +68,7 @@ security:
         - { path: '^/email/confirm/[A-Za-z0-9_-]{43}$', roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/email/confirm$, roles: PUBLIC_ACCESS, methods: [GET, POST] }
         - { path: ^/invitations/pending$, roles: PUBLIC_ACCESS, methods: [GET, POST] }
+        - { path: ^/notifications/unsubscribe$, roles: PUBLIC_ACCESS, methods: [GET, POST] }
         - { path: ^/2fa, roles: IS_AUTHENTICATED_2FA_IN_PROGRESS }
         # One role only: several roles in a rule mean "any of them". ROLE_SUPER_ADMIN exists on a fully
         # authenticated token only (a second factor in progress has no role).

@@ -95,7 +95,7 @@ class Agent implements RecordsEvents
             $agent->approvedAt = $now;
         }
 
-        $agent->recordThat(new AgentEnrolled($id->toString(), $token->teamId()->toRfc4122()));
+        $agent->recordThat(new AgentEnrolled($id->toString(), $token->teamId()->toRfc4122(), !$token->approvesAgents(), $host->facts()->hostname));
 
         return $agent;
     }

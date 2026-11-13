@@ -187,7 +187,7 @@ final readonly class DbalFindingReadModel implements FindingReadModel
     private function select(QueryBuilder $query): QueryBuilder
     {
         return $query->select('f.id', 'f.team_id', 'f.subject_type', 'f.subject_id', 'f.kind', 'f.title', 'f.package', 'f.installed', 'f.fixed', 'f.severity', 'f.cvss', 'f.known_exploited', 'f.epss',
-            'f.eol_level', 'f.end_of_life', 'f.latest', 'f.aliases', 'f.status', 'f.first_seen_at', 'f.last_seen_at', 'f.fixed_at', self::ACCEPTED_UNTIL, 'f.subject_name', 'f.suggested');
+            'f.eol_level', 'f.end_of_life', 'f.latest', 'f.aliases', 'f.status', 'f.first_seen_at', 'f.last_seen_at', 'f.fixed_at', self::ACCEPTED_UNTIL, 'f.subject_name', 'f.suggested', 'f.project_id', 'f.environment_id');
     }
 
     /**
@@ -205,7 +205,7 @@ final readonly class DbalFindingReadModel implements FindingReadModel
             Row::nullableString($row['eol_level']), $date($row['end_of_life']), Row::nullableString($row['latest']),
             \is_array($aliases) ? array_values(array_filter($aliases, \is_string(...))) : [], Row::string($row['status']),
             new \DateTimeImmutable(Row::string($row['first_seen_at'])), new \DateTimeImmutable(Row::string($row['last_seen_at'])), $date($row['fixed_at']), $date($row['accepted_until']),
-            Row::string($row['subject_name']), Row::nullableString($row['suggested']),
+            Row::string($row['subject_name']), Row::nullableString($row['suggested']), Row::nullableString($row['project_id']), Row::nullableString($row['environment_id']),
         );
     }
 }

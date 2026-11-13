@@ -37,6 +37,8 @@ final readonly class FindingRow
         public ?\DateTimeImmutable $acceptedUntil,
         public string $subjectName = '',
         public ?string $suggested = null,
+        public ?string $projectId = null,
+        public ?string $environmentId = null,
     ) {
     }
 

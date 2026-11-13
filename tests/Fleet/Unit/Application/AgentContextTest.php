@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Fleet\Unit\Application;
 
+use Fleet\Application\EventHandler\PublishAgentIntegrationEvents;
 use Fleet\Application\Query\Contract\Handler\FindTeamHostHandler;
 use Fleet\Application\Query\Contract\Handler\GetAgentContextHandler;
+use Fleet\Application\Query\Contract\Handler\ListSilentAgentsHandler;
+use Fleet\Domain\Event\AgentEnrolled;
 use Fleet\Domain\Model\Agent;
 use Fleet\Domain\Model\AgentId;
 use Fleet\Domain\Model\AgentMode;
@@ -16,12 +19,16 @@ use Fleet\Domain\Model\EnrollmentTokenId;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Authorization\ResourceNotFound;
+use Shared\Application\Contract\Fleet\AgentAwaitingApproval;
 use Shared\Application\Contract\Fleet\AgentContext;
 use Shared\Application\Contract\Fleet\FindTeamHost;
 use Shared\Application\Contract\Fleet\GetAgentContext;
+use Shared\Application\Contract\Fleet\ListSilentAgents;
+use Shared\Application\Contract\Fleet\SilentAgent;
 use Symfony\Component\Uid\Uuid;
 use Tests\Fleet\Support\Fleet;
 use Tests\Fleet\Support\FleetWorld;
+use Tests\Identity\Support\RecordingEventBus;
 
 final class AgentContextTest extends TestCase
 {
@@ -65,6 +72,28 @@ final class AgentContextTest extends TestCase
         self::assertFalse($context('approved', 'container', 'host')->isConfinedToComposeProject());
         self::assertFalse($context('approved', 'host', null)->isConfinedToComposeProject());
         self::assertFalse($context('approved', 'host', 'compose')->isConfinedToComposeProject(), 'Only a container agent has a scope.');
+    }
+
+    #[Test]
+    public function it_should_publish_the_agents_waiting_and_list_the_silent_ones(): void
+    {
+        $events = new RecordingEventBus();
+        $publish = new PublishAgentIntegrationEvents($events);
+        $publish(new AgentEnrolled(Fleet::AGENT, Fleet::TEAM, true, 'web-01'));
+        $publish(new AgentEnrolled(Fleet::ORDER, Fleet::TEAM, false, 'web-02'));
+        self::assertEquals([new AgentAwaitingApproval(Fleet::AGENT, Fleet::TEAM, 'web-01')], $events->published, 'Only one waiting for a human.');
+
+        $world = new FleetWorld();
+        $world->hosts->add(Fleet::host());
+        $silent = Fleet::approved();
+        $world->agents->add($silent);
+        $handler = new ListSilentAgentsHandler($world->agents, $world->hosts);
+        self::assertEquals([new SilentAgent(Fleet::AGENT, Fleet::TEAM, 'web-01', Fleet::now())], $handler(new ListSilentAgents(Fleet::now()->modify('+1 hour'))));
+        self::assertSame([], $handler(new ListSilentAgents(Fleet::now()->modify('-1 hour'))), 'Heard from since.');
+        self::assertSame([], $handler(new ListSilentAgents(Fleet::now()->modify('+1 hour'), 0)));
+        self::assertSame(1000, new ListSilentAgents(Fleet::now())->limit);
+        $world->hosts->hosts = [];
+        self::assertSame('', $handler(new ListSilentAgents(Fleet::now()->modify('+1 hour')))[0]->hostname, 'Its host gone: no name.');
     }
 
     #[Test]

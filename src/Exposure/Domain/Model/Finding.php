@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Exposure\Domain\Model;
 
 use Doctrine\ORM\Mapping as ORM;
+use Exposure\Domain\Event\FindingEscalated;
 use Exposure\Domain\Event\FindingFixed;
 use Exposure\Domain\Event\FindingOpened;
 use Shared\Domain\Model\EventRecording;
@@ -25,6 +26,9 @@ use Symfony\Component\Uid\Uuid;
 class Finding implements RecordsEvents
 {
     use EventRecording;
+
+    /** The end of life levels, from the farthest. */
+    private const array LEVELS = ['upcoming' => 1, 'soon' => 2, 'imminent' => 3, 'expired' => 4];
 
     /**
      * @param list<string> $aliases
@@ -100,7 +104,12 @@ class Finding implements RecordsEvents
      */
     public function observe(FindingFacts $facts, \DateTimeImmutable $now): void
     {
+        $before = self::LEVELS[$this->eolLevel ?? ''] ?? 0;
         $this->apply($facts, $now);
+        if (FindingStatus::Open === $this->status && (self::LEVELS[$facts->eolLevel ?? ''] ?? 0) > $before) {
+            $this->recordThat(new FindingEscalated($this->id->toRfc4122(), $this->teamId->toRfc4122(), (string) $facts->eolLevel));
+        }
+
         if (FindingStatus::Fixed === $this->status) {
             $this->status = FindingStatus::Open;
             $this->fixedAt = null;

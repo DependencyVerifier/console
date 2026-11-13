@@ -143,7 +143,7 @@ final class FindingsChainTest extends IdentityWebTestCase
         self::assertSame('shop / php', $page->filter('[data-dashboard="top"] a')->text());
         $chart = $page->filter('[data-controller="chart-theme"] canvas')->first();
         self::assertStringContainsString('var(--sev-high)', (string) $chart->attr('data-symfony--ux-chartjs--chart-view-value'), 'Colours from the theme, resolved in the browser.');
-        self::assertSame(4, \count(DataTables::draw($this->client, '/teams/'.$teamId.'/findings', 'findings')['data']));
+        self::assertCount(4, DataTables::draw($this->client, '/teams/'.$teamId.'/findings', 'findings')['data']);
         $outdated = DataTables::draw($this->client, '/teams/'.$teamId.'/findings?kind=outdated', 'findings')['data'];
         self::assertCount(2, $outdated, 'Filtered from the query string.');
         self::assertStringContainsString('shop / php', (string) $outdated[0]['subject']);

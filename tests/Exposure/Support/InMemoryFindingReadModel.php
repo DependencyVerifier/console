@@ -69,7 +69,7 @@ final class InMemoryFindingReadModel implements FindingReadModel
             $finding->id()->toRfc4122(), $finding->teamId()->toRfc4122(), $finding->subjectType()->value, $finding->subjectId()->toRfc4122(), $finding->kind()->value,
             $facts->title, $facts->package, $facts->installed, $facts->fixed, $facts->severity, $facts->cvss, $facts->knownExploited, $facts->epss, $facts->eolLevel,
             $facts->endOfLife, $facts->latest, $facts->aliases, $finding->status()->value, $finding->firstSeenAt(), $finding->lastSeenAt(), $finding->fixedAt(), $running?->expiresOn(),
-            $finding->placement()->name, $facts->suggested,
+            $finding->placement()->name, $facts->suggested, $finding->placement()->projectId?->toRfc4122(), $finding->placement()->environmentId?->toRfc4122(),
         );
     }
 }
