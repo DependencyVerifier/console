@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (unreleased)
+## 1.0.0 (2026-11-14)
 
 First release: a self-hosted console that shows what really runs in production across teams, and what threatens it.
 
