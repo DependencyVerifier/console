@@ -33,7 +33,7 @@ final class FindingsTable implements DataTableTypeInterface
             ->add('title', TwigColumn::class, ['field' => 'title', 'label' => 'exposure.field.finding', 'orderable' => false, 'template' => 'exposure/cells/finding_title.html.twig'])
             ->add('severity', TwigColumn::class, ['field' => 'severity', 'label' => 'exposure.field.severity', 'orderable' => false, 'template' => 'exposure/cells/finding_severity.html.twig'])
             ->add('versions', TwigColumn::class, ['field' => 'installed', 'label' => 'exposure.field.versions', 'orderable' => false, 'template' => 'exposure/cells/finding_versions.html.twig', 'className' => DataTableView::SECONDARY])
-            ->add('status', TwigColumn::class, ['field' => 'status', 'label' => 'exposure.field.status', 'orderable' => false, 'template' => 'exposure/cells/finding_status.html.twig'])
+            ->add('status', TwigColumn::class, ['field' => 'status', 'label' => 'exposure.field.status', 'orderable' => false, 'template' => 'exposure/cells/finding_status.html.twig', 'className' => DataTableView::SECONDARY])
             ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListFindings => new ListFindings($o['teamId'], $o['subjectType'], $o['subjectId'], $page)]);
     }
 }

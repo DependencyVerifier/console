@@ -32,7 +32,7 @@
         </section>
         <div class="grid gap-4 lg:grid-cols-2">
             {%- for team in portfolio.teams %}
-                <section class="flex flex-col gap-3 rounded-lg border p-4" data-portfolio-team="{{ team.teamId }}" aria-labelledby="portfolio-team-{{ team.teamId }}">
+                <section class="flex min-w-0 flex-col gap-3 rounded-lg border p-4" data-portfolio-team="{{ team.teamId }}" aria-labelledby="portfolio-team-{{ team.teamId }}">
                     <div class="flex items-center justify-between gap-2">
                         <h2 id="portfolio-team-{{ team.teamId }}" class="text-sm font-semibold"><a href="{{ path('organization_team', {teamId: team.teamId}) }}" target="_top" class="underline-offset-4 hover:underline">{{ team.name }}</a></h2>
                         <span class="text-xs text-muted-foreground">{{ ('role.' ~ team.role)|trans }}</span>

@@ -133,6 +133,16 @@
         display: none;
     }
 
+    /* Emails, identifiers and versions break anywhere rather than widen the page; tighter cells. */
+    .dt-card table.dataTable > tbody > tr > td {
+        overflow-wrap: anywhere;
+        padding-inline: 0.5rem;
+    }
+
+    .dt-card table.dataTable > thead > tr > th {
+        padding-inline: 0.5rem;
+    }
+
     .dt-card div.dt-container > .dt-layout-row:not(.dt-layout-table) {
         flex-direction: row;
         flex-wrap: wrap;

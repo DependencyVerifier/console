@@ -359,6 +359,8 @@ datatable:
     emptyTable: Nothing here yet
     empty:
         agents: "No agent yet. Create an enrollment token, then run the command it shows on the server."
+        applications: "No application here yet: attach one from its page, or label its container with dev.depverify.environment."
+        unattached: "Every application is attached to an environment."
         components: "No component yet: attach an application to this environment."
         environments: "No environment yet. Add one (production, staging…) to attach applications to it."
         findings: "Nothing to fix here: no finding matches."
