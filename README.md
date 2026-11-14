@@ -12,7 +12,7 @@ Symfony 8 · PHP 8.5 · FrankenPHP · PostgreSQL 18 · Twig + Symfony UX · Vite
 
 ## Installation
 
-Production: see [INSTALL.md](INSTALL.md) (settings, secrets, first start, backups, upgrades). Agents install from the console itself (`/install.sh`, or the `ghcr.io/dependencyverifier/agent` image).
+From an empty server to a whole fleet reporting: [GUIDE.md](GUIDE.md). Console reference: [INSTALL.md](INSTALL.md) (settings, secrets, first start, backups, upgrades). Agents install from the console itself (`/install.sh`, or the `ghcr.io/dependencyverifier/agent` image).
 
 ## Development
 
