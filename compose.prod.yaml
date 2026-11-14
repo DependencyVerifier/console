@@ -1,20 +1,36 @@
 ---
-# Production environment override
+# Production environment override (INSTALL.md). Every value comes from the shell, loaded from prod.env
+# (`set -a; . ./prod.env; set +a`): a missing secret stops `docker compose` before anything starts.
+x-app-environment: &app-environment
+  APP_ENV: prod
+  APP_SECRET: ${APP_SECRET:?set APP_SECRET in prod.env}
+  APP_ENCRYPTION_KEYS: ${APP_ENCRYPTION_KEYS:?set APP_ENCRYPTION_KEYS in prod.env}
+  APP_HASH_PEPPER: ${APP_HASH_PEPPER:?set APP_HASH_PEPPER in prod.env}
+  APP_AGENT_SIGNING_KEY: ${APP_AGENT_SIGNING_KEY:?set APP_AGENT_SIGNING_KEY in prod.env}
+  APP_AGENT_SIGNING_KEY_NEXT: ${APP_AGENT_SIGNING_KEY_NEXT:-}
+  MAILER_DSN: ${MAILER_DSN:?set MAILER_DSN in prod.env}
+  MAILER_FROM: ${MAILER_FROM:?set MAILER_FROM in prod.env}
+  SYMFONY_TRUSTED_PROXIES: ${SYMFONY_TRUSTED_PROXIES:-}
+  AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-365}
+
 services:
   php:
     image: ${IMAGES_PREFIX:-}app-php-prod
     build:
       context: .
       target: frankenphp_prod
-    environment:
-      APP_SECRET: ${APP_SECRET}
+    environment: *app-environment
 
   worker:
     image: ${IMAGES_PREFIX:-}app-php-prod
-    environment:
-      APP_SECRET: ${APP_SECRET}
+    environment: *app-environment
 
   cron:
     image: ${IMAGES_PREFIX:-}app-php-prod
+    environment: *app-environment
+
+  database:
     environment:
-      APP_SECRET: ${APP_SECRET}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in prod.env}
+      DEPVERIFY_APP_PASSWORD: ${DEPVERIFY_APP_PASSWORD:?set DEPVERIFY_APP_PASSWORD in prod.env}
+      DEPVERIFY_OWNER_PASSWORD: ${DEPVERIFY_OWNER_PASSWORD:?set DEPVERIFY_OWNER_PASSWORD in prod.env}

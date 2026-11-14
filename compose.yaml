@@ -23,6 +23,9 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      # The verified agent releases: stored by the cron's daily sync, served by php (install.sh, downloads). One volume
+      # shared by both, or what the cron stores never reaches the web, and kept across deploys.
+      - agent_releases:/app/var/agent-releases
     ports:
       - name: http
         target: 80
@@ -43,6 +46,8 @@ services:
     restart: unless-stopped
     user: root
     command: ["docker-cron"]
+    volumes:
+      - agent_releases:/app/var/agent-releases
     environment:
       DATABASE_URL: postgresql://depverify_app:${DEPVERIFY_APP_PASSWORD:-!ChangeMeApp!}@database:5432/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-18}&charset=${POSTGRES_CHARSET:-utf8}
     depends_on:
@@ -88,6 +93,7 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  agent_releases:
 
 ###> doctrine/doctrine-bundle ###
   database_data:

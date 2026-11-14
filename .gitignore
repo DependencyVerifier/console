@@ -33,3 +33,7 @@
 ###> depverify ###
 /.docker/database/owner.env
 ###< depverify ###
+
+###> depverify ###
+/prod.env
+###< depverify ###
