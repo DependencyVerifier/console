@@ -11,6 +11,7 @@ use Omines\DataTablesBundle\Column\TwigColumn;
 use Omines\DataTablesBundle\DataTable;
 use Omines\DataTablesBundle\DataTableTypeInterface;
 use Shared\Application\Query\PageRequest;
+use Shared\UI\DataTable\DataTableView;
 use Shared\UI\DataTable\QueryBusAdapter;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -34,7 +35,7 @@ final class TeamFindingsTable implements DataTableTypeInterface
             ->add('subject', TwigColumn::class, ['field' => 'subjectName', 'label' => 'exposure.field.subject', 'orderable' => false, 'template' => 'exposure/cells/finding_subject.html.twig'])
             ->add('title', TwigColumn::class, ['field' => 'title', 'label' => 'exposure.field.finding', 'orderable' => false, 'template' => 'exposure/cells/finding_title.html.twig'])
             ->add('severity', TwigColumn::class, ['field' => 'severity', 'label' => 'exposure.field.severity', 'orderable' => false, 'template' => 'exposure/cells/finding_severity.html.twig'])
-            ->add('versions', TwigColumn::class, ['field' => 'installed', 'label' => 'exposure.field.versions', 'orderable' => false, 'template' => 'exposure/cells/finding_versions.html.twig'])
+            ->add('versions', TwigColumn::class, ['field' => 'installed', 'label' => 'exposure.field.versions', 'orderable' => false, 'template' => 'exposure/cells/finding_versions.html.twig', 'className' => DataTableView::SECONDARY])
             ->add('status', TwigColumn::class, ['field' => 'status', 'label' => 'exposure.field.status', 'orderable' => false, 'template' => 'exposure/cells/finding_status.html.twig'])
             ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListTeamFindings => new ListTeamFindings($o['teamId'], $o['scope'], $o['id'], $o['criteria'], $page)]);
     }

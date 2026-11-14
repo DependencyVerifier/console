@@ -125,8 +125,14 @@
 }
 
 /* Narrow screens: the header line wraps instead of centering. No horizontal scroll on the table: it would clip the row
-   menus; the actions being in those menus, a row stays narrow. */
+   menus; the actions being in those menus, a row stays narrow, and the secondary columns (DataTableView::SECONDARY:
+   fingerprints, versions, dates…) are left out. */
 @media (width < 48rem) {
+    .dt-card th.dt-secondary,
+    .dt-card td.dt-secondary {
+        display: none;
+    }
+
     .dt-card div.dt-container > .dt-layout-row:not(.dt-layout-table) {
         flex-direction: row;
         flex-wrap: wrap;

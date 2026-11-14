@@ -34,6 +34,14 @@
         <figure class="flex flex-col gap-2 rounded-lg border p-4">
             <figcaption class="text-sm font-semibold">{{ 'exposure.dashboard.trend'|trans }}</figcaption>
             <div class="relative h-56">{{ render_chart(trend_chart, {'aria-label': 'exposure.dashboard.trend'|trans, role: 'img'}) }}</div>
+            {#- The series of the chart in text (WCAG 1.1.1): read by screen readers, the chart stays an illustration. -#}
+            <table class="sr-only" data-dashboard="trend">
+                <caption>{{ 'exposure.dashboard.trend'|trans }}</caption>
+                <thead><tr><th scope="col">{{ 'exposure.dashboard.day'|trans }}</th><th scope="col">{{ 'exposure.dashboard.opened'|trans }}</th><th scope="col">{{ 'exposure.dashboard.fixed'|trans }}</th></tr></thead>
+                <tbody>
+                    {%- for day in summary.trend %}<tr><th scope="row"><time datetime="{{ day.day }}">{{ day.day }}</time></th><td>{{ day.opened }}</td><td>{{ day.fixed }}</td></tr>{% endfor %}
+                </tbody>
+            </table>
         </figure>
     </div>
 

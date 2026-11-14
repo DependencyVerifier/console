@@ -3,9 +3,14 @@
 {% use 'form_div_layout.html.twig' %}
 
 {%- block form_row -%}
+    {#- The help and the errors describe the field (`aria-describedby`), an error marks it invalid: what Symfony's own
+        form_row does, kept here. -#}
+    {%- set described_by = (help is not empty ? [id ~ '_help'] : [])|merge(errors|map((_, index) => id ~ '_error' ~ (index + 1))) -%}
+    {%- set widget_attr = described_by is empty ? {} : {'aria-describedby': described_by|join(' ')} -%}
+    {%- if errors|length > 0 -%}{%- set widget_attr = widget_attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
     <div data-slot="field" class="group/field flex w-full flex-col gap-2"{% if not valid %} data-invalid="true"{% endif %}{% for name, value in row_attr|filter((v, k) => k != 'class') %} {{ name }}="{{ value }}"{% endfor %}>
         {{- form_label(form) -}}
-        {{- form_widget(form) -}}
+        {{- form_widget(form, {attr: widget_attr}) -}}
         {{- form_help(form) -}}
         {{- form_errors(form) -}}
     </div>
@@ -22,7 +27,7 @@
 {#- A checkbox in the look of the kit's <twig:Checkbox> (input + check indicator). -#}
 {%- block checkbox_widget -%}
     <span data-slot="checkbox" class="group relative mt-0.5 grid size-4 shrink-0 grid-cols-1">
-        <input type="checkbox" {{ block('widget_attributes') }}{% if value is defined %} value="{{ value }}"{% endif %}{% if checked %} checked="checked"{% endif %} class="peer col-start-1 row-start-1 size-4 appearance-none rounded-[4px] border border-input bg-transparent transition-colors outline-none checked:border-primary checked:bg-primary focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:checked:bg-primary forced-colors:appearance-auto">
+        <input type="checkbox" {{ block('widget_attributes') }}{% if value is defined %} value="{{ value }}"{% endif %}{% if checked %} checked="checked"{% endif %} class="peer col-start-1 row-start-1 size-4 appearance-none rounded-[4px] border border-input bg-transparent transition-colors outline-none checked:border-primary checked:bg-primary focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:checked:bg-primary forced-colors:appearance-auto">
         <span data-slot="checkbox-indicator" class="pointer-events-none col-start-1 row-start-1 flex items-center justify-center text-primary-foreground opacity-0 group-has-checked:opacity-100">
             <twig:ux:icon name="lucide:check" class="size-3.5" />
         </span>
@@ -31,9 +36,14 @@
 
 {#- A single checkbox: the box then its label on one line, help under it. -#}
 {%- block checkbox_row -%}
+    {#- The help and the errors describe the field (`aria-describedby`), an error marks it invalid: what Symfony's own
+        form_row does, kept here. -#}
+    {%- set described_by = (help is not empty ? [id ~ '_help'] : [])|merge(errors|map((_, index) => id ~ '_error' ~ (index + 1))) -%}
+    {%- set widget_attr = described_by is empty ? {} : {'aria-describedby': described_by|join(' ')} -%}
+    {%- if errors|length > 0 -%}{%- set widget_attr = widget_attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
     <div data-slot="field" class="group/field flex flex-col gap-1"{% if not valid %} data-invalid="true"{% endif %}>
         <label for="{{ id }}" class="flex w-fit cursor-pointer items-start gap-2 text-sm leading-snug font-medium select-none">
-            {{- form_widget(form) -}}
+            {{- form_widget(form, {attr: widget_attr}) -}}
             <span>{{ (label is empty ? name|humanize : label)|trans({}, translation_domain) }}</span>
         </label>
         {{- form_help(form) -}}
@@ -62,14 +72,21 @@
 {%- endblock form_label -%}
 
 {%- block form_widget_simple -%}
-    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30')|trim}) -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30')|trim}) -%}
     {%- if not valid -%}{%- set attr = attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
     {{- parent() -}}
 {%- endblock form_widget_simple -%}
 
+{#- A text area in the look of the text inputs (form_widget_simple), several lines high. -#}
+{%- block textarea_widget -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' min-h-20 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30')|trim}) -%}
+    {%- if not valid -%}{%- set attr = attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
+    {{- parent() -}}
+{%- endblock textarea_widget -%}
+
 {#- A select in the look of the text inputs (form_widget_simple). -#}
 {%- block choice_widget_collapsed -%}
-    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30')|trim}) -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30')|trim}) -%}
     {%- if not valid -%}{%- set attr = attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
     {{- parent() -}}
 {%- endblock choice_widget_collapsed -%}
@@ -78,7 +95,7 @@
     {%- if errors|length > 0 -%}
         <div role="alert" data-slot="field-error" class="text-sm font-normal text-destructive">
             {%- for error in errors -%}
-                <p>{{ error.cause is null ? error.message|trans : error.message }}</p>
+                <p id="{{ id ~ '_error' ~ loop.index }}">{{ error.cause is null ? error.message|trans : error.message }}</p>
             {%- endfor -%}
         </div>
     {%- endif -%}

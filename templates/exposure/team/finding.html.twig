@@ -22,9 +22,9 @@
 {% block object_actions %}
     {%- if view.mayDecide and finding.status == 'open' %}
         {%- if view.runningAcceptance %}
-            <form method="post" action="{{ path('exposure_finding_revoke', {teamId: team.id, findingId: finding.id}) }}">
+            <form method="post" action="{{ path('exposure_finding_revoke', {teamId: team.id, findingId: finding.id}) }}" data-controller="confirm" data-action="submit->confirm#ask" data-confirm-message-value="{{ 'action.confirm'|trans({action: 'exposure.risk.revoke'|trans}) }}">
                 <input type="hidden" name="action[_token]" value="{{ csrf_token('finding_revoke:' ~ finding.id) }}">
-                <twig:Button type="submit" variant="outline">{{ 'exposure.risk.revoke'|trans }}</twig:Button>
+                <twig:Button type="submit" variant="destructive">{{ 'exposure.risk.revoke'|trans }}</twig:Button>
             </form>
         {%- endif %}
         <twig:FormDialog

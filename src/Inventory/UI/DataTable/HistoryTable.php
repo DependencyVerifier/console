@@ -9,6 +9,7 @@ use Omines\DataTablesBundle\Column\TwigColumn;
 use Omines\DataTablesBundle\DataTable;
 use Omines\DataTablesBundle\DataTableTypeInterface;
 use Shared\Application\Query\PageRequest;
+use Shared\UI\DataTable\DataTableView;
 use Shared\UI\DataTable\QueryBusAdapter;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -31,8 +32,8 @@ final class HistoryTable implements DataTableTypeInterface
             ->setName('history')
             ->add('taken_at', TwigColumn::class, ['field' => 'takenAt', 'label' => 'inventory.field.inventoried_at', 'orderable' => false, 'template' => 'fleet/cells/time.html.twig'])
             ->add('subject', TwigColumn::class, ['field' => 'subject', 'label' => 'inventory.field.snapshot', 'orderable' => false, 'template' => 'inventory/cells/history_subject.html.twig'])
-            ->add('trigger', TwigColumn::class, ['field' => 'trigger', 'label' => 'inventory.field.trigger', 'orderable' => false, 'template' => 'inventory/cells/history_trigger.html.twig'])
-            ->add('digest', TwigColumn::class, ['field' => 'digest', 'label' => 'inventory.field.digest', 'orderable' => false, 'template' => 'inventory/cells/history_digest.html.twig'])
+            ->add('trigger', TwigColumn::class, ['field' => 'trigger', 'label' => 'inventory.field.trigger', 'orderable' => false, 'template' => 'inventory/cells/history_trigger.html.twig', 'className' => DataTableView::SECONDARY])
+            ->add('digest', TwigColumn::class, ['field' => 'digest', 'label' => 'inventory.field.digest', 'orderable' => false, 'template' => 'inventory/cells/history_digest.html.twig', 'className' => DataTableView::SECONDARY])
             ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListInventoryHistory => new ListInventoryHistory($o['teamId'], $o['of'], $o['id'], $page)]);
     }
 }

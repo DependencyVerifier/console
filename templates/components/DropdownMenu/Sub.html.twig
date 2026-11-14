@@ -11,7 +11,7 @@
     {{ attributes.defaults({
         class: 'relative'|tailwind_classes,
         'data-controller': 'dropdown-menu-sub',
-        'data-action': 'mouseenter->dropdown-menu-sub#show mouseleave->dropdown-menu-sub#hide',
+        'data-action': 'mouseenter->dropdown-menu-sub#show mouseleave->dropdown-menu-sub#hide keydown->dropdown-menu-sub#onKeydown focusout->dropdown-menu-sub#onFocusout',
     }) }}
 >
     {##- A `DropdownMenu:SubTrigger` and a `DropdownMenu:SubContent`. -#}

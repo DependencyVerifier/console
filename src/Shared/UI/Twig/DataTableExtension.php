@@ -25,7 +25,7 @@ final readonly class DataTableExtension
         return [
             'name' => $table->getName(),
             'columns' => $this->view->columns($table),
-            'language' => $this->view->language(),
+            'language' => $this->view->language($table->getName()),
             'pageLength' => \is_int($pageLength) ? $pageLength : 25,
         ];
     }

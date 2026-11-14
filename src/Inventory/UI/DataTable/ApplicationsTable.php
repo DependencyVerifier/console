@@ -9,6 +9,7 @@ use Omines\DataTablesBundle\Column\TwigColumn;
 use Omines\DataTablesBundle\DataTable;
 use Omines\DataTablesBundle\DataTableTypeInterface;
 use Shared\Application\Query\PageRequest;
+use Shared\UI\DataTable\DataTableView;
 use Shared\UI\DataTable\QueryBusAdapter;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -34,8 +35,8 @@ final class ApplicationsTable implements DataTableTypeInterface
             ->add('name', TwigColumn::class, ['field' => 'subjectKey', 'label' => 'inventory.field.application', 'orderable' => true, 'template' => 'inventory/cells/app_name.html.twig'])
             ->add('host', TwigColumn::class, ['field' => 'hostname', 'label' => 'inventory.field.host', 'orderable' => true, 'template' => 'inventory/cells/app_host.html.twig'])
             ->add('environment', TwigColumn::class, ['field' => 'environment', 'label' => 'inventory.field.environment', 'orderable' => false, 'template' => 'inventory/cells/app_environment.html.twig'])
-            ->add('packages', TwigColumn::class, ['field' => 'packages', 'label' => 'inventory.field.packages', 'orderable' => false, 'template' => 'fleet/cells/number.html.twig'])
-            ->add('last_seen', TwigColumn::class, ['field' => 'lastSeenAt', 'label' => 'inventory.field.last_seen', 'orderable' => true, 'template' => 'fleet/cells/time.html.twig'])
+            ->add('packages', TwigColumn::class, ['field' => 'packages', 'label' => 'inventory.field.packages', 'orderable' => false, 'template' => 'fleet/cells/number.html.twig', 'className' => DataTableView::SECONDARY])
+            ->add('last_seen', TwigColumn::class, ['field' => 'lastSeenAt', 'label' => 'inventory.field.last_seen', 'orderable' => true, 'template' => 'fleet/cells/time.html.twig', 'className' => DataTableView::SECONDARY])
             ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListApplications => new ListApplications($o['teamId'], $page, $o['projectId'], $o['unattached'], $o['hostId'], $o['imageId'], $o['environmentId'], $o['attached'])]);
     }
 }

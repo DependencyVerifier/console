@@ -13,6 +13,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 final readonly class DataTableView
 {
+    /** The class of a column hidden on narrow screens (datatables.css): the table fits a phone without scrolling. */
+    public const string SECONDARY = 'dt-secondary';
+
     public function __construct(private TranslatorInterface $translator)
     {
     }
@@ -31,14 +34,23 @@ final readonly class DataTableView
     }
 
     /**
+     * The texts of a table; an empty one says what this list is for and how it fills (`datatable.empty.<name>`, else the
+     * generic sentence).
+     *
      * @return array<string, string>
      */
-    public function language(): array
+    public function language(?string $name = null): array
     {
         $keys = ['processing', 'search', 'searchPlaceholder', 'lengthMenu', 'info', 'infoEmpty', 'infoFiltered', 'loadingRecords', 'zeroRecords', 'emptyTable'];
         $language = [];
         foreach ($keys as $key) {
             $language[$key] = $this->translator->trans('datatable.'.$key);
+        }
+
+        $key = 'datatable.empty.'.$name;
+        $sentence = null === $name ? $key : $this->translator->trans($key);
+        if ($sentence !== $key) {
+            $language['emptyTable'] = $sentence;
         }
 
         return $language;

@@ -1,3 +1,4 @@
+/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 
 // A WebAuthn ceremony (docs/cadrage.md §7): asks the server for its options (POST, the CSRF token of the form in

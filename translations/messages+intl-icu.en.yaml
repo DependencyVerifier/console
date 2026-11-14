@@ -40,6 +40,7 @@ action:
     continue: Continue
     save: Save
     cancel: Cancel
+    confirm: "{action}: this cannot be undone. Continue?"
 frame:
     loading: Loading
     retry: Retry
@@ -216,6 +217,7 @@ identity:
             add: Add a passkey
             registered: Passkey added.
             revoke: Remove
+            revoke_named: "Remove the passkey {name}"
             revoked: Passkey removed. Sign in again.
             dates: "Added {created} · last used {used}"
         backup_codes:
@@ -355,6 +357,25 @@ datatable:
     loadingRecords: Loading…
     zeroRecords: No matching entries
     emptyTable: Nothing here yet
+    empty:
+        agents: "No agent yet. Create an enrollment token, then run the command it shows on the server."
+        components: "No component yet: attach an application to this environment."
+        environments: "No environment yet. Add one (production, staging…) to attach applications to it."
+        findings: "Nothing to fix here: no finding matches."
+        history: "No inventory received yet."
+        hosts: "No host yet: a host appears when its first agent enrolls."
+        invitations: "No pending invitation."
+        orders: "No order sent to this agent yet."
+        packages: "No package inventoried yet."
+        project_members: "No project member yet. Invite someone to give them a role in this project."
+        projects: "No project yet. Create one to group applications by environment."
+        recipients: "No recipient yet. Add one to send this project's notifications by email."
+        rules: "No notification rule yet. Create one to be told about vulnerabilities and silent agents."
+        team_members: "No member yet. Invite someone to share this team."
+        teams: "No team yet. Create the first one."
+        tokens: "No enrollment token yet. Create one to enroll an agent."
+        users: "No account yet."
+        webhooks: "No webhook yet. Add one to send notifications to another tool."
 organization:
     admin:
         memberships_resynced: "Memberships re-synced with the account status."
@@ -429,6 +450,7 @@ organization:
     members:
         title: Members
         actions_for: "Actions for {email}"
+        current_role: current
         change_role: Change role
         remove: Remove
         removed: Member removed.
@@ -801,6 +823,7 @@ exposure:
         low: Low
         unknown: Not rated
     dashboard:
+        day: Day
         title: Exposure
         known_exploited: Exploited (KEV)
         ends_of_life: Ends of life

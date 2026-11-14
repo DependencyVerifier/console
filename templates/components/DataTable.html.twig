@@ -21,7 +21,7 @@
         {%- if title %}<h2 class="text-sm font-semibold">{{ title }}</h2>{% endif %}
         <div class="flex items-center gap-2">{% block actions %}{% endblock %}</div>
     </div>
-    <table data-datatable-target="table" class="w-full caption-bottom text-sm">
+    <table data-datatable-target="table" class="w-full caption-bottom text-sm"{% if title %} aria-label="{{ title }}"{% endif %}>
         <thead>
             <tr>
                 {%- for column in config.columns -%}

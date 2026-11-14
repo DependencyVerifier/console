@@ -1,3 +1,4 @@
+/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 
 // From the Symfony UX Toolkit shadcn kit (Tabs), converted to TypeScript.

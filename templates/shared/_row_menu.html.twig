@@ -1,9 +1,10 @@
 {#- Items of a row menu (a kit DropdownMenu with a ⋯ trigger, written in each cell). An action is a form whose submit button IS the menu item (never a button inside a
     button: the browser would close the first one and the click would submit nothing). -#}
 
-{#- A field-less action (`<form name>[_token]`, CSRF token id given), answered by a Turbo Stream. -#}
+{#- A field-less action (`<form name>[_token]`, CSRF token id given), answered by a Turbo Stream. A destructive one asks
+    for a confirmation first (confirm_controller.ts). -#}
 {%- macro action(url, form_name, token_id, label, variant, icon) -%}
-    <form method="post" action="{{ url }}">
+    <form method="post" action="{{ url }}"{% if 'destructive' == variant|default('default') %} data-controller="confirm" data-action="submit->confirm#ask" data-confirm-message-value="{{ 'action.confirm'|trans({action: label|trans}) }}"{% endif %}>
         <input type="hidden" name="{{ form_name }}[_token]" value="{{ csrf_token(token_id) }}">
         <twig:DropdownMenu:Item type="submit" variant="{{ variant|default('default') }}">
             {%- if icon|default(null) %}<twig:ux:icon name="{{ icon }}" />{% endif -%}
@@ -23,9 +24,9 @@
         <twig:DropdownMenu:SubContent class="start-auto end-full ms-0 me-1">
             {%- for role in roles %}
                 {%- if role == current %}
-                    <twig:DropdownMenu:Item disabled aria-checked="true" class="font-medium">
+                    <twig:DropdownMenu:Item disabled class="font-medium">
                         <twig:ux:icon name="lucide:check" />
-                        {{ ('role.' ~ role)|trans }}
+                        {{ ('role.' ~ role)|trans }}<span class="sr-only"> ({{ 'organization.members.current_role'|trans }})</span>
                     </twig:DropdownMenu:Item>
                 {%- else %}
                     <form method="post" action="{{ url }}">

@@ -9,6 +9,7 @@ use Omines\DataTablesBundle\DataTable;
 use Omines\DataTablesBundle\DataTableTypeInterface;
 use Organization\Application\Query\Team\ListTeams;
 use Shared\Application\Query\PageRequest;
+use Shared\UI\DataTable\DataTableView;
 use Shared\UI\DataTable\QueryBusAdapter;
 
 /**
@@ -25,7 +26,7 @@ final class TeamsTable implements DataTableTypeInterface
             ->setName('teams')
             ->add('name', TwigColumn::class, ['label' => 'organization.field.team_name', 'orderable' => true, 'template' => 'organization/cells/team_name.html.twig'])
             ->add('members', TwigColumn::class, ['field' => 'members', 'label' => 'organization.field.members', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'])
-            ->add('projects', TwigColumn::class, ['field' => 'projects', 'label' => 'organization.field.projects', 'orderable' => false, 'template' => 'organization/cells/number.html.twig'])
+            ->add('projects', TwigColumn::class, ['field' => 'projects', 'label' => 'organization.field.projects', 'orderable' => false, 'template' => 'organization/cells/number.html.twig', 'className' => DataTableView::SECONDARY])
             ->add('actions', TwigColumn::class, ['label' => 'admin.users.actions', 'orderable' => false, 'className' => 'text-end', 'template' => 'organization/cells/team_actions.html.twig'])
             ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListTeams => new ListTeams($page)]);
     }

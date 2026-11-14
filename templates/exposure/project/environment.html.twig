@@ -14,10 +14,10 @@
     <section class="flex flex-col gap-2" aria-labelledby="components-title">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <p id="components-title" class="text-sm text-muted-foreground">{{ 'inventory.matrix.description'|trans }}</p>
-            <form method="get" data-controller="auto-submit" data-action="change->auto-submit#submit" class="flex items-center gap-2 text-sm">
+            <form method="get" class="flex items-center gap-2 text-sm">
                 {%- for name, value in app.request.query.all|filter((v, k) => k != 'drift' and v is not iterable) %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
                 <label class="flex items-center gap-2"><input type="checkbox" name="drift" value="1"{% if drift_only %} checked{% endif %} class="size-4"> {{ 'inventory.matrix.drift_only'|trans }}</label>
-                <noscript><twig:Button type="submit" variant="outline" size="sm">{{ 'exposure.filters.apply'|trans }}</twig:Button></noscript>
+                <twig:Button type="submit" variant="outline" size="sm">{{ 'exposure.filters.apply'|trans }}</twig:Button>
             </form>
         </div>
         <twig:DataTable :table="tables.components" :title="'inventory.matrix.title'|trans" />

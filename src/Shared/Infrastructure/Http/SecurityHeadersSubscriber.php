@@ -9,6 +9,8 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
+use function Symfony\Component\String\u;
+
 /**
  * Strict CSP with a per-request nonce (never 'unsafe-inline', neither for scripts nor for styles), no framing,
  * no referrer (link tokens never leak), no MIME sniffing, HSTS outside dev. In dev only, the Vite dev server origin
@@ -45,8 +47,10 @@ final readonly class SecurityHeadersSubscriber
     private function policy(): string
     {
         $nonce = \sprintf("'nonce-%s'", $this->nonce->value());
-        $dev = 'dev' === $this->environment ? ' '.($this->viteDevOrigin ?? 'http://localhost:5173') : '';
-        $devSocket = 'dev' === $this->environment ? ' ws://localhost:5173' : '';
+        $viteOrigin = $this->viteDevOrigin ?? 'http://localhost:5173';
+        $dev = 'dev' === $this->environment ? ' '.$viteOrigin : '';
+        // Vite's hot reload socket is on the same port as its origin (9173 with compose.local.yaml).
+        $devSocket = 'dev' === $this->environment ? ' '.u($viteOrigin)->replaceMatches('/^http/', 'ws')->toString() : '';
 
         return implode('; ', [
             "default-src 'self'",

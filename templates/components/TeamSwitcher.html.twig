@@ -13,6 +13,7 @@
                     <twig:Sidebar:MenuButton
                         {{ ...dropdown_menu_trigger_attrs }}
                         size="lg"
+                        tooltip="{{ activeTeam.name }}"
                         class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                     >
                         <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
@@ -25,7 +26,8 @@
                         <twig:ux:icon name="lucide:chevrons-up-down" class="ms-auto" />
                     </twig:Sidebar:MenuButton>
                 </twig:DropdownMenu:Trigger>
-                <twig:DropdownMenu:Content class="w-max">
+                {#- On mobile the sidebar is a sheet that clips what passes its edge: the menu opens below the button, inside it. -#}
+                <twig:DropdownMenu:Content class="w-max max-md:left-0 max-md:ml-0 max-md:top-full max-md:mt-2 max-md:w-full">
                     <twig:DropdownMenu:Label class="text-xs text-muted-foreground">
                         {{ 'nav.teams'|trans }}
                     </twig:DropdownMenu:Label>

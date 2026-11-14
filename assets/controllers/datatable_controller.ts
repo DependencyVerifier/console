@@ -1,3 +1,4 @@
+/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 import DataTable, { type Api, type Config } from 'datatables.net-dt';
 

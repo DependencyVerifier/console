@@ -38,12 +38,12 @@ final class MemberPermissionsTest extends IdentityWebTestCase
         self::assertCount(0, DataTables::cell($alice['actions'])->filter('turbo-frame'), 'A TEAM_ADMIN has nothing to receive on top.');
 
         // The row menu: every action is a form whose submit button is the menu item itself, the current role is
-        // checked and not submittable, and never a button inside a button or a link.
+        // marked and not submittable, and never a button inside a button or a link.
         $menu = DataTables::cell($bob['actions']);
         self::assertCount(1, $menu->filter('[data-slot="dropdown-menu-trigger"][aria-label="Actions for bob@example.com"]'));
         self::assertCount(1, $menu->filter(\sprintf('form[action="/teams/%s/members/%s/remove"] button[type="submit"][role="menuitem"]', $teamId, $bobId)));
         self::assertCount(3, $menu->filter(\sprintf('form[action="/teams/%s/members/%s/role"] button[type="submit"][role="menuitem"]', $teamId, $bobId)), 'One form per other role.');
-        self::assertSame('Team member', u($menu->filter('[role="menuitem"][aria-checked="true"]')->text())->trim()->toString());
+        self::assertSame('Team member (current)', u($menu->filter('[role="menuitem"][disabled]')->text())->trim()->toString(), 'Named current for a screen reader, not submittable.');
         self::assertCount(0, $menu->filter('button button, a button, button a'));
 
         $frame = ['HTTP_TURBO_FRAME' => \sprintf('member-permissions-%s-form', $bobId)];

@@ -26,7 +26,7 @@
         {% for passkey in user.passkeys %}
             <div class="flex items-center justify-between gap-3">
                 <span class="text-sm">{{ passkey.name }} <span class="text-xs text-muted-foreground">· {{ passkey.createdAt|date('Y-m-d') }}</span></span>
-                <form method="post" action="{{ path('identity_admin_user_revoke_passkey', {userId: user.id, passkeyId: passkey.id}) }}">
+                <form method="post" action="{{ path('identity_admin_user_revoke_passkey', {userId: user.id, passkeyId: passkey.id}) }}" data-controller="confirm" data-action="submit->confirm#ask" data-confirm-message-value="{{ 'action.confirm'|trans({action: 'identity.account.passkeys.revoke_named'|trans({name: passkey.name})}) }}">
                     <input type="hidden" name="action[_token]" value="{{ csrf_token('revoke_passkey:' ~ passkey.id) }}">
                     <twig:Button type="submit" size="xs" variant="destructive">{{ 'admin.users.revoke_passkey'|trans }}</twig:Button>
                 </form>

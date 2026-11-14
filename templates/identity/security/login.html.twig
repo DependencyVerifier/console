@@ -41,7 +41,7 @@
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('passkey_login') }}">
             <input type="hidden" name="_passkey" data-passkey-target="response">
             <twig:Button type="submit" variant="outline" class="w-full"><twig:ux:icon name="lucide:key-round" /> {{ 'identity.login.passkey'|trans }}</twig:Button>
-            <p class="text-sm text-destructive" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
+            <p class="text-sm text-destructive" role="alert" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
         </form>
 
         <p class="text-center text-xs text-muted-foreground">{{ 'identity.login.invitation_only'|trans }}</p>

@@ -56,7 +56,7 @@
                         {{ form_start(backup_codes_form, {action: path('identity_account_backup_codes'), attr: {'data-turbo': 'false'}}) }}
                             <twig:Button type="submit" variant="outline">{{ 'identity.account.backup_codes.regenerate'|trans }}</twig:Button>
                         {{ form_end(backup_codes_form) }}
-                        {{ form_start(totp_disable_form, {action: path('identity_account_totp_disable'), attr: {'data-turbo': 'false'}}) }}
+                        {{ form_start(totp_disable_form, {action: path('identity_account_totp_disable'), attr: {'data-turbo': 'false', 'data-controller': 'confirm', 'data-action': 'submit->confirm#ask', 'data-confirm-message-value': 'action.confirm'|trans({action: 'identity.account.totp.disable'|trans})}}) }}
                             <twig:Button type="submit" variant="destructive">{{ 'identity.account.totp.disable'|trans }}</twig:Button>
                         {{ form_end(totp_disable_form) }}
                     </div>
@@ -93,8 +93,8 @@
                                     <p class="text-sm font-medium">{{ passkey.name }}</p>
                                     <p class="text-xs text-muted-foreground">{{ 'identity.account.passkeys.dates'|trans({created: passkey.createdAt|date('Y-m-d'), used: passkey.lastUsedAt ? passkey.lastUsedAt|date('Y-m-d H:i') : '—'}) }}</p>
                                 </div>
-                                {{ form_start(passkey_revoke_forms[passkey.id], {action: path('identity_account_passkey_revoke', {passkeyId: passkey.id}), attr: {'data-turbo': 'false'}}) }}
-                                    <twig:Button type="submit" variant="destructive" size="sm">{{ 'identity.account.passkeys.revoke'|trans }}</twig:Button>
+                                {{ form_start(passkey_revoke_forms[passkey.id], {action: path('identity_account_passkey_revoke', {passkeyId: passkey.id}), attr: {'data-turbo': 'false', 'data-controller': 'confirm', 'data-action': 'submit->confirm#ask', 'data-confirm-message-value': 'action.confirm'|trans({action: 'identity.account.passkeys.revoke_named'|trans({name: passkey.name})})}}) }}
+                                    <twig:Button type="submit" variant="destructive" size="sm" aria-label="{{ 'identity.account.passkeys.revoke_named'|trans({name: passkey.name}) }}">{{ 'identity.account.passkeys.revoke'|trans }}</twig:Button>
                                 {{ form_end(passkey_revoke_forms[passkey.id]) }}
                             </li>
                         {% endfor %}
@@ -106,7 +106,7 @@
                         'data-passkey-mode-value': 'create', 'data-action': 'submit->passkey#start'}}) }}
                         {{ form_row(passkey_form.name) }}
                         {{ form_widget(passkey_form.response) }}
-                        <p class="text-sm text-destructive" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
+                        <p class="text-sm text-destructive" role="alert" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
                         <twig:Button type="submit" class="w-fit"><twig:ux:icon name="lucide:key-round" /> {{ 'identity.account.passkeys.add'|trans }}</twig:Button>
                     {{ form_end(passkey_form) }}
                 {% endif %}

@@ -9,6 +9,7 @@ use Omines\DataTablesBundle\Column\TwigColumn;
 use Omines\DataTablesBundle\DataTable;
 use Omines\DataTablesBundle\DataTableTypeInterface;
 use Shared\Application\Query\PageRequest;
+use Shared\UI\DataTable\DataTableView;
 use Shared\UI\DataTable\QueryBusAdapter;
 
 /**
@@ -29,9 +30,9 @@ final class HostsTable implements DataTableTypeInterface
         $dataTable
             ->setName('hosts')
             ->add('hostname', TwigColumn::class, ['field' => 'hostname', 'label' => 'fleet.field.hostname', 'orderable' => true, 'template' => 'fleet/cells/host_name.html.twig'])
-            ->add('os', TwigColumn::class, ['field' => 'os', 'label' => 'fleet.field.os', 'orderable' => false, 'template' => 'fleet/cells/text.html.twig'])
+            ->add('os', TwigColumn::class, ['field' => 'os', 'label' => 'fleet.field.os', 'orderable' => false, 'template' => 'fleet/cells/text.html.twig', 'className' => DataTableView::SECONDARY])
             ->add('agents', TwigColumn::class, ['field' => 'liveAgents', 'label' => 'fleet.field.agents', 'orderable' => false, 'template' => 'fleet/cells/number.html.twig'])
-            ->add('last_seen', TwigColumn::class, ['field' => 'lastSeenAt', 'label' => 'fleet.field.last_seen', 'orderable' => true, 'template' => 'fleet/cells/time.html.twig'])
+            ->add('last_seen', TwigColumn::class, ['field' => 'lastSeenAt', 'label' => 'fleet.field.last_seen', 'orderable' => true, 'template' => 'fleet/cells/time.html.twig', 'className' => DataTableView::SECONDARY])
             ->add('actions', TwigColumn::class, ['field' => 'id', 'label' => 'admin.users.actions', 'orderable' => false, 'template' => 'fleet/cells/host_actions.html.twig', 'className' => 'text-end'])
             ->createAdapter(QueryBusAdapter::class, ['query' => static fn (PageRequest $page): ListTeamHosts => new ListTeamHosts($teamId, $page)]);
     }
