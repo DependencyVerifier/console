@@ -10,7 +10,7 @@ containers: `php` (FrankenPHP + Caddy), `worker` (asynchronous queues), `cron` (
 ```bash
 git clone --recurse-submodules https://github.com/DependencyVerifier/console.git
 cd console
-git checkout v1.0.0   # a release tag, never main
+git checkout v1.0.1   # a release tag, never main
 ```
 
 ## 2. Install

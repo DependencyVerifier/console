@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 (2026-11-15)
 
 **Installation**
 - `bin/install-console` installs and upgrades the console in one command: it checks the host (Docker and Compose
@@ -10,6 +10,9 @@
 - Fixed: a database volume initialised with other passwords than `prod.env` (`password authentication failed for
   user "depverify_app"`). The script realigns the database roles with `prod.env` on every run, and the containers
   stop at once on this error, pointing to the fix, instead of retrying for a minute.
+
+**Documentation**
+- `GUIDE.md`: the whole rollout, from an empty server to every machine reporting (console, teams, agents, approval).
 
 ## 1.0.0 (2026-11-14)
 

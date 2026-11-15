@@ -14,25 +14,17 @@ this guide is the whole path.
 
 ## 1. Install the console
 
-Follow [INSTALL.md](INSTALL.md), steps 1 to 3. In short:
+Follow [INSTALL.md](INSTALL.md), steps 1 and 2. In short:
 
 ```bash
 git clone --recurse-submodules https://github.com/DependencyVerifier/console.git
-cd console && git checkout v1.0.0
-cp prod.env.dist prod.env && chmod 600 prod.env
-cp .docker/database/owner.env.dist .docker/database/owner.env && chmod 600 .docker/database/owner.env
-# fill both files (SERVER_NAME, DEFAULT_URI, MAILER_DSN, MAILER_FROM, the generated secrets)
-
-set -a; . ./prod.env; set +a        # in every new shell
-docker compose build --pull
-docker compose up -d --wait
-make db-migrate
-make audit-partitions
-make agent-release-sync
-make super-admin email=you@example.com
+cd console && git checkout v1.0.1
+bin/install-console                  # checks the server, creates prod.env and stops
+# fill SERVER_NAME, DEFAULT_URI, MAILER_DSN, MAILER_FROM in prod.env (the secrets are generated)
+bin/install-console --super-admin you@example.com
 ```
 
-> **Back up `prod.env` outside the server now.** Without `APP_ENCRYPTION_KEYS` the stored secrets (webhooks, TOTP)
+> **Back up `prod.env` and `.docker/database/owner.env` outside the server now.** Without `APP_ENCRYPTION_KEYS` the stored secrets (webhooks, TOTP)
 > cannot be read; without `APP_AGENT_SIGNING_KEY` every agent must be installed again.
 
 Open `https://console.example.com`, sign in (password, then the code sent by email), and in **Account security** set
@@ -125,10 +117,10 @@ Fleet-wide rules (silent agent, new agent to approve) live in the team's **Notif
 - **Back up PostgreSQL**: `make db-dump DUMP=console-$(date +%F).sql` (with `prod.env` loaded), then copy
   `var/console-….sql` away; keep `prod.env` and `owner.env` safe.
 - **Upgrade the console**: read the release notes, then
-  `git fetch --tags && git checkout v1.x.y && docker compose build --pull && docker compose up -d --wait && make db-migrate`.
+  `git fetch --tags && git checkout v1.x.y && bin/install-console`.
 - **Upgrade the agents**: systemd agents from the console (**Update**); container agents by changing the digest of
   their image.
-- **Change the console signing key**: never replace it directly, follow [INSTALL.md](INSTALL.md#7-changing-a-key)
+- **Change the console signing key**: never replace it directly, follow [INSTALL.md](INSTALL.md#6-changing-a-key)
   (`APP_AGENT_SIGNING_KEY_NEXT`, then `make console-key-rotate`).
 
 ## Recommended order
