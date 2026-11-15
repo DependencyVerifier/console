@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 (2026-11-15)
+
+**Installation**
+- Fixed: behind a reverse proxy that terminates TLS (`SERVER_NAME=:80`), `bin/install-console` no longer warns that
+  `:80` does not resolve; it warns instead when `SYMFONY_TRUSTED_PROXIES` is empty or `DEFAULT_URI` is not an
+  `https://` address. Its summary shows `DEFAULT_URI`. `INSTALL.md` lists what the reverse proxy must do (port 80,
+  `X-Forwarded-For` and `X-Forwarded-Proto`, 20 MB request bodies).
+
 ## 1.0.1 (2026-11-15)
 
 **Installation**
