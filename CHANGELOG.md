@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.3 (2026-11-15)
 
 **Installation**
 - Fixed: the emails sent from the web (password reset, sign-in codes, invitations) failed with "certificate verify
