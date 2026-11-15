@@ -20,6 +20,14 @@ if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 				ATTEMPTS_LEFT_TO_REACH_DATABASE=0
 				break
 			fi
+			# A wrong password never heals by waiting: the roles are created only on a fresh volume (roles.sh).
+			case "$DATABASE_ERROR" in
+			*'password authentication failed'*)
+				echo 'The role password in the database differs from DATABASE_URL: run bin/install-console again, or make db-roles (INSTALL.md, Troubleshooting).'
+				ATTEMPTS_LEFT_TO_REACH_DATABASE=0
+				break
+				;;
+			esac
 			sleep 1
 			ATTEMPTS_LEFT_TO_REACH_DATABASE=$((ATTEMPTS_LEFT_TO_REACH_DATABASE - 1))
 			echo "Still waiting for database to be ready... Or maybe the database is not reachable. $ATTEMPTS_LEFT_TO_REACH_DATABASE attempts left."

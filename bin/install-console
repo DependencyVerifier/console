@@ -1,0 +1,300 @@
+#!/usr/bin/env bash
+# Installs or upgrades the console in production (INSTALL.md). Safe to run again: it never overwrites a value of
+# prod.env, only fills the empty secrets, and realigns the database roles with prod.env on every run (the roles are
+# created by roles.sh only on a fresh volume, so a volume older than prod.env would otherwise refuse the passwords).
+# It checks the host but installs nothing on it: a missing tool is reported with the command to install it.
+set -Eeuo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: bin/install-console [--check] [--super-admin <email>]
+
+  --check                 check the host prerequisites only, change nothing
+  --super-admin <email>   create a super admin at the end (password typed hidden, needs a terminal)
+  -h, --help              show this help
+
+Run it from the root of the repository. On the first run it creates prod.env from prod.env.dist and stops: fill
+SERVER_NAME, DEFAULT_URI, MAILER_DSN and MAILER_FROM, then run it again. The secrets left empty are generated.
+EOF
+}
+
+CHECK_ONLY=0
+SUPER_ADMIN_EMAIL=''
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --check) CHECK_ONLY=1 ;;
+        --super-admin)
+            [ $# -ge 2 ] || { usage >&2; exit 2; }
+            SUPER_ADMIN_EMAIL="$2"
+            shift
+            ;;
+        -h | --help) usage; exit 0 ;;
+        *) usage >&2; exit 2 ;;
+    esac
+    shift
+done
+
+PROD_ENV=prod.env
+OWNER_ENV=.docker/database/owner.env
+MIN_COMPOSE_VERSION=2.24.0
+MIN_FREE_DISK_KB=$((5 * 1024 * 1024))
+
+if [ -t 1 ]; then
+    BOLD=$'\033[1m' RED=$'\033[31m' YELLOW=$'\033[33m' GREEN=$'\033[32m' RESET=$'\033[0m'
+else
+    BOLD='' RED='' YELLOW='' GREEN='' RESET=''
+fi
+
+STEP='startup'
+step() { STEP="$1"; printf '\n%s==> %s%s\n' "$BOLD" "$1" "$RESET"; }
+ok() { printf '  %s✓%s %s\n' "$GREEN" "$RESET" "$1"; }
+warn() { printf '  %s!%s %s\n' "$YELLOW" "$RESET" "$1"; }
+fail() { printf '  %s✗%s %s\n' "$RED" "$RESET" "$1"; }
+die() { printf '\n%sError:%s %s\n' "$RED" "$RESET" "$1" >&2; exit 1; }
+
+on_error() {
+    # set -E hands the trap to command substitutions: a probe failing there is expected, report the main shell only.
+    [ "$BASH_SUBSHELL" -eq 0 ] || return 0
+    printf '\n%sFailed during: %s%s\n' "$RED" "$STEP" "$RESET" >&2
+    printf 'Diagnose with: docker compose ps; docker compose logs --tail=100 <service> (php, worker, cron, database)\n' >&2
+}
+trap on_error ERR
+
+# Value of KEY in an env file, without surrounding quotes; empty when the key is absent.
+env_get() {
+    local value
+    value=$(grep -E "^$1=" "$2" | tail -n 1 | cut -d= -f2-) || true
+    value="${value%\"}"; value="${value#\"}"
+    value="${value%\'}"; value="${value#\'}"
+    printf '%s' "$value"
+}
+
+# Sets KEY=VALUE in an env file (the line is replaced, or appended when absent), keeping its mode.
+env_set() {
+    local tmp
+    tmp=$(mktemp "$3.XXXXXX")
+    KEY="$1" VALUE="$2" awk '
+        BEGIN { key = ENVIRON["KEY"]; value = ENVIRON["VALUE"]; done = 0 }
+        index($0, key "=") == 1 { print key "=" value; done = 1; next }
+        { print }
+        END { if (!done) print key "=" value }
+    ' "$3" > "$tmp"
+    chmod 600 "$tmp"
+    mv "$tmp" "$3"
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+check_prerequisites() {
+    step 'Checking the host'
+    local errors=0
+
+    if [ -f compose.prod.yaml ] && [ -f prod.env.dist ] && [ -f Makefile ]; then
+        ok 'run from the root of the repository'
+    else
+        fail 'run this script from the root of the console repository (cd console; bin/install-console)'
+        errors=$((errors + 1))
+    fi
+
+    local tool hint
+    for tool in docker make git openssl awk; do
+        case "$tool" in
+            docker) hint='https://docs.docker.com/engine/install/ (Docker Engine and the Compose plugin)' ;;
+            make) hint='apt-get install make' ;;
+            git) hint='apt-get install git' ;;
+            openssl) hint='apt-get install openssl' ;;
+            awk) hint='apt-get install gawk' ;;
+        esac
+        if command -v "$tool" > /dev/null 2>&1; then
+            ok "$tool"
+        else
+            fail "$tool is missing: $hint"
+            errors=$((errors + 1))
+        fi
+    done
+
+    if command -v docker > /dev/null 2>&1; then
+        if docker info > /dev/null 2>&1; then
+            ok 'Docker daemon reachable'
+        else
+            fail 'the Docker daemon is not reachable: start it (systemctl start docker) or add this user to the docker group'
+            errors=$((errors + 1))
+        fi
+
+        local compose_version
+        if compose_version=$(docker compose version --short 2> /dev/null); then
+            compose_version="${compose_version#v}"
+            if [ "$(printf '%s\n%s\n' "$MIN_COMPOSE_VERSION" "$compose_version" | sort -V | head -n 1)" = "$MIN_COMPOSE_VERSION" ]; then
+                ok "Docker Compose $compose_version"
+            else
+                fail "Docker Compose $compose_version is too old, $MIN_COMPOSE_VERSION or later is needed: apt-get install docker-compose-plugin"
+                errors=$((errors + 1))
+            fi
+        else
+            fail 'the Docker Compose plugin is missing (docker compose): apt-get install docker-compose-plugin'
+            errors=$((errors + 1))
+        fi
+    fi
+
+    # Ports 80/443: free, or already held by this project's own php container (upgrade).
+    if docker compose ps --status running --quiet php 2> /dev/null | grep -q .; then
+        ok 'ports 80/443 held by the running console'
+    elif command -v ss > /dev/null 2>&1; then
+        local port
+        for port in 80 443; do
+            if ss -ltnH "sport = :$port" 2> /dev/null | grep -q .; then
+                fail "port $port is already used by another program (ss -ltnp 'sport = :$port')"
+                errors=$((errors + 1))
+            else
+                ok "port $port free"
+            fi
+        done
+    else
+        warn 'ss not found: ports 80/443 not checked'
+    fi
+
+    local free_kb
+    free_kb=$(df -Pk . | awk 'NR == 2 { print $4 }')
+    if [ "${free_kb:-0}" -lt "$MIN_FREE_DISK_KB" ]; then
+        warn "less than 5 GB free on this disk ($((free_kb / 1024)) MB): the images and the database need room"
+    else
+        ok 'disk space'
+    fi
+
+    if command -v git > /dev/null 2>&1 && [ -d .git ]; then
+        local tag
+        if tag=$(git describe --exact-match --tags 2> /dev/null); then
+            ok "release $tag"
+        else
+            warn 'the checkout is not on a release tag (git checkout v1.x.y): a branch is not meant for production'
+        fi
+    fi
+
+    if [ -f "$PROD_ENV" ] && command -v getent > /dev/null 2>&1; then
+        local server_name
+        server_name=$(env_get SERVER_NAME "$PROD_ENV")
+        if [ -n "$server_name" ] && ! getent hosts "$server_name" > /dev/null 2>&1; then
+            warn "$server_name does not resolve: Caddy cannot get its certificate until the DNS points to this server"
+        fi
+    fi
+
+    [ "$errors" -eq 0 ] || die "$errors prerequisite(s) missing, see above."
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+prepare_prod_env() {
+    step "Settings ($PROD_ENV)"
+
+    if [ ! -f "$PROD_ENV" ]; then
+        (umask 077; cp prod.env.dist "$PROD_ENV")
+        chmod 600 "$PROD_ENV"
+        ok "$PROD_ENV created from prod.env.dist"
+        printf '\nFill SERVER_NAME, DEFAULT_URI, MAILER_DSN and MAILER_FROM in %s, then run bin/install-console again.\n' "$PROD_ENV"
+        printf 'The secrets left empty are generated by the script.\n'
+        exit 0
+    fi
+    chmod 600 "$PROD_ENV"
+
+    local missing=() key value
+    for key in SERVER_NAME DEFAULT_URI MAILER_DSN MAILER_FROM; do
+        value=$(env_get "$key" "$PROD_ENV")
+        if [ -z "$value" ] || [[ "$value" == *example.com* ]]; then
+            missing+=("$key")
+        fi
+    done
+    [ "$(env_get COMPOSE_FILE "$PROD_ENV")" = 'compose.yaml:compose.prod.yaml' ] || missing+=('COMPOSE_FILE (compose.yaml:compose.prod.yaml)')
+    [ ${#missing[@]} -eq 0 ] || die "fill these values in $PROD_ENV: ${missing[*]}"
+    ok 'required values present'
+
+    # Only the empty secrets are generated: an existing one is never replaced (it encrypts or signs stored data).
+    local generated=()
+    gen_if_empty() {
+        if [ -z "$(env_get "$1" "$PROD_ENV")" ]; then
+            env_set "$1" "$2" "$PROD_ENV"
+            generated+=("$1")
+        fi
+    }
+    gen_if_empty APP_SECRET "$(openssl rand -hex 32)"
+    gen_if_empty APP_ENCRYPTION_KEYS "key1=$(openssl rand -base64 32)"
+    gen_if_empty APP_HASH_PEPPER "key1=$(openssl rand -base64 32)"
+    gen_if_empty APP_AGENT_SIGNING_KEY "$(openssl rand -base64 32)"
+    gen_if_empty POSTGRES_PASSWORD "$(openssl rand -hex 24)"
+    gen_if_empty DEPVERIFY_APP_PASSWORD "$(openssl rand -hex 24)"
+    gen_if_empty DEPVERIFY_OWNER_PASSWORD "$(openssl rand -hex 24)"
+
+    if [ ${#generated[@]} -gt 0 ]; then
+        ok "generated: ${generated[*]}"
+        warn "back up $PROD_ENV outside this server now: without APP_ENCRYPTION_KEYS the stored secrets are lost,"
+        warn 'without APP_AGENT_SIGNING_KEY every agent must be installed again'
+    else
+        ok 'secrets already set, none generated'
+    fi
+
+    # The owner credentials are derived from prod.env on every run, so both files never disagree.
+    local owner_password db
+    owner_password=$(env_get DEPVERIFY_OWNER_PASSWORD "$PROD_ENV")
+    db=$(env_get POSTGRES_DB "$PROD_ENV"); db="${db:-app}"
+    (
+        umask 077
+        printf '# Generated by bin/install-console from %s (DEPVERIFY_OWNER_PASSWORD): do not edit, run the script again.\n' "$PROD_ENV"
+        printf 'DATABASE_MIGRATIONS_URL=postgresql://depverify_owner:%s@database:5432/%s?serverVersion=18&charset=utf8\n' "$owner_password" "$db"
+    ) > "$OWNER_ENV"
+    chmod 600 "$OWNER_ENV"
+    ok "$OWNER_ENV in sync"
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+install() {
+    set -a
+    # shellcheck source=/dev/null
+    . "./$PROD_ENV"
+    set +a
+
+    step 'Git submodules'
+    make submodules
+
+    step 'Building the images'
+    docker compose build --pull
+
+    step 'Starting the database'
+    docker compose up -d --wait database
+
+    # Every run: roles.sh only runs on a fresh volume, so this realigns the role passwords with prod.env.
+    step 'Database roles'
+    make db-roles
+
+    step 'Starting the console (php, worker, cron)'
+    docker compose up -d --wait --remove-orphans
+
+    step 'Migrations'
+    make db-migrate
+
+    step 'Audit log partitions'
+    make audit-partitions
+
+    step 'Agent release'
+    # Network dependent and run daily by the cron: a failure here does not stop the installation.
+    if ! make agent-release-sync; then
+        warn 'agent release not synced now (network?): the cron retries daily, or run: make agent-release-sync'
+    fi
+
+    if [ -n "$SUPER_ADMIN_EMAIL" ]; then
+        step 'Super admin'
+        [ -t 0 ] || die 'creating a super admin needs a terminal (the password is typed hidden)'
+        make super-admin email="$SUPER_ADMIN_EMAIL"
+    fi
+
+    step 'Done'
+    docker compose ps
+    # shellcheck disable=SC2153 # exported by prod.env
+    printf '\nConsole: https://%s\n' "$SERVER_NAME"
+    if [ -z "$SUPER_ADMIN_EMAIL" ]; then
+        printf 'First install? Create the super admin: bin/install-console --super-admin you@example.com\n'
+        printf '                                   (or: set -a; . ./prod.env; set +a; make super-admin email=you@example.com)\n'
+    fi
+    printf 'Keep a copy of %s and %s outside this server.\n' "$PROD_ENV" "$OWNER_ENV"
+}
+
+check_prerequisites
+[ "$CHECK_ONLY" -eq 1 ] && { printf '\nAll prerequisites are met.\n'; exit 0; }
+prepare_prod_env
+install

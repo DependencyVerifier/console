@@ -212,7 +212,7 @@ make super-admin email=you@example.com / make mailpit
 make adminer          # dev DB UI on http://localhost:8080 (system PostgreSQL, server database, user depverify_app or depverify_owner, database app)
 ```
 
-Production: `INSTALL.md` (operator guide). `compose.prod.yaml` takes every secret from the shell (`prod.env`, git-ignored, from `prod.env.dist`; `${VAR:?}`: a missing one stops Compose), the named volume `agent_releases` is shared by `php` (serves `install.sh`) and `cron` (daily sync), and `CHANGELOG.md` lists each release. In dev `var/` is an anonymous volume per container: it starts empty when a container is recreated.
+Production: `INSTALL.md` (operator guide) and `bin/install-console` (checks the host, fills the empty secrets of `prod.env`, writes `owner.env`, realigns the database roles, builds, starts, migrates; idempotent, also the upgrade path). `compose.prod.yaml` takes every secret from the shell (`prod.env`, git-ignored, from `prod.env.dist`; `${VAR:?}`: a missing one stops Compose), the named volume `agent_releases` is shared by `php` (serves `install.sh`) and `cron` (daily sync), and `CHANGELOG.md` lists each release. In dev `var/` is an anonymous volume per container: it starts empty when a container is recreated.
 
 CI (`.github/workflows/ci.yml`, GitHub Actions): starts the same Docker stack, runs `make qa` and the production asset build on every push to `main` and every pull request. Keep `make qa` green locally: the CI runs exactly that. Dependabot updates Composer, npm, Docker, Actions and the submodule weekly.
 
