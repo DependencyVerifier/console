@@ -3,6 +3,9 @@
 ## 1.0.2 (2026-11-15)
 
 **Installation**
+- Fixed: the production image did not build the front assets (`public/build`, git-ignored), so on a fresh clone the
+  pages rendered without any stylesheet or script. A Node stage of the `Dockerfile` now runs `yarn build` before the
+  cache warmup, and `public/build` and `node_modules` are no longer taken from the build context.
 - Fixed: behind a reverse proxy that terminates TLS (`SERVER_NAME=:80`), `bin/install-console` no longer warns that
   `:80` does not resolve; it warns instead when `SYMFONY_TRUSTED_PROXIES` is empty or `DEFAULT_URI` is not an
   `https://` address. Its summary shows `DEFAULT_URI`. `INSTALL.md` lists what the reverse proxy must do (port 80,

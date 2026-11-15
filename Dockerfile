@@ -2,6 +2,8 @@
 
 # Versions
 FROM dunglas/frankenphp:1-php8.5 AS frankenphp_upstream
+# Same image as the dev `node` service (compose.override.yaml): the front assets of the prod image are built with it.
+FROM node:24-alpine AS node_upstream
 
 # The different stages of this Dockerfile are meant to be built into separate images
 # https://docs.docker.com/build/building/multi-stage/#stop-at-a-specific-build-stage
@@ -105,8 +107,8 @@ COPY --link frankenphp/conf.d/20-app.dev.ini $PHP_INI_DIR/app.conf.d/
 
 CMD [ "frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--watch" ]
 
-# Builder for the prod FrankenPHP image
-FROM frankenphp_base AS frankenphp_prod_builder
+# Prod PHP dependencies, in their own stage: the front assets need the Symfony UX packages of vendor/
+FROM frankenphp_base AS frankenphp_prod_vendor
 
 # Repeated until hadolint inherits the parent stage SHELL: https://github.com/hadolint/hadolint/pull/1258
 SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
@@ -121,8 +123,36 @@ COPY --link frankenphp/conf.d/20-app.prod.ini $PHP_INI_DIR/app.conf.d/
 COPY --link composer.* symfony.* ./
 RUN composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress
 
+# Front assets (Vite + Tailwind) of the prod image: public/build is git-ignored, so it is built here, never taken from
+# the build context (.dockerignore). package.json links the Symfony UX packages from vendor/ (file:vendor/symfony/…),
+# and Tailwind scans templates/ for its classes.
+FROM node_upstream AS frankenphp_prod_assets
+
+WORKDIR /app
+
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+COPY --link package.json yarn.lock .yarnrc.yml ./
+COPY --link --from=frankenphp_prod_vendor /app/vendor/symfony vendor/symfony
+RUN corepack enable && yarn install --immutable
+
+COPY --link vite.config.ts tsconfig.json ./
+COPY --link assets assets
+COPY --link templates templates
+RUN yarn build
+
+# Builder for the prod FrankenPHP image
+FROM frankenphp_prod_vendor AS frankenphp_prod_builder
+
+# Repeated until hadolint inherits the parent stage SHELL: https://github.com/hadolint/hadolint/pull/1258
+SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
+
 # copy sources
 COPY --link --exclude=frankenphp/ . ./
+
+# Before the cache warmup below: Reprise caches public/build/entrypoints.json in it (prod `cache: true`), and an
+# image warmed without it would render pages without any stylesheet or script.
+COPY --link --from=frankenphp_prod_assets /app/public/build public/build
 
 RUN <<-EOF
 	mkdir -p var/cache var/log var/share

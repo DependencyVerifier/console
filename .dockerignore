@@ -23,6 +23,8 @@
 **/Thumbs.db
 .github/
 docs/
+node_modules/
+public/build/
 public/bundles/
 tests/
 var/
