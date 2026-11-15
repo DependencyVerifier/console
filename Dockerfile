@@ -211,6 +211,17 @@ COPY --from=frankenphp_prod_builder /usr/lib/file/magic.mgc /usr/lib/file/magic.
 
 ENV  OPENSSL_CONF=/etc/ssl/openssl.cnf XDG_CONFIG_HOME=/config XDG_DATA_HOME=/data SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
+# The frankenphp binary carries cap_net_bind_service (ports 80/443 as www-data): OpenSSL then runs in secure mode and
+# ignores SSL_CERT_FILE and OPENSSL_CONF, falling back to its compiled-in /usr/lib/ssl, absent from this slim image.
+# Without these links every TLS connection made by the web workers (SMTP STARTTLS of the emails) fails with
+# "certificate verify failed", while the CLI (worker, cron, mailer:test) works.
+RUN <<-EOF
+	mkdir -p /usr/lib/ssl
+	ln -s /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem
+	ln -s /etc/ssl/certs /usr/lib/ssl/certs
+	ln -s /etc/ssl/openssl.cnf /usr/lib/ssl/openssl.cnf
+EOF
+
 # The scheduled commands (the `cron` service of Compose runs them), installed before the setuid bits are removed
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends cron && rm -rf /var/lib/apt/lists/*

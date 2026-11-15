@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+**Installation**
+- Fixed: the emails sent from the web (password reset, sign-in codes, invitations) failed with "certificate verify
+  failed" in the production image. The `frankenphp` binary carries `cap_net_bind_service`, so OpenSSL ignores
+  `SSL_CERT_FILE` there and looks in `/usr/lib/ssl`, absent from the slim image: it now points to the system CA
+  certificates. The CLI (worker, cron) was not affected.
+
 ## 1.0.2 (2026-11-15)
 
 **Installation**
