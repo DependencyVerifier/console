@@ -3,8 +3,24 @@ set -e
 
 if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 
-	if [ -z "$(ls -A 'vendor/' 2>/dev/null)" ]; then
-		composer install --prefer-dist --no-progress --no-interaction
+	# In dev, php and the worker share the bind-mounted vendor/: two concurrent `composer install` into it break each
+	# other ("exists and is not a directory"). Only the web container installs; the others wait for the end of it
+	# (autoload_runtime.php is written last). In prod the vendors are in the image, so nothing waits.
+	if [ "$1" = 'frankenphp' ]; then
+		if [ -z "$(ls -A 'vendor/' 2>/dev/null)" ]; then
+			composer install --prefer-dist --no-progress --no-interaction
+		fi
+	elif [ ! -f vendor/autoload_runtime.php ]; then
+		echo 'Waiting for the php service to install the vendors...'
+		ATTEMPTS_LEFT_FOR_VENDORS=600
+		until [ -f vendor/autoload_runtime.php ] || [ $ATTEMPTS_LEFT_FOR_VENDORS -eq 0 ]; do
+			sleep 1
+			ATTEMPTS_LEFT_FOR_VENDORS=$((ATTEMPTS_LEFT_FOR_VENDORS - 1))
+		done
+		if [ ! -f vendor/autoload_runtime.php ]; then
+			echo 'The vendors are still missing: see `docker compose logs php`.' >&2
+			exit 1
+		fi
 	fi
 
 	# Display information about the current project
