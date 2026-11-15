@@ -95,4 +95,6 @@ loaded (`COMPOSE_FILE` unset, default passwords). The volume keeps its roles acr
 ## Behind a reverse proxy
 
 Set `SYMFONY_TRUSTED_PROXIES` to its addresses, so that the client IP (rate limits, audit log) is the real one. Caddy
-must still receive HTTPS, or set `SERVER_NAME=:80` and let the proxy terminate TLS.
+must still receive HTTPS, or set `SERVER_NAME=:80` and let the proxy terminate TLS (it then targets port 80 of the
+server, sends `X-Forwarded-For` and `X-Forwarded-Proto`, and accepts 20 MB request bodies; `DEFAULT_URI` stays the
+public `https://` address). `bin/install-console --check` warns when one of these settings is missing.

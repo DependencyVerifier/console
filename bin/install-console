@@ -169,15 +169,36 @@ check_prerequisites() {
         fi
     fi
 
-    if [ -f "$PROD_ENV" ] && command -v getent > /dev/null 2>&1; then
-        local server_name
-        server_name=$(env_get SERVER_NAME "$PROD_ENV")
-        if [ -n "$server_name" ] && ! getent hosts "$server_name" > /dev/null 2>&1; then
-            warn "$server_name does not resolve: Caddy cannot get its certificate until the DNS points to this server"
-        fi
+    if [ -f "$PROD_ENV" ]; then
+        check_public_address
     fi
 
     [ "$errors" -eq 0 ] || die "$errors prerequisite(s) missing, see above."
+}
+
+# SERVER_NAME is a host name (Caddy terminates TLS and gets its certificate) or only a port such as ":80" (a reverse
+# proxy in front terminates TLS, INSTALL.md "Behind a reverse proxy"): only a host name has a DNS record to check.
+check_public_address() {
+    local server_name host
+    server_name=$(env_get SERVER_NAME "$PROD_ENV")
+    [ -n "$server_name" ] || return 0
+    host="${server_name%%,*}"
+    host="${host// /}"
+    host="${host#*://}"
+    host="${host%%:*}"
+
+    if [ -z "$host" ]; then
+        ok "SERVER_NAME=$server_name: TLS terminated by the reverse proxy in front"
+        [ -n "$(env_get SYMFONY_TRUSTED_PROXIES "$PROD_ENV")" ] \
+            || warn 'SYMFONY_TRUSTED_PROXIES is empty: set the address of the reverse proxy, or every client gets its IP (rate limits, audit log) and the console believes it is served over http'
+        [[ "$(env_get DEFAULT_URI "$PROD_ENV")" == https://* ]] \
+            || warn 'DEFAULT_URI should be the public https:// address served by the reverse proxy'
+        return 0
+    fi
+
+    if command -v getent > /dev/null 2>&1 && ! getent hosts "$host" > /dev/null 2>&1; then
+        warn "$host does not resolve: Caddy cannot get its certificate until the DNS points to this server"
+    fi
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -286,7 +307,7 @@ install() {
     step 'Done'
     docker compose ps
     # shellcheck disable=SC2153 # exported by prod.env
-    printf '\nConsole: https://%s\n' "$SERVER_NAME"
+    printf '\nConsole: %s\n' "$DEFAULT_URI"
     if [ -z "$SUPER_ADMIN_EMAIL" ]; then
         printf 'First install? Create the super admin: bin/install-console --super-admin you@example.com\n'
         printf '                                   (or: set -a; . ./prod.env; set +a; make super-admin email=you@example.com)\n'
