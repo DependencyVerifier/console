@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+**Installation**
+- `bin/install-console` installs and upgrades the console in one command: it checks the host (Docker and Compose
+  ≥ 2.24, `make`, `git`, `openssl`, ports 80 / 443) and stops on anything missing, creates `prod.env`, generates
+  the secrets left empty without ever replacing one, writes `owner.env`, then builds, starts and migrates.
+  `--check` runs the checks only, `--super-admin <email>` creates the first account. `INSTALL.md` now uses it.
+- Fixed: a database volume initialised with other passwords than `prod.env` (`password authentication failed for
+  user "depverify_app"`). The script realigns the database roles with `prod.env` on every run, and the containers
+  stop at once on this error, pointing to the fix, instead of retrying for a minute.
+
 ## 1.0.0 (2026-11-14)
 
 First release: a self-hosted console that shows what really runs in production across teams, and what threatens it.
