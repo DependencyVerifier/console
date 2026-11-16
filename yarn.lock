@@ -268,9 +268,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@symfony/reprise@npm:^1.3.0":
-  version: 1.3.0
-  resolution: "@symfony/reprise@npm:1.3.0"
+"@symfony/reprise@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "@symfony/reprise@npm:1.4.0"
   dependencies:
     unplugin: "npm:^3.4.0"
   peerDependencies:
@@ -284,46 +284,35 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 10c0/33abfffab1d3672e5b513b4066227b8a220ad5596664d009de9040acacf53a93a296deb9737ae62760eaef8f06ff430a9a68f8fc9c2458d0535623f41c4c8cc8
+  checksum: 10c0/6ecfe5f284c363cf628f5a488780702ec65237b4ad017755edb6f98a366c5573bd7eb8432c8159be5d4c38e51b4233ac9696f36ca69b72ca2d1cb7699d2fd590
   languageName: node
   linkType: hard
 
 "@symfony/ux-autocomplete@file:vendor/symfony/ux-autocomplete/assets::locator=depverify-console%40workspace%3A.":
   version: 3.7.2
-  resolution: "@symfony/ux-autocomplete@file:vendor/symfony/ux-autocomplete/assets#vendor/symfony/ux-autocomplete/assets::hash=d48569&locator=depverify-console%40workspace%3A."
-  peerDependencies:
-    "@hotwired/stimulus": ^3.0.0
-    tom-select: ^2.2.2
-  checksum: 10c0/f4159b1e18bf3eedd46d6f3be490a95a8e228473ba726f71ab4699f15b581cbae9c4d88f655a29cfea4eeed8bf54415e2d5d88e5f39e8bd9d549c8213c09e6ae
+  resolution: "@symfony/ux-autocomplete@file:vendor/symfony/ux-autocomplete/assets#vendor/symfony/ux-autocomplete/assets::hash=d98561&locator=depverify-console%40workspace%3A."
+  checksum: 10c0/02464ff8edb09c33c436ff3089335c87d5938aadf7daa2616fb5ca7813d9483ba49c90e179a37710a7499e27210a415f8696821ceb046db8fbd86634b996f0cc
   languageName: node
   linkType: hard
 
 "@symfony/ux-chartjs@file:vendor/symfony/ux-chartjs/assets::locator=depverify-console%40workspace%3A.":
   version: 3.7.0
-  resolution: "@symfony/ux-chartjs@file:vendor/symfony/ux-chartjs/assets#vendor/symfony/ux-chartjs/assets::hash=2f9e23&locator=depverify-console%40workspace%3A."
-  peerDependencies:
-    "@hotwired/stimulus": ^3.0.0
-    chart.js: ^3.4.1 || ^4.0
-  checksum: 10c0/33bc856e97b9c66a3fb12808036e5591e74c60ef3ea06f2726aaa8d9d4fdfae4a3f903cb61abc77087b8725322c39744409da35f86201bddfac1006625bc6e60
+  resolution: "@symfony/ux-chartjs@file:vendor/symfony/ux-chartjs/assets#vendor/symfony/ux-chartjs/assets::hash=268e3e&locator=depverify-console%40workspace%3A."
+  checksum: 10c0/1a506d5289aee15fe0f6ac6dd6e7fe4c4c366cf2c9a90091540a8e6e1258761c22ec64405b691f6992e22aa77362919ef5a1f2fa88a8e41448009ed32108bd3f
   languageName: node
   linkType: hard
 
 "@symfony/ux-live-component@file:vendor/symfony/ux-live-component/assets::locator=depverify-console%40workspace%3A.":
   version: 3.7.2
-  resolution: "@symfony/ux-live-component@file:vendor/symfony/ux-live-component/assets#vendor/symfony/ux-live-component/assets::hash=100973&locator=depverify-console%40workspace%3A."
-  peerDependencies:
-    "@hotwired/stimulus": ^3.0.0
-  checksum: 10c0/401ffbee85fc31d304f72c787561092bfe24dac7ba4d83dd2e5fab1500d0ccce7755a8b029bf9295779385cd270cd113d5e95eedf1fc0695723e1dfe48c353b6
+  resolution: "@symfony/ux-live-component@file:vendor/symfony/ux-live-component/assets#vendor/symfony/ux-live-component/assets::hash=97d4f9&locator=depverify-console%40workspace%3A."
+  checksum: 10c0/a5c2f4cbb8d91157748b7ad405200e7ca08f649eb8d6066f12452c33665a9e61738cc89712f13a0e4364fb441901110fba63fce3c83509177ac69feca83801a3
   languageName: node
   linkType: hard
 
 "@symfony/ux-turbo@file:vendor/symfony/ux-turbo/assets::locator=depverify-console%40workspace%3A.":
   version: 3.7.0
-  resolution: "@symfony/ux-turbo@file:vendor/symfony/ux-turbo/assets#vendor/symfony/ux-turbo/assets::hash=32f986&locator=depverify-console%40workspace%3A."
-  peerDependencies:
-    "@hotwired/stimulus": ^3.0.0
-    "@hotwired/turbo": ^7.1.0 || ^8.0
-  checksum: 10c0/b6d23da8550365be8420764c15b135459716043b41f29f71bbd4dfa8d74af2aa60995bec17370ed6e612e436fad08717af9d482d9bb0085e59162648e6f37b76
+  resolution: "@symfony/ux-turbo@file:vendor/symfony/ux-turbo/assets#vendor/symfony/ux-turbo/assets::hash=8d691c&locator=depverify-console%40workspace%3A."
+  checksum: 10c0/3fb990425499ed15f7eb87ad0593e42699bdd9205ae4dc138c0f7021d9674161be77f6e10f76cb6afc885e890140fe70ee656a4d1347fb3f0caadd0b5beed9d3
   languageName: node
   linkType: hard
 
@@ -712,7 +701,7 @@ __metadata:
     "@fontsource/ibm-plex-mono": "npm:^5.3.0"
     "@hotwired/stimulus": "npm:^3.2.2"
     "@hotwired/turbo": "npm:^8.0.23"
-    "@symfony/reprise": "npm:^1.3.0"
+    "@symfony/reprise": "npm:^1.4.0"
     "@symfony/ux-autocomplete": "file:vendor/symfony/ux-autocomplete/assets"
     "@symfony/ux-chartjs": "file:vendor/symfony/ux-chartjs/assets"
     "@symfony/ux-live-component": "file:vendor/symfony/ux-live-component/assets"
