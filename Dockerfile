@@ -3,7 +3,7 @@
 # Versions
 FROM dunglas/frankenphp:1-php8.5 AS frankenphp_upstream
 # Same image as the dev `node` service (compose.override.yaml): the front assets of the prod image are built with it.
-FROM node:24-alpine AS node_upstream
+FROM node:26-alpine AS node_upstream
 
 # The different stages of this Dockerfile are meant to be built into separate images
 # https://docs.docker.com/build/building/multi-stage/#stop-at-a-specific-build-stage
