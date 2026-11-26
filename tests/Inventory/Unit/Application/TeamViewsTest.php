@@ -151,11 +151,15 @@ final class TeamViewsTest extends TestCase
 
         $host = new HostView(Inv::HOST, Inv::TEAM, 'web-01', [
             'os' => ['pretty_name' => 'Debian GNU/Linux 12'], 'kernel' => '6.1.0', 'arch' => 7,
-            'runtimes' => [['name' => 'php', 'version' => '8.4.1', 'service' => 'php'], ['name' => 'node', 'version' => '22.11.0'], ['name' => 'go'], ['version' => '1'], 'x'],
+            'runtimes' => [['name' => 'php', 'version' => '8.4.1', 'service' => 'php'], ['name' => 'node', 'version' => '22.11.0', 'manager' => 'nvm'], ['name' => 'go'], ['version' => '1'], ['name' => 'ruby', 'version' => '3.3.14', 'service' => 3, 'manager' => 4], 'x'],
             'docker' => ['engine_version' => '27.3.1'],
         ], null, null, 0);
         self::assertSame(['Debian GNU/Linux 12', '6.1.0', null, null, '27.3.1'], [$host->os(), $host->fact('kernel'), $host->fact('arch'), $host->fact('missing'), $host->dockerVersion()]);
-        self::assertSame([['name' => 'php', 'version' => '8.4.1', 'service' => 'php'], ['name' => 'node', 'version' => '22.11.0', 'service' => null]], $host->runtimes());
+        self::assertSame([
+            ['name' => 'php', 'version' => '8.4.1', 'service' => 'php', 'manager' => null],
+            ['name' => 'node', 'version' => '22.11.0', 'service' => null, 'manager' => 'nvm'],
+            ['name' => 'ruby', 'version' => '3.3.14', 'service' => null, 'manager' => null],
+        ], $host->runtimes());
         $bare = new HostView(Inv::HOST, Inv::TEAM, 'web-01', ['os' => 'debian', 'runtimes' => 'php', 'docker' => '27'], null, null, 0);
         self::assertSame([null, [], null], [$bare->os(), $bare->runtimes(), $bare->dockerVersion()]);
         $empty = new HostView(Inv::HOST, Inv::TEAM, 'web-01', ['os' => ['pretty_name' => 12], 'docker' => ['engine_version' => 27]], null, null, 0);

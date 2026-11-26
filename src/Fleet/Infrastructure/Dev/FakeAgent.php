@@ -215,7 +215,12 @@ final class FakeAgent
             'os' => ['id' => 'debian', 'version_id' => '12', 'pretty_name' => 'Debian GNU/Linux 12 (bookworm)'],
             'kernel' => '6.1.0-27-amd64',
             'arch' => 'x86_64',
-            'runtimes' => [['name' => 'php', 'version' => '8.2.26', 'path' => '/usr/bin/php8.2'], ['name' => 'node', 'version' => '20.18.1', 'path' => '/usr/bin/node']],
+            'runtimes' => [
+                ['name' => 'java', 'version' => '1.8.0_512', 'path' => '/usr/lib/jvm/temurin-8/bin/java', 'implementor' => 'Eclipse Adoptium'],
+                ['name' => 'node', 'version' => '18.20.8', 'path' => '/home/deploy/.nvm/versions/node/v18.20.8/bin/node', 'manager' => 'nvm'],
+                ['name' => 'node', 'version' => '20.18.1', 'path' => '/usr/bin/node'],
+                ['name' => 'php', 'version' => '8.2.26', 'path' => '/usr/bin/php8.2'],
+            ],
             'docker' => ['engine_id' => 'b1c7a0f2-3e4d-4c5b-9a8f-7e6d5c4b3a21', 'engine_version' => '27.3.1'],
             'agent' => ['version' => self::VERSION, 'mode' => $mode, 'scope' => 'container' === $mode ? 'compose' : null, 'config_version' => $configVersion],
         ];

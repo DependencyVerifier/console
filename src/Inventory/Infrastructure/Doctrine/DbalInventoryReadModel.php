@@ -289,7 +289,14 @@ final readonly class DbalInventoryReadModel implements InventoryReadModel
             $runtimes = [];
             foreach (\is_array($facts['runtimes'] ?? null) ? $facts['runtimes'] : [] as $runtime) {
                 if (\is_array($runtime) && \is_string($runtime['name'] ?? null) && \is_string($runtime['version'] ?? null)) {
-                    $runtimes[] = ['name' => $runtime['name'], 'version' => $runtime['version']];
+                    $entry = ['name' => $runtime['name'], 'version' => $runtime['version']];
+                    if (\is_string($runtime['implementor'] ?? null)) {
+                        $entry['implementor'] = $runtime['implementor'];
+                    }
+                    if (\is_string($runtime['build_type'] ?? null)) {
+                        $entry['build_type'] = $runtime['build_type'];
+                    }
+                    $runtimes[] = $entry;
                 }
             }
 

@@ -13,13 +13,13 @@ final readonly class TeamSubject
     public const string HOST = 'host';
 
     /**
-     * @param list<array{purl: string, direct: bool}>    $packages
-     * @param list<array{name: string, version: string}> $runtimes
-     * @param ?array{id: string, version: string}        $os
-     * @param string                                     $name          the application's name, the host's hostname
-     * @param ?string                                    $environmentId of an application attached to one
-     * @param ?string                                    $hostId        the host it runs on (a host: itself)
-     * @param ?string                                    $hostName      that host's display name, else its hostname
+     * @param list<array{purl: string, direct: bool}>                                               $packages
+     * @param list<array{name: string, version: string, implementor?: string, build_type?: string}> $runtimes      a JDK carries the implementor and build type of its `release`
+     * @param ?array{id: string, version: string}                                                   $os
+     * @param string                                                                                $name          the application's name, the host's hostname
+     * @param ?string                                                                               $environmentId of an application attached to one
+     * @param ?string                                                                               $hostId        the host it runs on (a host: itself)
+     * @param ?string                                                                               $hostName      that host's display name, else its hostname
      */
     public function __construct(
         public string $type,

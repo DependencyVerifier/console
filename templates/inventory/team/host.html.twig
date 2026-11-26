@@ -52,7 +52,7 @@
                 <dt class="text-muted-foreground">{{ 'inventory.field.runtimes'|trans }}</dt>
                 <dd class="flex flex-wrap gap-2">
                     {%- for runtime in host.runtimes %}
-                        <twig:Badge variant="outline" class="font-mono">{{ runtime.name }} {{ runtime.version }}{% if runtime.service %} · {{ runtime.service }}{% endif %}</twig:Badge>
+                        <twig:Badge variant="outline" class="font-mono">{{ runtime.name }} {{ runtime.version }}{% if runtime.service %} · {{ runtime.service }}{% endif %}{% if runtime.manager %} · {{ runtime.manager }}{% endif %}</twig:Badge>
                     {%- else %}<span class="text-muted-foreground">—</span>{% endfor %}
                 </dd>
             </div>

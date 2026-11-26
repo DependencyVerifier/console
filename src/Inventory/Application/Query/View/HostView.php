@@ -39,14 +39,20 @@ final readonly class HostView
     }
 
     /**
-     * @return list<array{name: string, version: string, service: ?string}>
+     * @return list<array{name: string, version: string, service: ?string, manager: ?string}> `manager`: the version
+     *                                                                                        manager that installed it
      */
     public function runtimes(): array
     {
         $runtimes = [];
         foreach (\is_array($this->facts['runtimes'] ?? null) ? $this->facts['runtimes'] : [] as $runtime) {
             if (\is_array($runtime) && \is_string($runtime['name'] ?? null) && \is_string($runtime['version'] ?? null)) {
-                $runtimes[] = ['name' => $runtime['name'], 'version' => $runtime['version'], 'service' => \is_string($runtime['service'] ?? null) ? $runtime['service'] : null];
+                $runtimes[] = [
+                    'name' => $runtime['name'],
+                    'version' => $runtime['version'],
+                    'service' => \is_string($runtime['service'] ?? null) ? $runtime['service'] : null,
+                    'manager' => \is_string($runtime['manager'] ?? null) ? $runtime['manager'] : null,
+                ];
             }
         }
 
