@@ -8,14 +8,18 @@ use Fleet\Domain\Event\HostLabelled;
 use Fleet\Domain\Model\AgentMode;
 use Fleet\Domain\Model\AgentRuntime;
 use Fleet\Domain\Model\AgentScope;
+use Fleet\Domain\Model\Host;
 use Fleet\Domain\Model\HostFacts;
+use Fleet\Domain\Model\HostId;
 use Fleet\Domain\Model\HostIdentity;
 use Fleet\Domain\Model\HostLabel;
 use Fleet\Domain\Model\InvalidEnrollmentPayload;
+use Fleet\Domain\Model\InvalidHostFacts;
 use Fleet\Domain\Model\InvalidHostLabel;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\Uuid;
 use Tests\Fleet\Support\AssertsRefusals;
 use Tests\Fleet\Support\Fleet;
 
@@ -59,6 +63,95 @@ final class HostTest extends TestCase
         self::assertEquals($later->modify('+1 hour'), $host->lastSeenAt());
     }
 
+    /**
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function observedFields(): iterable
+    {
+        yield 'hostname' => ['hostname', 'YggWeb', 'hostname'];
+        yield 'os id' => ['osId', 'ubuntu', 'osId'];
+        yield 'os version' => ['osVersionId', '24.04', 'osVersionId'];
+        yield 'pretty name' => ['osPrettyName', 'Debian GNU/Linux 13 (trixie)', 'osPrettyName'];
+        yield 'kernel' => ['kernel', '6.17.13-2-pve', 'kernel'];
+        yield 'arch' => ['arch', 'aarch64', 'arch'];
+        yield 'engine' => ['dockerEngineId', 'engine-2', 'dockerEngineId'];
+    }
+
+    #[Test]
+    #[DataProvider('observedFields')]
+    public function it_should_merge_each_observed_field_alone(string $argument, string $value, string $property): void
+    {
+        $facts = Fleet::facts();
+        $merged = $facts->mergedWith(...[$argument => $value]);
+        $expected = (array) $facts;
+        $expected[$property] = $value;
+        self::assertSame($expected, (array) $merged, 'This field only, the others kept.');
+    }
+
+    #[Test]
+    public function it_should_keep_what_an_inventory_did_not_observe(): void
+    {
+        $facts = Fleet::facts();
+        self::assertSame((array) $facts, (array) $facts->mergedWith(), 'Nothing observed: nothing changes.');
+        self::assertSame((array) $facts, (array) $facts->mergedWith('', '', '', '', '', '', ''), 'An empty value is not an observation.');
+        self::assertSame(Fleet::MACHINE, $facts->mergedWith(hostname: 'other')->machineIdHash, 'Never taken from an inventory.');
+        $this->assertRefused(InvalidHostFacts::class, 'invalid_payload', static fn () => $facts->mergedWith(kernel: u('a')->repeat(256)->toString()));
+    }
+
+    #[Test]
+    public function it_should_observe_facts_without_touching_the_contact_or_the_name(): void
+    {
+        $host = Fleet::host();
+        $host->relabel(new HostLabel('Shop', []));
+        $host->releaseEvents();
+        $host->observe(hostname: 'YggWeb', osPrettyName: 'Debian GNU/Linux 13 (trixie)');
+        self::assertSame(['YggWeb', 'Debian GNU/Linux 13 (trixie)', Fleet::facts()->kernel], [$host->facts()->hostname, $host->facts()->osPrettyName, $host->facts()->kernel]);
+        self::assertSame('Shop', $host->name(), 'The display name of a human stays.');
+        self::assertNull($host->lastSeenAt(), 'The polls tell the last contact.');
+        self::assertSame([], $host->releaseEvents(), 'Nothing published: no loop with HostLabelled.');
+
+        $before = (array) $host->facts();
+        $this->assertRefused(InvalidHostFacts::class, 'invalid_payload', static fn () => $host->observe(hostname: "web\u{202E}"));
+        self::assertSame($before, (array) $host->facts(), 'Refused: the facts stay as they were.');
+    }
+
+    #[Test]
+    public function it_should_promote_a_host_known_by_its_hostname_only_to_its_docker_engine(): void
+    {
+        $host = Host::register(HostId::fromString(Fleet::HOST), Uuid::fromString(Fleet::TEAM), new HostIdentity('hostname', 'd0f0663a8c03'), new HostFacts('d0f0663a8c03'), Fleet::now());
+        self::assertTrue($host->identity()->isHostname());
+        self::assertNull($host->dockerIdentityCandidate(), 'No engine id observed yet.');
+        self::assertFalse($host->promoteToDockerEngine());
+
+        $host->observe(hostname: 'YggWeb', dockerEngineId: 'engine-1');
+        self::assertEquals(HostIdentity::docker('engine-1'), $host->dockerIdentityCandidate());
+        self::assertEquals(new HostFacts('YggWeb', dockerEngineId: 'engine-1')->identityFor(AgentMode::Container, 'ed25519:key'), $host->dockerIdentityCandidate(), 'The identity a later enrollment computes.');
+        self::assertTrue($host->promoteToDockerEngine());
+        self::assertEquals(new HostIdentity('docker', 'engine-1'), $host->identity());
+        self::assertFalse($host->identity()->isHostname());
+        self::assertNull($host->dockerIdentityCandidate(), 'Promoted once.');
+        self::assertFalse($host->promoteToDockerEngine());
+
+        $host->observe(dockerEngineId: 'engine-2');
+        self::assertEquals(HostIdentity::docker('engine-1'), $host->identity(), 'A new engine id is only a fact.');
+        self::assertSame([], $host->releaseEvents());
+    }
+
+    #[Test]
+    public function it_should_never_promote_another_identity(): void
+    {
+        foreach (['machine', 'docker', 'embedded'] as $kind) {
+            $host = Host::register(HostId::fromString(Fleet::HOST), Uuid::fromString(Fleet::TEAM), new HostIdentity($kind, 'value'), new HostFacts('web-01', dockerEngineId: 'engine-1'), Fleet::now());
+            self::assertNull($host->dockerIdentityCandidate(), $kind);
+            self::assertFalse($host->promoteToDockerEngine(), $kind);
+            self::assertEquals(new HostIdentity($kind, 'value'), $host->identity(), $kind);
+        }
+
+        $empty = Host::register(HostId::fromString(Fleet::HOST), Uuid::fromString(Fleet::TEAM), new HostIdentity('hostname', 'web-01'), new HostFacts('web-01', dockerEngineId: ''), Fleet::now());
+        self::assertNull($empty->dockerIdentityCandidate(), 'An empty engine id is no engine.');
+        self::assertFalse($empty->promoteToDockerEngine());
+    }
+
     #[Test]
     public function it_should_take_a_display_name_and_addresses_from_a_human(): void
     {
@@ -99,22 +192,53 @@ final class HostTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{\Closure(): mixed}>
+     * @return iterable<string, array{\Closure(): mixed, string}>
      */
     public static function invalidFacts(): iterable
     {
         $long = u('a')->repeat(256)->toString();
-        yield 'blank hostname' => [static fn () => new HostFacts('  ')];
-        yield 'long hostname' => [static fn () => new HostFacts($long)];
-        yield 'long os id' => [static fn () => new HostFacts('h', osId: $long)];
-        yield 'long os version' => [static fn () => new HostFacts('h', osVersionId: $long)];
-        yield 'long pretty name' => [static fn () => new HostFacts('h', osPrettyName: $long)];
-        yield 'long kernel' => [static fn () => new HostFacts('h', kernel: $long)];
-        yield 'long arch' => [static fn () => new HostFacts('h', arch: $long)];
-        yield 'long engine' => [static fn () => new HostFacts('h', dockerEngineId: $long)];
-        yield 'machine id not hex' => [static fn () => new HostFacts('h', machineIdHash: u('z')->repeat(64)->toString())];
-        yield 'machine id short' => [static fn () => new HostFacts('h', machineIdHash: u('a')->repeat(63)->toString())];
-        yield 'machine id uppercase' => [static fn () => new HostFacts('h', machineIdHash: u('A')->repeat(64)->toString())];
+        yield 'blank hostname' => [static fn () => new HostFacts('  '), 'hostname'];
+        yield 'long hostname' => [static fn () => new HostFacts($long), 'hostname'];
+        yield 'long os id' => [static fn () => new HostFacts('h', osId: $long), 'os_id'];
+        yield 'long os version' => [static fn () => new HostFacts('h', osVersionId: $long), 'os_version_id'];
+        yield 'long pretty name' => [static fn () => new HostFacts('h', osPrettyName: $long), 'os_pretty_name'];
+        yield 'long kernel' => [static fn () => new HostFacts('h', kernel: $long), 'kernel'];
+        yield 'long arch' => [static fn () => new HostFacts('h', arch: $long), 'arch'];
+        yield 'long engine' => [static fn () => new HostFacts('h', dockerEngineId: $long), 'docker_engine_id'];
+        yield 'control character' => [static fn () => new HostFacts("web\u{0007}"), 'hostname'];
+        yield 'bidi override' => [static fn () => new HostFacts("web\u{202E}10-bew"), 'hostname'];
+        yield 'left-to-right mark' => [static fn () => new HostFacts('h', osPrettyName: "Debian\u{200E}"), 'os_pretty_name'];
+        yield 'zero-width space' => [static fn () => new HostFacts('h', kernel: "6.1\u{200B}"), 'kernel'];
+        yield 'byte order mark' => [static fn () => new HostFacts('h', arch: "\u{FEFF}x86_64"), 'arch'];
+        yield 'format character in os id' => [static fn () => new HostFacts('h', osId: "deb\u{00AD}ian"), 'os_id'];
+        yield 'format character in os version' => [static fn () => new HostFacts('h', osVersionId: "1\u{2066}2"), 'os_version_id'];
+        yield 'format character in engine' => [static fn () => new HostFacts('h', dockerEngineId: "e\u{200D}"), 'docker_engine_id'];
+        yield 'machine id not hex' => [static fn () => new HostFacts('h', machineIdHash: u('z')->repeat(64)->toString()), 'machine_id_hash'];
+        yield 'machine id short' => [static fn () => new HostFacts('h', machineIdHash: u('a')->repeat(63)->toString()), 'machine_id_hash'];
+        yield 'machine id uppercase' => [static fn () => new HostFacts('h', machineIdHash: u('A')->repeat(64)->toString()), 'machine_id_hash'];
+    }
+
+    /**
+     * @param \Closure(): mixed $build
+     */
+    #[Test]
+    #[DataProvider('invalidFacts')]
+    public function it_should_refuse_facts_out_of_the_protocol_bounds(\Closure $build, string $field): void
+    {
+        try {
+            $build();
+            self::fail('Expected InvalidHostFacts.');
+        } catch (InvalidHostFacts $refused) {
+            self::assertSame(['invalid_payload', $field], [$refused->ruleKey(), $refused->field], 'The agent gets the usual answer; the logs get the field.');
+        }
+    }
+
+    /**
+     * @return iterable<string, array{\Closure(): mixed}>
+     */
+    public static function invalidRuntimes(): iterable
+    {
+        $long = u('a')->repeat(256)->toString();
         yield 'host mode with scope' => [static fn () => new AgentRuntime(AgentMode::Host, AgentScope::Host, null, '0.1.0')];
         yield 'container without scope' => [static fn () => new AgentRuntime(AgentMode::Container, null, null, '0.1.0')];
         yield 'compose scope without project' => [static fn () => new AgentRuntime(AgentMode::Container, AgentScope::Compose, null, '0.1.0')];
@@ -131,8 +255,8 @@ final class HostTest extends TestCase
      * @param \Closure(): mixed $build
      */
     #[Test]
-    #[DataProvider('invalidFacts')]
-    public function it_should_refuse_facts_out_of_the_protocol_bounds(\Closure $build): void
+    #[DataProvider('invalidRuntimes')]
+    public function it_should_refuse_a_runtime_out_of_the_protocol_bounds(\Closure $build): void
     {
         $this->assertRefused(InvalidEnrollmentPayload::class, 'invalid_payload', $build);
     }
@@ -146,5 +270,6 @@ final class HostTest extends TestCase
         self::assertNull(new AgentRuntime(AgentMode::Container, AgentScope::Host, null, '0.1.0')->composeProject);
         self::assertSame('0.1.0', new AgentRuntime(AgentMode::Host, null, null, '0.1.0')->version);
         self::assertSame('99999.99999.99999', AgentRuntime::version('99999.99999.99999'));
+        self::assertSame('Ubuntu 24.04 — édition « noble »', new HostFacts('h', osPrettyName: 'Ubuntu 24.04 — édition « noble »')->osPrettyName, 'Letters and punctuation of any script stay.');
     }
 }

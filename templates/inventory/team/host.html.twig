@@ -14,7 +14,7 @@
 {% block object_actions %}
     {%- if team.can('host.edit') %}
         <twig:FormDialog
-            id="label-host"
+            id="label-host-{{ host.hostId }}"
             :title="'fleet.hosts.label_title'|trans({host: host.name})"
             :description="'fleet.hosts.label_description'|trans"
             :trigger="'fleet.hosts.edit'|trans"

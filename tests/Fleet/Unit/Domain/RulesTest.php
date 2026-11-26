@@ -12,6 +12,7 @@ use Fleet\Domain\Model\EnrollmentTokenNotApprovable;
 use Fleet\Domain\Model\HostHasAgents;
 use Fleet\Domain\Model\InvalidEnrollmentPayload;
 use Fleet\Domain\Model\InvalidEnrollmentTokenSettings;
+use Fleet\Domain\Model\InvalidHostFacts;
 use Fleet\Domain\Model\InvalidOrderPayload;
 use Fleet\Domain\Model\InvalidPublicKey;
 use Fleet\Domain\Model\RevokedAgent;
@@ -45,5 +46,8 @@ final class RulesTest extends TestCase
             self::assertSame($key, $rule->ruleKey());
             self::assertSame($key, $rule->getMessage());
         }
+
+        $facts = new InvalidHostFacts('hostname');
+        self::assertSame(['invalid_payload', 'invalid_payload', 'hostname'], [$facts->ruleKey(), $facts->getMessage(), $facts->field], 'The same answer to the agent as the other enrollment facts.');
     }
 }

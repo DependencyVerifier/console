@@ -13,6 +13,7 @@ use Fleet\Domain\Model\AgentId;
 use Fleet\Domain\Model\AgentNotPending;
 use Fleet\Domain\Model\AgentPublicKey;
 use Fleet\Domain\Model\AgentStatus;
+use Fleet\Domain\Model\HostId;
 use Fleet\Domain\Model\InvalidEnrollmentPayload;
 use Fleet\Domain\Model\RevokedAgent;
 use PHPUnit\Framework\Attributes\Test;
@@ -90,6 +91,19 @@ final class AgentTest extends TestCase
         $this->assertRefused(RevokedAgent::class, 'agent_revoked', static fn () => $agent->seen('0.2.0', 0, Fleet::now()));
         $agent->reactivate();
         self::assertSame(AgentStatus::Revoked, $agent->status(), 'Never brought back.');
+    }
+
+    #[Test]
+    public function it_should_report_for_its_host_while_approved_only(): void
+    {
+        $pending = Fleet::agent();
+        self::assertFalse($pending->reportsFor(HostId::fromString(Fleet::HOST)), 'Not approved yet.');
+
+        $agent = Fleet::approved();
+        self::assertTrue($agent->reportsFor(HostId::fromString(Fleet::HOST)));
+        self::assertFalse($agent->reportsFor(HostId::fromString('019a6b2c-8f00-7a11-8b22-3c44d55e6f99')), 'Another host.');
+        $agent->revoke(Fleet::now()->modify('+1 minute'));
+        self::assertFalse($agent->reportsFor(HostId::fromString(Fleet::HOST)), 'Revoked while its inventory waited.');
     }
 
     #[Test]

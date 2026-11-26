@@ -30,8 +30,6 @@ use function Symfony\Component\String\u;
 #[Route(path: '/teams/{teamId}/hosts/{hostId}/label', name: RouteCollection::HOST_LABEL->value, requirements: ['teamId' => Requirement::UUID, 'hostId' => Requirement::UUID], methods: ['GET', 'POST'])]
 final readonly class LabelHostController
 {
-    public const string DIALOG = 'label-host';
-
     public function __construct(private QueryBus $queries, private FormFactoryInterface $forms, private DialogForm $dialog, private StreamOrRedirect $redirect)
     {
     }
@@ -47,7 +45,7 @@ final readonly class LabelHostController
         return $this->dialog->handle(
             $request,
             $form,
-            self::DIALOG,
+            'label-host-'.$hostId,
             'fleet.hosts.label',
             static fn (): LabelHost => new LabelHost($hostId, FormData::nullableString($form, 'display_name'), AgentConfigType::lines(u(FormData::nullableString($form, 'addresses') ?? '')->replace(',', "\n")->toString())),
             $this->redirect->withSuccessKey('fleet.hosts.labelled'),

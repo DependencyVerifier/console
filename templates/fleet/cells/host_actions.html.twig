@@ -1,13 +1,28 @@
+{#- Row menu of a host. Gestures from the FleetView of the page (UI hints: each command checks again). -#}
 {%- set fleet = app.request.attributes.get('_fleet') -%}
+{%- set can_edit = fleet.can('host.edit') -%}
+{%- set can_delete = fleet.can('host.delete') -%}
 <div class="flex justify-end">
-    {%- if fleet.can('host.delete') %}
+    {%- if can_edit %}
+        <twig:FormDialog
+            id="label-host-{{ row.id }}"
+            :title="'fleet.hosts.label_title'|trans({host: row.hostname})"
+            :description="'fleet.hosts.label_description'|trans"
+            :trigger="'fleet.hosts.edit'|trans"
+            :src="path('fleet_host_label', {teamId: fleet.teamId, hostId: row.id})"
+            :hiddenTrigger="true"
+        />
+    {%- endif %}
+    {%- if can_edit or can_delete %}
         <twig:DropdownMenu id="host-{{ row.id }}" side="bottom" align="end" class="inline-block text-start">
             <twig:DropdownMenu:Trigger>
                 <twig:Button variant="ghost" size="icon-sm" :aria-label="'fleet.hosts.actions_for'|trans({host: row.hostname})" :title="'fleet.hosts.actions_for'|trans({host: row.hostname})" {{ ...dropdown_menu_trigger_attrs }}><twig:ux:icon name="lucide:ellipsis" /></twig:Button>
             </twig:DropdownMenu:Trigger>
             <twig:DropdownMenu:Content class="w-max min-w-44">
                 {%- import 'shared/_row_menu.html.twig' as menu -%}
-                {{ menu.action(path('fleet_host_delete', {teamId: fleet.teamId, hostId: row.id}), 'action', 'host_delete:' ~ row.id, 'fleet.hosts.delete', 'destructive') }}
+                {%- if can_edit %}{{ menu.dialog('label-host-' ~ row.id, 'fleet.hosts.edit') }}{% endif %}
+                {%- if can_edit and can_delete %}<twig:DropdownMenu:Separator />{% endif %}
+                {%- if can_delete %}{{ menu.action(path('fleet_host_delete', {teamId: fleet.teamId, hostId: row.id}), 'action', 'host_delete:' ~ row.id, 'fleet.hosts.delete', 'destructive') }}{% endif %}
             </twig:DropdownMenu:Content>
         </twig:DropdownMenu>
     {%- endif %}

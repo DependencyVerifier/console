@@ -165,6 +165,48 @@ final class FleetUiTest extends IdentityWebTestCase
     }
 
     #[Test]
+    public function it_should_rename_a_host_from_its_row_menu_and_its_page(): void
+    {
+        $alice = Accounts::create(self::getContainer(), 'alice@example.com');
+        $vic = Accounts::create(self::getContainer(), 'vic@example.com');
+        $bob = Accounts::create(self::getContainer(), 'bob@example.com');
+        $team = Seed::team(self::getContainer(), 'Alpha', [[$alice, TeamRole::Admin], [$vic, TeamRole::Viewer]]);
+        Seed::team(self::getContainer(), 'Beta', [[$bob, TeamRole::Admin]]);
+        $teamId = $team->id()->toString();
+        [, $plain] = FleetSeed::token(self::getContainer(), $teamId);
+        AgentClient::generate()->enroll($this->client, $plain);
+        $hostId = $this->fetchString('SELECT id FROM fleet_host');
+        $label = \sprintf('/teams/%s/hosts/%s/label', $teamId, $hostId);
+        $this->logIn('alice@example.com');
+
+        $cell = DataTables::cell((string) DataTables::draw($this->client, '/teams/'.$teamId.'/hosts', 'hosts')['data'][0]['actions']);
+        self::assertCount(1, $cell->filter(\sprintf('[data-dialog-opener-dialog-value="label-host-%s"]', $hostId)), 'The Edit entry of the menu…');
+        self::assertCount(1, $cell->filter(\sprintf('[data-dialog-trigger-for="label-host-%s"]', $hostId)), '…opens the dialog of this host.');
+        $page = $this->client->request('GET', \sprintf('/teams/%s/hosts/%s', $teamId, $hostId));
+        self::assertCount(1, $page->filter(\sprintf('[data-dialog-trigger-for="label-host-%s"]', $hostId)), 'The Edit button of the host page.');
+
+        $dialog = $this->client->request('GET', $label, server: ['HTTP_TURBO_FRAME' => 'label-host-'.$hostId.'-form']);
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $dialog->filter(\sprintf('turbo-frame#label-host-%s-form', $hostId)), 'The frame the dialog of this host waits for.');
+        $this->client->submit($dialog->filter('form')->form(), ['host[display_name]' => 'YggWeb'], ['HTTP_ACCEPT' => self::STREAM]);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('YggWeb', (string) DataTables::draw($this->client, '/teams/'.$teamId.'/hosts', 'hosts')['data'][0]['hostname']);
+
+        $this->client->getCookieJar()->clear();
+        $this->logIn('vic@example.com');
+        $cell = DataTables::cell((string) DataTables::draw($this->client, '/teams/'.$teamId.'/hosts', 'hosts')['data'][0]['actions']);
+        self::assertCount(0, $cell->filter('[data-dialog-opener-dialog-value]'), 'A TEAM_VIEWER sees, never edits.');
+        $this->client->request('POST', $label, ['host' => ['display_name' => 'Pwned']]);
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->getCookieJar()->clear();
+        $this->logIn('bob@example.com');
+        $this->client->request('POST', $label, ['host' => ['display_name' => 'Pwned']]);
+        self::assertResponseStatusCodeSame(404);
+        self::assertSame('YggWeb', $this->fetchString('SELECT display_name FROM fleet_host'));
+    }
+
+    #[Test]
     public function it_should_list_every_agent_to_the_super_admin(): void
     {
         Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);

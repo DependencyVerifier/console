@@ -13,7 +13,7 @@ use Shared\Domain\Authorization\Permission;
 
 final readonly class GetTeamFleetHandler implements QueryHandler
 {
-    private const array GESTURES = [Permission::HostEnroll, Permission::HostApprove, Permission::HostRevoke, Permission::HostDelete, Permission::HostOrder];
+    private const array GESTURES = [Permission::HostEnroll, Permission::HostApprove, Permission::HostRevoke, Permission::HostDelete, Permission::HostOrder, Permission::HostEdit];
 
     public function __construct(private FleetAccess $access, private ConsoleSigner $signer)
     {

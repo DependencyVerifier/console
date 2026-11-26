@@ -9,6 +9,7 @@ use Inventory\Application\EventHandler\PublishInventoryIntegrationEvents;
 use Inventory\Application\EventHandler\QueueInventoryProcessing;
 use Inventory\Application\Protocol\CycloneDxReader;
 use Inventory\Domain\Event\ApplicationPlaced;
+use Inventory\Domain\Event\HostFactsRecorded;
 use Inventory\Domain\Event\InventoryCompleted;
 use Inventory\Domain\Event\InventoryProcessed;
 use Inventory\Domain\Model\AppInstance;
@@ -17,6 +18,7 @@ use Inventory\Domain\Model\Digest;
 use Inventory\Domain\Model\InventoryTrigger;
 use Inventory\Domain\Model\Manifest;
 use Inventory\Domain\Model\MediaType;
+use Inventory\Domain\Model\ObservedHostFacts;
 use Inventory\Domain\Model\RunStatus;
 use Inventory\Domain\Model\SnapshotRef;
 use Inventory\Domain\Model\SnapshotSubject;
@@ -26,6 +28,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Shared\Application\Audit\Target;
 use Shared\Application\Contract\Inventory\ApplicationPlacementChanged;
+use Shared\Application\Contract\Inventory\HostFactsObserved;
 use Shared\Application\Contract\Inventory\InventoryChanged;
 use Symfony\Component\Uid\Uuid;
 use Tests\Identity\Support\RecordingEventBus;
@@ -210,7 +213,12 @@ final class ProcessingTest extends TestCase
         $publish = new PublishInventoryIntegrationEvents($events);
         $publish(new InventoryProcessed(Inv::RUN, Inv::TEAM));
         $publish(new ApplicationPlaced(Inv::APP, Inv::TEAM));
-        self::assertEquals([new InventoryChanged(Inv::TEAM), new ApplicationPlacementChanged(Inv::TEAM)], $events->published, 'In the published language.');
+        $publish(new HostFactsRecorded(Inv::HOST, Inv::TEAM, Inv::AGENT, new ObservedHostFacts('YggWeb', 'debian', '13', 'Debian GNU/Linux 13 (trixie)', '6.17', 'x86_64', 'engine-1')));
+        self::assertEquals([
+            new InventoryChanged(Inv::TEAM),
+            new ApplicationPlacementChanged(Inv::TEAM),
+            new HostFactsObserved(Inv::HOST, Inv::TEAM, Inv::AGENT, 'YggWeb', 'debian', '13', 'Debian GNU/Linux 13 (trixie)', '6.17', 'x86_64', 'engine-1'),
+        ], $events->published, 'In the published language.');
     }
 
     #[Test]

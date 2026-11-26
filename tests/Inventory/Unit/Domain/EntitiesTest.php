@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Inventory\Unit\Domain;
 
+use Inventory\Domain\Event\HostFactsRecorded;
 use Inventory\Domain\Event\InventoryCompleted;
 use Inventory\Domain\Event\InventoryProcessed;
 use Inventory\Domain\Model\AppInstance;
@@ -16,6 +17,7 @@ use Inventory\Domain\Model\InvalidInventory;
 use Inventory\Domain\Model\InventoryNotOpen;
 use Inventory\Domain\Model\InventoryRun;
 use Inventory\Domain\Model\MediaType;
+use Inventory\Domain\Model\ObservedHostFacts;
 use Inventory\Domain\Model\RunStatus;
 use Inventory\Domain\Model\ScopeViolation;
 use Inventory\Domain\Model\SnapshotBlob;
@@ -186,11 +188,35 @@ final class EntitiesTest extends TestCase
         $host = HostInventory::of(Uuid::fromString(Inv::HOST), Uuid::fromString(Inv::TEAM));
         self::assertSame([Inv::HOST, Inv::TEAM, [], null, null, null, null], [$host->hostId()->toRfc4122(), $host->teamId()->toRfc4122(), $host->facts(), $host->factsDigest(), $host->packagesDigest(), $host->lastInventoryId(), $host->inventoriedAt()]);
 
-        $host->record(Uuid::fromString(Inv::RUN), ['kernel' => '6.1'], Inv::digest(9), Inv::digest(4), Inv::now());
+        $host->record(Uuid::fromString(Inv::RUN), Uuid::fromString(Inv::AGENT), ['kernel' => '6.1'], Inv::digest(9), Inv::digest(4), Inv::now());
         self::assertSame([['kernel' => '6.1'], Inv::digest(9)->value, Inv::digest(4)->value, Inv::RUN], [$host->facts(), $host->factsDigest()?->value, $host->packagesDigest()?->value, $host->lastInventoryId()?->toRfc4122()]);
         self::assertEquals(Inv::now(), $host->inventoriedAt());
-        $host->record(Uuid::fromString(Inv::RUN), [], Inv::digest(10), null, Inv::now());
+        $host->record(Uuid::fromString(Inv::RUN), Uuid::fromString(Inv::AGENT), [], Inv::digest(10), null, Inv::now());
         self::assertSame(Inv::digest(4)->value, $host->packagesDigest()?->value, 'An inventory without host subject keeps the last OS packages.');
+        $events = $host->releaseEvents();
+        self::assertEquals([
+            new HostFactsRecorded(Inv::HOST, Inv::TEAM, Inv::AGENT, new ObservedHostFacts(kernel: '6.1')),
+            new HostFactsRecorded(Inv::HOST, Inv::TEAM, Inv::AGENT, new ObservedHostFacts()),
+        ], $events, 'At each inventory, changed or not, by the agent of the run.');
+    }
+
+    #[Test]
+    public function it_should_read_the_observed_facts_of_a_host_document(): void
+    {
+        self::assertEquals(
+            new ObservedHostFacts('YggWeb', 'debian', '13', 'Debian GNU/Linux 13 (trixie)', '6.17.13-2-pve', 'x86_64', 'engine-1'),
+            ObservedHostFacts::fromDocument(['hostname' => 'YggWeb', 'os' => ['id' => 'debian', 'version_id' => '13', 'pretty_name' => 'Debian GNU/Linux 13 (trixie)'], 'kernel' => '6.17.13-2-pve', 'arch' => 'x86_64', 'docker' => ['engine_id' => 'engine-1', 'engine_version' => '29.1'], 'runtimes' => []]),
+        );
+        self::assertEquals(new ObservedHostFacts(), ObservedHostFacts::fromDocument([]), 'Nothing observed.');
+        self::assertEquals(
+            new ObservedHostFacts(),
+            ObservedHostFacts::fromDocument(['hostname' => '', 'os' => 'debian', 'kernel' => 6, 'arch' => ['x86_64'], 'docker' => null]),
+            'Empty, not a string, not an object: not observed.',
+        );
+        self::assertEquals(
+            new ObservedHostFacts(osId: 'debian', dockerEngineId: 'engine-1'),
+            ObservedHostFacts::fromDocument(['os' => ['id' => 'debian', 'version_id' => 13, 'pretty_name' => ''], 'docker' => ['engine_id' => 'engine-1']]),
+        );
     }
 
     #[Test]
