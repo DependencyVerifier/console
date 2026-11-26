@@ -45,7 +45,7 @@ final class UiQueriesTest extends TestCase
         $view = new GetTeamFleetHandler($world->access(), $world->signer)(new GetTeamFleet(Fleet::TEAM));
 
         self::assertEquals(new FleetView(Fleet::TEAM, 'Platform', [
-            'host.enroll' => true, 'host.approve' => false, 'host.revoke' => false, 'host.delete' => false, 'host.order' => true,
+            'host.enroll' => true, 'host.approve' => false, 'host.revoke' => false, 'host.delete' => false, 'host.order' => true, 'host.edit' => false,
         ], $world->signer->publicKey()->text(), $world->signer->publicKey()->fingerprint()), $view);
         self::assertTrue($view->can('host.enroll'));
         self::assertFalse($view->can('host.approve'));
