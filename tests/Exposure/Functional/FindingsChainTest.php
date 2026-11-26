@@ -18,6 +18,8 @@ use Tests\Support\AuditLog;
 use Tests\Support\DataTables;
 use Tests\Support\IdentityWebTestCase;
 
+use function Symfony\Component\String\u;
+
 /**
  * From the agent to the findings, the queues run at once (test env) and the public sources are recorded: the packages
  * of an inventory are watched, their advisories and latest releases fetched, the findings of the team computed; an
@@ -60,6 +62,48 @@ final class FindingsChainTest extends IdentityWebTestCase
             'application outdated Packagist symfony/http-kernel open',
             'application outdated npm lodash fixed',
         ], $this->findings(), 'Upgraded: fixed, never deleted.');
+    }
+
+    #[Test]
+    public function it_should_hide_the_fixed_findings_of_an_application_until_asked(): void
+    {
+        $alice = Accounts::create(self::getContainer(), 'alice@example.com');
+        $bob = Accounts::create(self::getContainer(), 'bob@example.com');
+        $team = Seed::team(self::getContainer(), 'Alpha', [[$alice, TeamRole::Admin]]);
+        Seed::team(self::getContainer(), 'Beta', [[$bob, TeamRole::Admin]]);
+        $teamId = $team->id()->toString();
+        $agent = $this->agent($teamId);
+        $this->send($agent, '019a6b31-5e00-7f12-a3b4-c5d6e7f80933', 'pkg:npm/lodash@4.17.20');
+        $this->send($agent, '019a6b31-5e00-7f12-a3b4-c5d6e7f80934', 'pkg:npm/lodash@4.18.1');
+        $appUrl = \sprintf('/teams/%s/applications/%s', $teamId, $this->fetchString('SELECT id FROM inventory_app_instance'));
+        $hostUrl = \sprintf('/teams/%s/hosts/%s', $teamId, $this->fetchString('SELECT id FROM fleet_host'));
+        $this->logIn('alice@example.com');
+
+        $titles = fn (string $url): array => array_map(static fn (array $row): string => DataTables::cell((string) $row['title'])->text(), DataTables::draw($this->client, $url, 'findings')['data']);
+        self::assertCount(2, $titles($appUrl), 'The two fixed lodash findings are hidden by default.');
+        self::assertSame([], array_filter($titles($appUrl), static fn (string $title): bool => u($title)->containsAny('lodash')));
+        self::assertCount(4, $titles($appUrl.'?fixed=1'), 'Shown when asked, never deleted.');
+        self::assertCount(2, $titles($appUrl.'?fixed[]=1'), 'An unexpected value is the default, never an error.');
+        self::assertResponseIsSuccessful();
+
+        $page = $this->client->request('GET', $appUrl.'?fixed=1&tab=x');
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $page->filter('input[type="checkbox"][name="fixed"][checked]'));
+        self::assertCount(0, $page->filter('input[type="hidden"][name="fixed"]'), 'Unchecked, the box sends nothing.');
+        self::assertCount(1, $page->filter('input[type="hidden"][name="tab"][value="x"]'), 'The other parameters stay.');
+        $page = $this->client->request('GET', $appUrl.'?fixed[]=1');
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $page->filter('input[name="fixed"][checked]'));
+        $this->client->request('GET', $hostUrl.'?fixed=1');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('input[type="checkbox"][name="fixed"][checked]');
+
+        $this->client->getCookieJar()->clear();
+        $this->logIn('bob@example.com');
+        foreach ([$appUrl, $hostUrl] as $url) {
+            $this->client->request('GET', $url.'?fixed=1');
+            self::assertResponseStatusCodeSame(404, 'A filter is a curtain, never a door: another team stays out.');
+        }
     }
 
     #[Test]

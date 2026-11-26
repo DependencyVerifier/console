@@ -35,8 +35,8 @@ final readonly class ApplicationController
 
         return $this->page->render($teamId, 'application', 'team_applications', [
             'packages' => $this->tables->createFromType(PackagesTable::class, ['teamId' => $teamId, 'of' => ListPackages::APPLICATION, 'id' => $appId])->handleRequest($request),
-            'findings' => $this->tables->createFromType(FindingsTable::class, ['teamId' => $teamId, 'subjectType' => 'application', 'subjectId' => $appId])->handleRequest($request),
+            'findings' => $this->tables->createFromType(FindingsTable::class, ['teamId' => $teamId, 'subjectType' => 'application', 'subjectId' => $appId, 'withFixed' => FindingsTable::showsFixed($request)])->handleRequest($request),
             'history' => $this->tables->createFromType(HistoryTable::class, ['teamId' => $teamId, 'of' => ListInventoryHistory::APPLICATION, 'id' => $appId])->handleRequest($request),
-        ], ['view' => $view, 'application' => $view->app]);
+        ], ['view' => $view, 'application' => $view->app, 'show_fixed' => FindingsTable::showsFixed($request)]);
     }
 }

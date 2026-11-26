@@ -97,15 +97,18 @@ final class RepositoriesTest extends KernelTestCase
         $this->flush();
 
         $read = new DbalFindingReadModel($this->manager->get()->getConnection());
-        $page = $read->ofSubject(self::TEAM, 'application', $subject->toRfc4122(), $now, new PageRequest());
+        $open = $read->ofSubject(self::TEAM, 'application', $subject->toRfc4122(), $now, withFixed: false, page: new PageRequest());
+        self::assertSame(['Title d', 'Title c', 'Title b', 'php 8.2'], array_map(static fn (FindingRow $r): string => $r->title, $open->items), 'By default without the fixed ones; the accepted ones stay.');
+        self::assertSame([4, 4], [$open->filtered, $open->total], 'Counted as listed.');
+        $page = $read->ofSubject(self::TEAM, 'application', $subject->toRfc4122(), $now, withFixed: true, page: new PageRequest());
         self::assertSame(['Title d', 'Title c', 'Title b', 'php 8.2', 'Title a'], array_map(static fn (FindingRow $r): string => $r->title, $page->items), 'Open first; vulnerabilities, the most severe and exploited first; then ends of life; fixed last.');
         self::assertSame([5, 5], [$page->filtered, $page->total]);
         self::assertSame(['2027-01-31', '2026-11-13'], [$page->items[1]->acceptedUntil?->format('Y-m-d'), $page->items[2]->acceptedUntil?->format('Y-m-d')]);
-        self::assertNull($read->ofSubject(self::TEAM, 'application', $subject->toRfc4122(), new \DateTimeImmutable('2026-11-13'), new PageRequest())->items[2]->acceptedUntil, 'Expired on its day.');
+        self::assertNull($read->ofSubject(self::TEAM, 'application', $subject->toRfc4122(), new \DateTimeImmutable('2026-11-13'), withFixed: true, page: new PageRequest())->items[2]->acceptedUntil, 'Expired on its day.');
         self::assertSame(['2026-12-31', 'soon', ['CVE-d'], true, 'fixed'], [$page->items[3]->endOfLife?->format('Y-m-d'), $page->items[3]->eolLevel, $page->items[0]->aliases, $page->items[0]->knownExploited, $page->items[4]->status]);
         self::assertNotNull($page->items[4]->fixedAt);
 
-        $searched = $read->ofSubject(self::TEAM, 'application', $subject->toRfc4122(), $now, new PageRequest(search: 'cve-b'));
+        $searched = $read->ofSubject(self::TEAM, 'application', $subject->toRfc4122(), $now, withFixed: true, page: new PageRequest(search: 'cve-b'));
         self::assertSame([['Title b'], 1, 5], [array_map(static fn (FindingRow $r): string => $r->title, $searched->items), $searched->filtered, $searched->total]);
         self::assertSame('Title c', $read->find($high->id()->toRfc4122(), $now)?->title);
         self::assertNull($read->find(Uuid::v7()->toRfc4122(), $now));

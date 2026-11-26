@@ -1,0 +1,8 @@
+{#- "Show fixed" of the Findings card of an application or a host (variable: show_fixed). A GET form submitted by
+    its button only (WCAG 3.2.2): the other parameters of the page are kept, never a `fixed` one (an unchecked box
+    sends nothing). FindingsTable::showsFixed() reads it. -#}
+<form method="get" class="flex items-center gap-2 text-sm">
+    {%- for name, value in app.request.query.all|filter((v, k) => k != 'fixed' and v is not iterable) %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <label class="flex items-center gap-2"><input type="checkbox" name="fixed" value="1"{% if show_fixed %} checked{% endif %} class="size-4"> {{ 'exposure.findings.show_fixed'|trans }}</label>
+    <twig:Button type="submit" variant="outline" size="sm">{{ 'exposure.filters.apply'|trans }}</twig:Button>
+</form>

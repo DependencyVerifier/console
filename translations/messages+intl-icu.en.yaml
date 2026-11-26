@@ -818,6 +818,7 @@ inventory:
 exposure:
     findings:
         title: Findings
+        show_fixed: Show fixed
     severity:
         critical: Critical
         high: High

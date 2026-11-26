@@ -58,7 +58,9 @@
             </div>
         </dl>
     </section>
-    <twig:DataTable :table="tables.findings" :title="'exposure.findings.title'|trans" />
+    <twig:DataTable :table="tables.findings" :title="'exposure.findings.title'|trans">
+        <twig:block name="actions">{{ include('exposure/_show_fixed.html.twig') }}</twig:block>
+    </twig:DataTable>
     <twig:DataTable :table="tables.applications" :title="'inventory.applications.title'|trans" />
     <twig:DataTable :table="tables.packages" :title="'inventory.packages.os_title'|trans({count: host.packages})" />
     <section class="flex flex-col gap-2">

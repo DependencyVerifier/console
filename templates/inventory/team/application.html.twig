@@ -105,7 +105,9 @@
             </div>
         </dl>
     </section>
-    <twig:DataTable :table="tables.findings" :title="'exposure.findings.title'|trans" />
+    <twig:DataTable :table="tables.findings" :title="'exposure.findings.title'|trans">
+        <twig:block name="actions">{{ include('exposure/_show_fixed.html.twig') }}</twig:block>
+    </twig:DataTable>
     <twig:DataTable :table="tables.packages" :title="'inventory.packages.title'|trans({count: application.packages})" />
     <section class="flex flex-col gap-2">
         <twig:DataTable :table="tables.history" :title="'inventory.history.title'|trans" />

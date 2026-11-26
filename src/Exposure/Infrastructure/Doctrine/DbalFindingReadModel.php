@@ -33,11 +33,14 @@ final readonly class DbalFindingReadModel implements FindingReadModel
     {
     }
 
-    public function ofSubject(string $teamId, string $subjectType, string $subjectId, \DateTimeImmutable $today, PageRequest $page): Page
+    public function ofSubject(string $teamId, string $subjectType, string $subjectId, \DateTimeImmutable $today, bool $withFixed, PageRequest $page): Page
     {
         $base = $this->connection->createQueryBuilder()->from('exposure_finding', 'f')
             ->where('f.team_id = :team')->andWhere('f.subject_type = :type')->andWhere('f.subject_id = :subject')
             ->setParameter('team', $teamId)->setParameter('type', $subjectType)->setParameter('subject', $subjectId);
+        if (!$withFixed) {
+            $base->andWhere("f.status <> 'fixed'");
+        }
 
         return $this->paged($base, $today, $page);
     }
