@@ -111,6 +111,18 @@ final class ObserveHostFactsTest extends TestCase
     }
 
     #[Test]
+    public function it_should_not_promote_a_host_whose_observed_facts_are_dropped(): void
+    {
+        $this->world->hosts->add(Host::register(HostId::fromString(Fleet::HOST), Uuid::fromString(Fleet::TEAM), new HostIdentity('hostname', 'web-01'), new HostFacts('web-01', dockerEngineId: 'engine-1'), Fleet::now()));
+        $this->world->agents->add(Fleet::approved());
+
+        ($this->handler())($this->command(hostname: "web\u{202E}"));
+
+        self::assertTrue($this->identity()->isHostname(), 'Dropped facts stop there: no promotion either.');
+        self::assertSame([], $this->entries());
+    }
+
+    #[Test]
     public function it_should_promote_a_host_known_by_its_hostname_to_its_docker_engine_once(): void
     {
         $this->world->hosts->add($this->hostnameHost(Fleet::HOST, Fleet::TEAM));
