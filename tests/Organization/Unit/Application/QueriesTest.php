@@ -90,7 +90,7 @@ final class QueriesTest extends TestCase
             },
             \in_array($name, [QuotaName::MaxProjects, QuotaName::MaxMembers, QuotaName::MaxAgents], true),
         ), QuotaName::cases()), $view->quotas);
-        self::assertSame(['team.edit' => false, 'team.members.manage' => false, 'team.audit.view' => false, 'project.create' => false, 'team.quotas.manage' => false], $view->can);
+        self::assertSame(['team.edit' => false, 'team.members.manage' => false, 'team.audit.view' => false, 'project.create' => false, 'team.quotas.manage' => false, 'host.edit' => false], $view->can);
         self::assertContains(['pendingInvitations', [Teams::TEAM, self::NOW]], $read->calls);
 
         $world->as(Teams::ADMIN, TeamRole::Admin);
