@@ -12,13 +12,13 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Http\Event\LoginSuccessEvent;
 
 /**
- * Decision 7: 30 minutes of inactivity, 12 hours in total, enforced here with the clock (testable with MockClock);
+ * Decision 7: 2 hours of inactivity, 12 hours in total, enforced here with the clock (testable with MockClock);
  * the session garbage collector only cleans up. Runs before the firewall reads the token from the session.
  * Also records the time of the last full authentication, read by the recent authentication check (10 minutes).
  */
 final readonly class SessionLifetimeSubscriber
 {
-    public const int IDLE_SECONDS = 1800;
+    public const int IDLE_SECONDS = 7200;
     public const int ABSOLUTE_SECONDS = 43_200;
 
     public function __construct(private ClockInterface $clock)

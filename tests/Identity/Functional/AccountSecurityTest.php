@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Identity\Functional;
 
 use Identity\Infrastructure\Security\SessionKeys;
+use Identity\Infrastructure\Security\SessionLifetimeSubscriber;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\Clock\Clock;
 use Symfony\Component\Clock\MockClock;
@@ -98,14 +99,18 @@ final class AccountSecurityTest extends IdentityWebTestCase
     }
 
     #[Test]
-    public function it_should_end_an_idle_session_after_thirty_minutes(): void
+    public function it_should_end_an_idle_session_after_two_hours(): void
     {
         Accounts::create(self::getContainer(), 'jane@example.com');
         $this->logIn('jane@example.com');
         $clock = new MockClock();
         Clock::set($clock);
         try {
-            $clock->sleep(1801);
+            $clock->sleep(SessionLifetimeSubscriber::IDLE_SECONDS);
+            $this->client->request('GET', '/');
+            self::assertResponseIsSuccessful('Two hours idle exactly: still signed in, and the request counts as activity.');
+
+            $clock->sleep(SessionLifetimeSubscriber::IDLE_SECONDS + 1);
             $this->client->request('GET', '/');
             self::assertResponseRedirects('/login');
         } finally {
