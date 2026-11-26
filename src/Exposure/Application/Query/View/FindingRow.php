@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Exposure\Application\Query\View;
 
+use Exposure\Domain\Model\FindingKind;
+
 /**
  * A finding as the lists show it; `acceptedUntil` is the expiry of its running acceptance; where its subject is (its
  * host, `Project / environment` once named by the handler, whether it is in production).
@@ -60,5 +62,20 @@ final readonly class FindingRow
     public function isAccepted(): bool
     {
         return 'open' === $this->status && null !== $this->acceptedUntil;
+    }
+
+    /**
+     * Where to go from the installed version: the fixed version of a vulnerability, the latest release of an outdated
+     * dependency, the newest supported cycle for an end of life (never the last patch of a cycle that ends). Null when
+     * there is none: no fix yet, or no newer supported cycle (the installed one is the newest, or none is supported).
+     */
+    public function target(): ?string
+    {
+        return match (FindingKind::tryFrom($this->kind)) {
+            FindingKind::Vulnerability => $this->fixed,
+            FindingKind::Outdated => $this->latest,
+            FindingKind::EndOfLife => $this->suggested,
+            null => null,
+        };
     }
 }

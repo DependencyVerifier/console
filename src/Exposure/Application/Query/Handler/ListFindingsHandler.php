@@ -33,6 +33,6 @@ final readonly class ListFindingsHandler implements QueryHandler
 
         $this->access->project($query->teamId, $type, $query->subjectId);
 
-        return $this->places->page($query->teamId, $this->read->ofSubject($query->teamId, $type->value, $query->subjectId, $this->clock->now(), $query->page));
+        return $this->places->page($query->teamId, $this->read->ofSubject($query->teamId, $type->value, $query->subjectId, $this->clock->now(), withFixed: $query->withFixed, page: $query->page));
     }
 }

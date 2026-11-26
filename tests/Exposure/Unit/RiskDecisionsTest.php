@@ -166,8 +166,10 @@ final class RiskDecisionsTest extends TestCase
     public function it_should_show_the_findings_the_actor_sees(): void
     {
         $read = new InMemoryFindingReadModel($this->findings, $this->acceptances);
-        $list = fn (string $type, string $subject, string $team = self::TEAM): array => array_map(static fn (FindingRow $r): string => $r->subjectId, (new ListFindingsHandler($this->access(), $read, $this->clock, $this->places()))(new ListFindings($team, $type, $subject, new PageRequest()))->items);
+        $list = fn (string $type, string $subject, string $team = self::TEAM): array => array_map(static fn (FindingRow $r): string => $r->subjectId, (new ListFindingsHandler($this->access(), $read, $this->clock, $this->places()))(new ListFindings($team, $type, $subject, page: new PageRequest()))->items);
         self::assertSame([self::SHOP_APP], $list('application', self::SHOP_APP));
+        (new ListFindingsHandler($this->access(), $read, $this->clock, $this->places()))(new ListFindings(self::TEAM, 'application', self::SHOP_APP, withFixed: true));
+        self::assertSame(['application '.self::SHOP_APP, 'application '.self::SHOP_APP.' with fixed'], $read->asked, 'The fixed ones only when asked.');
         self::assertSame([self::HOST], $list('host', self::HOST));
         self::assertSame([self::LOOSE_APP], $list('application', self::LOOSE_APP));
         $this->assertRefused(ResourceNotFound::class, static fn () => $list('image', self::SHOP_APP));

@@ -10,13 +10,13 @@ use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
 
 /**
- * The findings of an application or a host the actor sees.
+ * The findings of an application or a host the actor sees: open and accepted ones, the fixed ones only when asked.
  *
  * @implements Query<Page<FindingRow>>
  */
 final readonly class ListFindings implements Query
 {
-    public function __construct(public string $teamId, public string $subjectType, public string $subjectId, public PageRequest $page = new PageRequest())
+    public function __construct(public string $teamId, public string $subjectType, public string $subjectId, public bool $withFixed = false, public PageRequest $page = new PageRequest())
     {
     }
 }

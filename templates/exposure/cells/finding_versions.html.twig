@@ -1,3 +1,5 @@
-{#- Installed → fixed (vulnerability) or latest (end of life, outdated) (row: FindingRow). -#}
-{%- set target = row.kind == 'vulnerability' ? row.fixed : row.latest -%}
-<span class="font-mono text-xs">{{ row.installed ?? '—' }}{% if target %} → {{ target }}{% elseif row.kind == 'vulnerability' %} <span class="text-muted-foreground">({{ 'exposure.no_fix'|trans }})</span>{% endif %}</span>
+{#- Installed → target (row: FindingRow, FindingRow::target()): the fixed version of a vulnerability ("no fix" when
+    none), the latest release of an outdated dependency, the newest supported cycle for an end of life ("—" when none:
+    the installed cycle is the newest, or none is supported). -#}
+{%- set target = row.target -%}
+<span class="font-mono text-xs">{{ row.installed ?? '—' }}{% if target %} → {{ target }}{% elseif row.kind == 'vulnerability' %} <span class="text-muted-foreground">({{ 'exposure.no_fix'|trans }})</span>{% elseif row.kind == 'eol' %} → —{% endif %}</span>

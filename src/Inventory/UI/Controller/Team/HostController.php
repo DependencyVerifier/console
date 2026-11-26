@@ -37,8 +37,8 @@ final readonly class HostController
         return $this->page->render($teamId, 'host', 'team_hosts', [
             'applications' => $this->tables->createFromType(ApplicationsTable::class, ['teamId' => $teamId, 'hostId' => $hostId])->handleRequest($request),
             'packages' => $this->tables->createFromType(PackagesTable::class, ['teamId' => $teamId, 'of' => ListPackages::HOST, 'id' => $hostId])->handleRequest($request),
-            'findings' => $this->tables->createFromType(FindingsTable::class, ['teamId' => $teamId, 'subjectType' => 'host', 'subjectId' => $hostId])->handleRequest($request),
+            'findings' => $this->tables->createFromType(FindingsTable::class, ['teamId' => $teamId, 'subjectType' => 'host', 'subjectId' => $hostId, 'withFixed' => FindingsTable::showsFixed($request)])->handleRequest($request),
             'history' => $this->tables->createFromType(HistoryTable::class, ['teamId' => $teamId, 'of' => ListInventoryHistory::HOST, 'id' => $hostId])->handleRequest($request),
-        ], ['host' => $host]);
+        ], ['host' => $host, 'show_fixed' => FindingsTable::showsFixed($request)]);
     }
 }

@@ -15,11 +15,12 @@ use Shared\Application\Query\PageRequest;
 interface FindingReadModel
 {
     /**
-     * The findings of a subject: open first (the most severe first), then fixed.
+     * The findings of a subject: open first (the most severe first, accepted ones included), then the fixed ones, only
+     * when asked (`total` and `filtered` count what is listed).
      *
      * @return Page<FindingRow>
      */
-    public function ofSubject(string $teamId, string $subjectType, string $subjectId, \DateTimeImmutable $today, PageRequest $page): Page;
+    public function ofSubject(string $teamId, string $subjectType, string $subjectId, \DateTimeImmutable $today, bool $withFixed, PageRequest $page): Page;
 
     public function find(string $findingId, \DateTimeImmutable $today): ?FindingRow;
 

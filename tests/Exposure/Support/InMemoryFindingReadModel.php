@@ -10,6 +10,7 @@ use Exposure\Application\Query\FindingReadModel;
 use Exposure\Application\Query\View\ExposureSummary;
 use Exposure\Application\Query\View\FindingRow;
 use Exposure\Domain\Model\Finding;
+use Exposure\Domain\Model\FindingStatus;
 use Exposure\Domain\Model\RiskAcceptance;
 use Shared\Application\Query\Page;
 use Shared\Application\Query\PageRequest;
@@ -26,11 +27,11 @@ final class InMemoryFindingReadModel implements FindingReadModel
     {
     }
 
-    public function ofSubject(string $teamId, string $subjectType, string $subjectId, \DateTimeImmutable $today, PageRequest $page): Page
+    public function ofSubject(string $teamId, string $subjectType, string $subjectId, \DateTimeImmutable $today, bool $withFixed, PageRequest $page): Page
     {
-        $this->asked[] = $subjectType.' '.$subjectId;
+        $this->asked[] = $subjectType.' '.$subjectId.($withFixed ? ' with fixed' : '');
         $rows = array_map(fn (Finding $f): FindingRow => $this->row($f, $today), array_values(array_filter($this->findings->findings, static fn (Finding $f): bool => $f->teamId()->toRfc4122() === $teamId
-            && $f->subjectType()->value === $subjectType && $f->subjectId()->toRfc4122() === $subjectId)));
+            && $f->subjectType()->value === $subjectType && $f->subjectId()->toRfc4122() === $subjectId && ($withFixed || FindingStatus::Fixed !== $f->status()))));
 
         return new Page($rows, \count($rows), \count($rows));
     }
