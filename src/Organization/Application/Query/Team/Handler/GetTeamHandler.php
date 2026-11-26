@@ -27,7 +27,7 @@ final readonly class GetTeamHandler implements QueryHandler
 {
     private const array GESTURES = [
         Permission::TeamEdit, Permission::TeamMembersManage, Permission::TeamAuditView, Permission::ProjectCreate,
-        Permission::TeamQuotasManage,
+        Permission::TeamQuotasManage, Permission::HostEdit,
     ];
 
     /**

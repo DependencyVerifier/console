@@ -15,6 +15,7 @@ use Fleet\Domain\Model\EnrollmentTokenInvalid;
 use Fleet\Domain\Model\FleetQuotaReached;
 use Fleet\Domain\Model\HostIdentity;
 use Fleet\Domain\Model\InvalidEnrollmentPayload;
+use Fleet\Domain\Model\InvalidHostFacts;
 use Fleet\Domain\Model\RevokedAgent;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -238,7 +239,8 @@ final class EnrollAgentTest extends TestCase
     public function it_should_refuse_facts_out_of_bounds(): void
     {
         $world = $this->world();
-        $this->assertRefused(InvalidEnrollmentPayload::class, 'invalid_payload', fn () => $world->enroll()($this->command($world, AgentClient::generate(), body: ['host' => ['hostname' => u('a')->repeat(256)->toString()]])));
+        $this->assertRefused(InvalidHostFacts::class, 'invalid_payload', fn () => $world->enroll()($this->command($world, AgentClient::generate(), body: ['host' => ['hostname' => u('a')->repeat(256)->toString()]])));
+        $this->assertRefused(InvalidHostFacts::class, 'invalid_payload', fn () => $world->enroll()($this->command($world, AgentClient::generate(), body: ['host' => ['hostname' => "web-01\u{202E}"]])));
         $this->assertRefused(InvalidEnrollmentPayload::class, 'invalid_payload', fn () => $world->enroll()($this->command($world, AgentClient::generate(), body: ['compose_project' => null])));
     }
 

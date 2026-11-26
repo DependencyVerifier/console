@@ -7,7 +7,8 @@ namespace Fleet\Domain\Model;
 use Shared\Domain\BusinessRuleViolated;
 
 /**
- * Enrollment facts (host, mode, scope, version) out of the protocol bounds (protocol: invalid_payload).
+ * Runtime facts of an agent (mode, scope, Compose project, version) out of the protocol bounds (protocol:
+ * invalid_payload). The host facts have their own refusal, InvalidHostFacts, with the same rule key.
  */
 final class InvalidEnrollmentPayload extends BusinessRuleViolated
 {

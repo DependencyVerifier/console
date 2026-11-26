@@ -114,7 +114,7 @@ final readonly class ProcessInventoryHandler implements CommandHandler
             }
         }
 
-        $host->record($run->id(), array_intersect_key($facts, array_flip(['hostname', 'os', 'kernel', 'arch', 'runtimes', 'docker', 'agent'])), $factsDigest, $packages, $now);
+        $host->record($run->id(), $run->agentId(), array_intersect_key($facts, array_flip(['hostname', 'os', 'kernel', 'arch', 'runtimes', 'docker', 'agent'])), $factsDigest, $packages, $now);
         $this->record($run, SnapshotSubject::HostFacts, $run->hostId(), $factsDigest, $now);
     }
 

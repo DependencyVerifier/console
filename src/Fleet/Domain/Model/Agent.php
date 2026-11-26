@@ -199,6 +199,14 @@ class Agent implements RecordsEvents
         return AgentStatus::Approved === $this->status;
     }
 
+    /**
+     * Whether what it reports still speaks for this host: approved, and attached to it.
+     */
+    public function reportsFor(HostId $host): bool
+    {
+        return $this->isApproved() && $this->hostId->equals($host->value);
+    }
+
     public function approve(Uuid $by, \DateTimeImmutable $now): void
     {
         if (AgentStatus::Pending !== $this->status) {
