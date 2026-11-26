@@ -4,7 +4,7 @@ framework:
 
     # Sessions in PostgreSQL (decision 29): own PDO connection with session-level timeouts, advisory locks.
     # __Host- cookie (Secure, Path=/, no Domain): no cookie tossing from a sibling subdomain. 12 h maximum; the
-    # 30 min idle / 12 h absolute limits are enforced by SessionLifetimeSubscriber, the GC only cleans up.
+    # 2 h idle / 12 h absolute limits are enforced by SessionLifetimeSubscriber, the GC only cleans up.
     session:
         handler_id: app.session_handler
         name: __Host-depverify_session
