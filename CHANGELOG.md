@@ -42,7 +42,6 @@
 - Tables, gauges and loading zones are named by their visible title; secondary columns hide by the width of their card.
 
 ## 1.0.3 (2026-11-15)
-## 1.0.3 (2026-11-15)
 
 **Installation**
 - Fixed: the emails sent from the web (password reset, sign-in codes, invitations) failed with "certificate verify
