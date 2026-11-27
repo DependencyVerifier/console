@@ -71,7 +71,8 @@ final readonly class WebAuthnCeremony implements PasskeyCeremony
             [PublicKeyCredentialParameters::createPk(Algorithms::COSE_ALGORITHM_ES256), PublicKeyCredentialParameters::createPk(Algorithms::COSE_ALGORITHM_RS256)],
             AuthenticatorSelectionCriteria::create(
                 userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
-                residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
+                // Required: a passkey that is not discoverable could not sign in without an email (claimOf() needs its user handle).
+                residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_REQUIRED,
             ),
             PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
             array_map(self::descriptor(...), $excluded),

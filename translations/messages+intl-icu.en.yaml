@@ -142,7 +142,8 @@ identity:
             passkey: "The passkey was not accepted. Try again, or sign in with your password."
         passkey: Sign in with a passkey
     passkey:
-        failed: "The passkey could not be used (cancelled, not available on this device, or refused). Try again."
+        failed: "The passkey could not be used (not available on this device, or refused). Try again."
+        duplicate: "This device already holds a passkey for your account."
     two_factor:
         title: Second factor
         email_description: We sent a 6-digit code to your email address.

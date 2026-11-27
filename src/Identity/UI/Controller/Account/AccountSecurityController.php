@@ -6,14 +6,17 @@ namespace Identity\UI\Controller\Account;
 
 use Identity\Application\Query\User\GetUserProfile;
 use Identity\Application\Query\User\PasskeySummary;
+use Identity\Domain\Model\PasskeyCredential;
 use Identity\Domain\Model\User;
 use Identity\Domain\Model\UserId;
 use Identity\Domain\Repository\UserRepository;
 use Identity\Infrastructure\Crypto\TotpProvisioning;
 use Identity\Infrastructure\Security\SecurityUser;
 use Identity\UI\Controller\RouteCollection;
+use ParagonIE\ConstantTime\Base64UrlSafe;
 use Shared\Application\Bus\QueryBus;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -30,6 +33,8 @@ final class AccountSecurityController extends AbstractController
         private readonly UserRepository $users,
         private readonly TotpProvisioning $provisioning,
         private readonly AccountForms $forms,
+        #[Autowire(env: 'DEFAULT_URI')]
+        private readonly string $defaultUri,
     ) {
     }
 
@@ -53,10 +58,29 @@ final class AccountSecurityController extends AbstractController
                 array_map(fn (PasskeySummary $p): FormView => $this->forms->button(AccountForms::passkeyRevoke($p->id))->createView(), $profile->passkeys),
             ),
             'max_passkeys' => User::PASSKEYS_MAX,
+            'passkey_signal' => null === $account ? null : $this->passkeySignal($account),
             'nav_active' => 'account',
         ]);
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;
+    }
+
+    /**
+     * What passkey_signal_controller.ts tells the password manager: the passkeys this account still accepts, so a
+     * removed one disappears from the device (WebAuthn Signal API). The ids are those of the ceremonies (rpId: the
+     * host of DEFAULT_URI, user handle: the account id), never a secret.
+     *
+     * @return array{rpId: string, userId: string, credentialIds: list<string>}
+     */
+    private function passkeySignal(User $account): array
+    {
+        $url = parse_url($this->defaultUri);
+
+        return [
+            'rpId' => \is_array($url) && isset($url['host']) ? $url['host'] : '',
+            'userId' => Base64UrlSafe::encodeUnpadded($account->id()->toString()),
+            'credentialIds' => array_map(static fn (PasskeyCredential $p): string => $p->credentialId(), $account->passkeys()),
+        ];
     }
 }

@@ -4,8 +4,30 @@ import { Controller } from '@hotwired/stimulus';
 // A WebAuthn ceremony (docs/cadrage.md §7): asks the server for its options (POST, the CSRF token of the form in
 // `X-CSRF-Token`), lets the browser create or use a passkey, then puts the answer (JSON, base64url fields, as
 // PublicKeyCredential.toJSON() gives it) in the `response` target and submits the form. No library, nothing external.
+//
+// Progressive enhancement (passkey-authentication, passkey-registration; Browser Support in CLAUDE.md): the JSON
+// helpers of WebAuthn (parse*OptionsFromJSON, toJSON) when the browser has them, the hand-written conversions below
+// otherwise. `conditional` (sign-in page): where conditional mediation exists, passkeys are offered in the autofill of
+// the email field (`autocomplete="username webauthn"`); the button aborts that request first, because the options
+// kept in the session serve once.
+//
+// Errors land in an always-present `role="alert"` element, whose text changes (a live region that is shown rather
+// than changed is not announced reliably). A cancellation says nothing; a passkey already on the device has its own
+// message.
 
 type Json = Record<string, unknown>;
+
+/** WebAuthn statics that are newer than Baseline widely available: always feature-detected. */
+type WebAuthnStatics = {
+    getClientCapabilities?: () => Promise<Record<string, boolean | undefined>>;
+    isConditionalMediationAvailable?: () => Promise<boolean>;
+    parseCreationOptionsFromJSON?: (options: Json) => PublicKeyCredentialCreationOptions;
+    parseRequestOptionsFromJSON?: (options: Json) => PublicKeyCredentialRequestOptions;
+};
+
+const statics = (): WebAuthnStatics => window.PublicKeyCredential as unknown as WebAuthnStatics;
+
+const nameOf = (error: unknown): string => (error instanceof DOMException ? error.name : '');
 
 const toBytes = (value: string): ArrayBuffer => {
     const base64 = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=');
@@ -44,6 +66,9 @@ export default class extends Controller<HTMLFormElement> {
         options: String,
         csrf: String,
         mode: { type: String, default: 'get' },
+        conditional: { type: Boolean, default: false },
+        failedMessage: String,
+        duplicateMessage: String,
     };
 
     declare readonly responseTarget: HTMLInputElement;
@@ -52,11 +77,26 @@ export default class extends Controller<HTMLFormElement> {
     declare optionsValue: string;
     declare csrfValue: string;
     declare modeValue: string;
+    declare conditionalValue: boolean;
+    declare failedMessageValue: string;
+    declare duplicateMessageValue: string;
+
+    #conditional: AbortController | null = null;
 
     connect(): void {
         if (!('PublicKeyCredential' in window)) {
             this.element.hidden = true;
+
+            return;
         }
+        if (this.conditionalValue) {
+            void this.#offerInAutofill();
+        }
+    }
+
+    disconnect(): void {
+        this.#conditional?.abort();
+        this.#conditional = null;
     }
 
     async start(event: Event): Promise<void> {
@@ -68,35 +108,73 @@ export default class extends Controller<HTMLFormElement> {
         if (!this.element.reportValidity()) {
             return;
         }
-        this.showError(false);
+        this.#conditional?.abort();
+        this.#conditional = null;
+        this.#say('');
         try {
-            const answer = await fetch(this.optionsValue, { method: 'POST', headers: { 'X-CSRF-Token': this.csrfValue, Accept: 'application/json' }, credentials: 'same-origin' });
-            if (!answer.ok) {
-                throw new Error(`options: ${answer.status}`);
-            }
-            const options = (await answer.json()) as Json;
+            const options = await this.#options();
             const credential = 'create' === this.modeValue ? await this.create(options) : await this.get(options);
-            this.responseTarget.value = JSON.stringify(credential);
-            this.element.requestSubmit();
+            this.#submit(credential);
         } catch (error) {
-            console.warn('Passkey ceremony failed', error);
             this.responseTarget.value = '';
-            this.showError(true);
+            const name = nameOf(error);
+            if ('NotAllowedError' === name || 'AbortError' === name) {
+                // Cancelled by the user (or timed out): nothing to report.
+                return;
+            }
+            console.warn('Passkey ceremony failed', error);
+            this.#say('create' === this.modeValue && 'InvalidStateError' === name ? this.duplicateMessageValue : this.failedMessageValue);
         }
     }
 
+    /** Passkeys in the autofill of the email field, where conditional mediation exists. */
+    async #offerInAutofill(): Promise<void> {
+        const webauthn = statics();
+        try {
+            const available = undefined !== webauthn.getClientCapabilities
+                ? true === (await webauthn.getClientCapabilities()).conditionalGet
+                : true === (await webauthn.isConditionalMediationAvailable?.());
+            if (!available || !this.element.isConnected) {
+                return;
+            }
+            const conditional = new AbortController();
+            this.#conditional = conditional;
+            const options = await this.#options();
+            if (conditional.signal.aborted) {
+                return;
+            }
+            const credential = await this.get(options, conditional.signal);
+            this.#submit(credential);
+        } catch (error) {
+            // Aborted by the button, or nothing chosen: the button stays the way in.
+            if ('AbortError' !== nameOf(error)) {
+                console.warn('Passkey autofill unavailable', error);
+            }
+        }
+    }
+
+    async #options(): Promise<Json> {
+        const answer = await fetch(this.optionsValue, { method: 'POST', headers: { 'X-CSRF-Token': this.csrfValue, Accept: 'application/json' }, credentials: 'same-origin' });
+        if (!answer.ok) {
+            throw new Error(`options: ${answer.status}`);
+        }
+
+        return (await answer.json()) as Json;
+    }
+
+    #submit(credential: Json): void {
+        this.responseTarget.value = JSON.stringify(credential);
+        this.element.requestSubmit();
+    }
+
     private async create(options: Json): Promise<Json> {
-        const user = options.user as Json;
-        const credential = (await navigator.credentials.create({
-            publicKey: {
-                ...(options as unknown as PublicKeyCredentialCreationOptions),
-                challenge: toBytes(String(options.challenge)),
-                user: { id: toBytes(String(user.id)), name: String(user.name), displayName: String(user.displayName) },
-                excludeCredentials: descriptors(options.excludeCredentials),
-            },
-        })) as PublicKeyCredential | null;
+        const credential = (await navigator.credentials.create({ publicKey: this.#creationOptions(options) })) as PublicKeyCredential | null;
         if (null === credential) {
             throw new Error('no credential');
+        }
+        const native = this.#nativeJson(credential);
+        if (null !== native) {
+            return native;
         }
         const response = credential.response as AuthenticatorAttestationResponse;
 
@@ -114,16 +192,17 @@ export default class extends Controller<HTMLFormElement> {
         };
     }
 
-    private async get(options: Json): Promise<Json> {
+    private async get(options: Json, signal?: AbortSignal): Promise<Json> {
         const credential = (await navigator.credentials.get({
-            publicKey: {
-                ...(options as unknown as PublicKeyCredentialRequestOptions),
-                challenge: toBytes(String(options.challenge)),
-                allowCredentials: descriptors(options.allowCredentials),
-            },
+            publicKey: this.#requestOptions(options),
+            ...(undefined !== signal ? { mediation: 'conditional' as CredentialMediationRequirement, signal } : {}),
         })) as PublicKeyCredential | null;
         if (null === credential) {
             throw new Error('no credential');
+        }
+        const native = this.#nativeJson(credential);
+        if (null !== native) {
+            return native;
         }
         const response = credential.response as AuthenticatorAssertionResponse;
 
@@ -142,9 +221,52 @@ export default class extends Controller<HTMLFormElement> {
         };
     }
 
-    private showError(visible: boolean): void {
+    #creationOptions(options: Json): PublicKeyCredentialCreationOptions {
+        const parse = statics().parseCreationOptionsFromJSON;
+        if (undefined !== parse) {
+            try {
+                return parse.call(window.PublicKeyCredential, options);
+            } catch (error) {
+                console.warn('parseCreationOptionsFromJSON refused the options, converting by hand', error);
+            }
+        }
+        const user = options.user as Json;
+
+        return {
+            ...(options as unknown as PublicKeyCredentialCreationOptions),
+            challenge: toBytes(String(options.challenge)),
+            user: { id: toBytes(String(user.id)), name: String(user.name), displayName: String(user.displayName) },
+            excludeCredentials: descriptors(options.excludeCredentials),
+        };
+    }
+
+    #requestOptions(options: Json): PublicKeyCredentialRequestOptions {
+        const parse = statics().parseRequestOptionsFromJSON;
+        if (undefined !== parse) {
+            try {
+                return parse.call(window.PublicKeyCredential, options);
+            } catch (error) {
+                console.warn('parseRequestOptionsFromJSON refused the options, converting by hand', error);
+            }
+        }
+
+        return {
+            ...(options as unknown as PublicKeyCredentialRequestOptions),
+            challenge: toBytes(String(options.challenge)),
+            allowCredentials: descriptors(options.allowCredentials),
+        };
+    }
+
+    /** PublicKeyCredential.toJSON() where it exists. */
+    #nativeJson(credential: PublicKeyCredential): Json | null {
+        const toJson = (credential as unknown as { toJSON?: () => Json }).toJSON;
+
+        return typeof toJson === 'function' ? toJson.call(credential) : null;
+    }
+
+    #say(message: string): void {
         if (this.hasErrorTarget) {
-            this.errorTarget.hidden = !visible;
+            this.errorTarget.textContent = message;
         }
     }
 }

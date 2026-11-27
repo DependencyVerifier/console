@@ -83,6 +83,9 @@
                 <twig:Card:Description>{{ 'identity.account.passkeys.description'|trans }}</twig:Card:Description>
             </twig:Card:Header>
             <twig:Card:Content class="flex flex-col gap-4">
+                {%- if passkey_signal %}
+                    <div hidden data-controller="passkey-signal" data-passkey-signal-rp-id-value="{{ passkey_signal.rpId }}" data-passkey-signal-user-id-value="{{ passkey_signal.userId }}" data-passkey-signal-credential-ids-value="{{ passkey_signal.credentialIds|json_encode }}"></div>
+                {%- endif %}
                 {% if profile.passkeys is empty %}
                     <p class="text-sm text-muted-foreground">{{ 'identity.account.passkeys.none'|trans }}</p>
                 {% else %}
@@ -103,10 +106,12 @@
                 {% if profile.passkeys|length < max_passkeys %}
                     {{ form_start(passkey_form, {action: path('identity_account_passkey_register'), attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false', novalidate: 'novalidate',
                         'data-controller': 'passkey', 'data-passkey-options-value': path('identity_account_passkey_options'), 'data-passkey-csrf-value': csrf_token('passkey_register'),
-                        'data-passkey-mode-value': 'create', 'data-action': 'submit->passkey#start'}}) }}
+                        'data-passkey-mode-value': 'create', 'data-passkey-failed-message-value': 'identity.passkey.failed'|trans,
+                        'data-passkey-duplicate-message-value': 'identity.passkey.duplicate'|trans, 'data-action': 'submit->passkey#start'}}) }}
                         {{ form_row(passkey_form.name) }}
                         {{ form_widget(passkey_form.response) }}
-                        <p class="text-sm text-destructive" role="alert" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
+                        {#- Always present and empty: passkey_controller.ts changes its text, so the alert is announced. -#}
+                        <p class="text-sm text-destructive empty:hidden" role="alert" data-passkey-target="error"></p>
                         <twig:Button type="submit" class="w-fit"><twig:ux:icon name="lucide:key-round" /> {{ 'identity.account.passkeys.add'|trans }}</twig:Button>
                     {{ form_end(passkey_form) }}
                 {% endif %}
