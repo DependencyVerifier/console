@@ -2,7 +2,9 @@
     its button only (WCAG 3.2.2: choosing an option, with the arrow keys too, never reloads the page). Variables: criteria FindingCriteria,
     projects (id => name, team only), environments (list<TeamEnvironment>: of the team, named Project / env, when
     projects is set; else of the project), hosts (id => name). -#}
-<form method="get" class="flex flex-wrap items-end gap-3 text-sm" aria-label="{{ 'exposure.filters.label'|trans }}">
+{#- A <search> landmark around the filters (forms guide); it carries their name. -#}
+<search aria-label="{{ 'exposure.filters.label'|trans }}">
+<form method="get" class="flex flex-wrap items-end gap-3 text-sm">
     {%- set selects = {
         kind: {'': 'exposure.filters.any_kind'|trans}|merge({vulnerability: 'exposure.kind.vulnerability'|trans, eol: 'exposure.kind.eol'|trans, outdated: 'exposure.kind.outdated'|trans}),
         severity: {'': 'exposure.filters.any_severity'|trans}|merge({critical: 'exposure.severity.critical'|trans, high: 'exposure.severity.high'|trans, medium: 'exposure.severity.medium'|trans, low: 'exposure.severity.low'|trans}),
@@ -54,3 +56,4 @@
     </label>
     <twig:Button type="submit" variant="outline">{{ 'exposure.filters.apply'|trans }}</twig:Button>
 </form>
+</search>

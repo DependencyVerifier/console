@@ -42,7 +42,8 @@
     {%- set widget_attr = described_by is empty ? {} : {'aria-describedby': described_by|join(' ')} -%}
     {%- if errors|length > 0 -%}{%- set widget_attr = widget_attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
     <div data-slot="field" class="group/field flex flex-col gap-1"{% if not valid %} data-invalid="true"{% endif %}>
-        <label for="{{ id }}" class="flex w-fit cursor-pointer items-start gap-2 text-sm leading-snug font-medium select-none">
+        {#- -my-3 py-3: a 44px hit target (checkbox guide) without moving the layout. -#}
+        <label for="{{ id }}" class="-my-3 flex w-fit cursor-pointer items-start gap-2 py-3 text-sm leading-snug font-medium select-none">
             {{- form_widget(form, {attr: widget_attr}) -}}
             <span>{{ (label is empty ? name|humanize : label)|trans({}, translation_domain) }}</span>
         </label>
@@ -77,6 +78,12 @@
     {{- parent() -}}
 {%- endblock form_widget_simple -%}
 
+{#- Emails are never "corrected" by the spellchecker (autofill-sign-in-form). -#}
+{%- block email_widget -%}
+    {%- set attr = attr|merge({spellcheck: 'false'}) -%}
+    {{- parent() -}}
+{%- endblock email_widget -%}
+
 {#- A text area in the look of the text inputs (form_widget_simple), several lines high. -#}
 {%- block textarea_widget -%}
     {%- set attr = attr|merge({class: (attr.class|default('') ~ ' min-h-20 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-hidden focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30')|trim}) -%}
@@ -90,6 +97,20 @@
     {%- if not valid -%}{%- set attr = attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
     {{- parent() -}}
 {%- endblock choice_widget_collapsed -%}
+
+{#- A password field with a "Show password" toggle (password_visibility_controller.ts; autofill-sign-in-form): an
+    aria-pressed button, whose icon follows its state. -#}
+{%- block password_widget -%}
+    <div class="relative" data-controller="password-visibility">
+        {%- set attr = attr|merge({class: (attr.class|default('') ~ ' pe-10')|trim, 'data-password-visibility-target': 'input'}) -%}
+        {{- parent() -}}
+        <button type="button" aria-pressed="false" aria-label="{{ 'identity.field.show_password'|trans }}" data-action="password-visibility#toggle"
+                class="group/reveal absolute inset-y-0 end-0 inline-flex w-10 items-center justify-center rounded-e-lg text-muted-foreground outline-hidden hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+            <twig:ux:icon name="lucide:eye" aria-hidden="true" class="size-4 group-aria-pressed/reveal:hidden" />
+            <twig:ux:icon name="lucide:eye-off" aria-hidden="true" class="hidden size-4 group-aria-pressed/reveal:block" />
+        </button>
+    </div>
+{%- endblock password_widget -%}
 
 {%- block form_errors -%}
     {%- if errors|length > 0 -%}

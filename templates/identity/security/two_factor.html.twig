@@ -6,7 +6,7 @@
     <div class="flex flex-col gap-6">
         <div>
             <h1 class="text-2xl font-semibold tracking-tight text-balance">{{ 'identity.two_factor.title'|trans }}</h1>
-            <p class="mt-1 text-sm text-muted-foreground">{{ (passkey ? 'identity.two_factor.passkey_description' : (email_code ? 'identity.two_factor.email_description' : 'identity.two_factor.totp_description'))|trans }}</p>
+            <p id="two-factor-description" class="mt-1 text-sm text-muted-foreground">{{ (passkey ? 'identity.two_factor.passkey_description' : (email_code ? 'identity.two_factor.email_description' : 'identity.two_factor.totp_description'))|trans }}</p>
         </div>
 
         {% if error_key %}
@@ -23,7 +23,7 @@
             <input type="hidden" name="{{ csrfParameterName }}" value="{{ csrf_token(csrfTokenId) }}">
             <input type="hidden" name="{{ authCodeParameterName }}" data-passkey-target="response">
             {% if displayTrustedOption %}
-                <label class="flex items-center gap-2 text-sm">
+                <label class="-my-3 flex items-center gap-2 py-3 text-sm">
                     <input type="checkbox" name="{{ trustedParameterName }}" value="1" class="size-4 rounded border-input">
                     {{ 'identity.two_factor.trust_device'|trans }}
                 </label>
@@ -38,13 +38,13 @@
             <twig:Field:Group>
                 <twig:Field>
                     <twig:Field:Label for="auth-code">{{ 'identity.field.code'|trans }}</twig:Field:Label>
-                    <twig:Input id="auth-code" type="text" name="{{ authCodeParameterName }}" autocomplete="one-time-code" inputmode="{{ email_code ? 'numeric' : 'text' }}" required autofocus />
+                    <twig:Input id="auth-code" type="text" name="{{ authCodeParameterName }}" autocomplete="one-time-code" inputmode="{{ email_code ? 'numeric' : 'text' }}" spellcheck="false" aria-describedby="two-factor-description" required autofocus />
                     {% if not email_code %}
                         <p class="text-sm text-muted-foreground">{{ 'identity.two_factor.backup_hint'|trans }}</p>
                     {% endif %}
                 </twig:Field>
                 {% if displayTrustedOption %}
-                    <label class="flex items-center gap-2 text-sm">
+                    <label class="-my-3 flex items-center gap-2 py-3 text-sm">
                         <input type="checkbox" name="{{ trustedParameterName }}" value="1" class="size-4 rounded border-input">
                         {{ 'identity.two_factor.trust_device'|trans }}
                     </label>

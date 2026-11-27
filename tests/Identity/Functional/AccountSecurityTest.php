@@ -80,16 +80,14 @@ final class AccountSecurityTest extends IdentityWebTestCase
 
         $crawler = $this->client->request('GET', '/account/security');
         $this->client->submit($crawler->filter('form[action="/account/security/password"]')->form([
-            'change_password[password][first]' => 'jane@example.com is weak',
-            'change_password[password][second]' => 'jane@example.com is weak',
+            'change_password[password]' => 'jane@example.com is weak',
         ]));
         self::assertResponseStatusCodeSame(422);
         self::assertStringNotContainsString('jane@example.com is weak', (string) $this->client->getResponse()->getContent());
 
         $crawler = $this->client->request('GET', '/account/security');
         $this->client->submit($crawler->filter('form[action="/account/security/password"]')->form([
-            'change_password[password][first]' => 'a brand new passphrase',
-            'change_password[password][second]' => 'a brand new passphrase',
+            'change_password[password]' => 'a brand new passphrase',
         ]));
         self::assertResponseRedirects('/login');
         self::assertEmailCount(1, message: 'Alert to the holder.');

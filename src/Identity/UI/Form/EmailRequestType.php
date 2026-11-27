@@ -20,7 +20,8 @@ final class EmailRequestType extends AbstractType
         $builder->add('email', EmailType::class, [
             'label' => 'identity.field.email',
             'constraints' => [new Assert\NotBlank(), new Assert\Email(), new Assert\Length(max: 254)],
-            'attr' => ['autocomplete' => 'email'],
+            // The account's identifier, as on the sign-in page: the password manager offers the saved one.
+            'attr' => ['autocomplete' => 'username'],
         ]);
     }
 

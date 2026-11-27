@@ -7,6 +7,7 @@ namespace Identity\UI\Controller\Security;
 use Identity\Application\Command\Password\ResetPassword;
 use Identity\Domain\Model\PasswordResetLinkInvalid;
 use Identity\Domain\Repository\PasswordResetRequestRepository;
+use Identity\Domain\Repository\UserRepository;
 use Identity\Infrastructure\Security\SessionKeys;
 use Identity\UI\Controller\RouteCollection;
 use Identity\UI\Form\NewPasswordType;
@@ -36,6 +37,7 @@ final class PasswordResetNewController extends AbstractController
         private readonly CommandBus $commands,
         private readonly CsrfRejection $csrfRejection,
         private readonly ClockInterface $clock,
+        private readonly UserRepository $users,
     ) {
     }
 
@@ -75,7 +77,10 @@ final class PasswordResetNewController extends AbstractController
             }
         }
 
-        $response = $this->render('identity/security/password_reset_new.html.twig', ['form' => $form], new Response(status: $status));
+        $response = $this->render('identity/security/password_reset_new.html.twig', [
+            'form' => $form,
+            'account_email' => $this->users->find($resetRequest->userId())?->email()->value(),
+        ], new Response(status: $status));
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;

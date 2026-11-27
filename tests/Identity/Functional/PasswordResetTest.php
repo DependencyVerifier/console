@@ -41,8 +41,7 @@ final class PasswordResetTest extends IdentityWebTestCase
         self::assertStringContainsString('no-store', (string) $this->client->getResponse()->headers->get('Cache-Control'));
 
         $this->client->submit($crawler->filter('form')->form([
-            'new_password[password][first]' => 'another long passphrase',
-            'new_password[password][second]' => 'another long passphrase',
+            'new_password[password]' => 'another long passphrase',
         ]));
         self::assertResponseRedirects('/login');
 
@@ -63,8 +62,7 @@ final class PasswordResetTest extends IdentityWebTestCase
         $crawler = $this->client->clickLink('Continue');
 
         $this->client->submit($crawler->filter('form')->form([
-            'new_password[password][first]' => 'jane@example.com!!',
-            'new_password[password][second]' => 'jane@example.com!!',
+            'new_password[password]' => 'jane@example.com!!',
         ]));
 
         self::assertResponseStatusCodeSame(422);

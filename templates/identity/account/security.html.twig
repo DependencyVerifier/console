@@ -36,6 +36,11 @@
             </twig:Card:Header>
             <twig:Card:Content>
                 {{ form_start(password_form, {action: path('identity_account_password'), attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
+                    {#- The account the new password belongs to, for the password manager (autocomplete="username"); not submitted. -#}
+                    <div data-slot="field" class="flex w-full flex-col gap-2">
+                        <label for="account-username" class="text-sm leading-snug font-medium">{{ 'identity.field.account'|trans }}</label>
+                        <twig:Input id="account-username" type="email" value="{{ profile.email }}" autocomplete="username" spellcheck="false" readonly />
+                    </div>
                     {{ form_row(password_form.password) }}
                     <twig:Button type="submit">{{ 'identity.account.password.submit'|trans }}</twig:Button>
                 {{ form_end(password_form) }}
