@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.1 (2026-11-27)
 
 **Installation**
 - The console image is built by the release workflow and published signed on GHCR,
