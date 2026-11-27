@@ -42,7 +42,8 @@
     {%- if advisory.details %}
         <section class="flex flex-col gap-2" aria-labelledby="advisory-details">
             <h3 id="advisory-details" class="text-sm font-semibold">{{ 'exposure.advisory.details'|trans }}</h3>
-            <div class="max-h-96 overflow-y-auto rounded-lg border bg-muted/30 p-4 text-sm whitespace-pre-line break-words">{{ advisory.details }}</div>
+            {#- A scrolling region must be reachable with the keyboard to be scrolled. -#}
+            <div tabindex="0" role="region" aria-labelledby="advisory-details" class="max-h-96 overflow-y-auto rounded-lg border bg-muted/30 p-4 text-sm whitespace-pre-line break-words">{{ advisory.details }}</div>
         </section>
     {%- endif %}
     {%- if advisory.affected is not empty %}

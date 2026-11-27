@@ -68,7 +68,7 @@ dialog:has(.ts-wrapper) {
     background: var(--popover);
     color: var(--popover-foreground);
     font-size: var(--text-sm);
-    box-shadow: 0 4px 12px color-mix(in oklch, var(--foreground), transparent 90%);
+    box-shadow: 0 4px 12px color-mix(in oklab, var(--foreground), transparent 90%);
     overflow: hidden;
 }
 

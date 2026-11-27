@@ -54,10 +54,11 @@ final readonly class ExposureCharts
             'labels' => array_map(static fn (array $day): string => new \DateTimeImmutable($day['day'])->format('d/m'), $summary->trend),
             'datasets' => [
                 ['label' => $this->translator->trans('exposure.dashboard.opened'), 'data' => array_column($summary->trend, 'opened'), 'borderColor' => 'var(--sev-high)', 'backgroundColor' => 'var(--sev-high)', 'tension' => 0.3],
-                ['label' => $this->translator->trans('exposure.dashboard.fixed'), 'data' => array_column($summary->trend, 'fixed'), 'borderColor' => 'var(--status-ok)', 'backgroundColor' => 'var(--status-ok)', 'tension' => 0.3],
+                ['label' => $this->translator->trans('exposure.dashboard.fixed'), 'data' => array_column($summary->trend, 'fixed'), 'borderColor' => 'var(--status-ok)', 'backgroundColor' => 'var(--status-ok)', 'tension' => 0.3, 'borderDash' => [6, 4], 'pointStyle' => 'rectRot'],
             ],
         ]);
-        $chart->setOptions(['maintainAspectRatio' => false, 'scales' => ['y' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]]], 'plugins' => ['legend' => ['position' => 'bottom']]]);
+        // Fixed is dashed with diamond points: the two lines never differ by their colour alone.
+        $chart->setOptions(['maintainAspectRatio' => false, 'scales' => ['y' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]]], 'plugins' => ['legend' => ['position' => 'bottom', 'labels' => ['usePointStyle' => true]]]]);
 
         return $chart;
     }

@@ -19,13 +19,13 @@
             {%- set state = quota.limit is null ? 'none' : (quota.reached ? 'reached' : (quota.warning ? 'warning' : 'ok')) -%}
             <div class="grid gap-2 px-4 py-3">
                 <div class="flex items-baseline justify-between gap-3">
-                    <dt class="text-sm">{{ ('quota.' ~ quota.name)|trans }}</dt>
+                    <dt id="quota-{{ quota.name }}" class="text-sm">{{ ('quota.' ~ quota.name)|trans }}</dt>
                     <dd class="text-sm font-medium tabular-nums {{ state == 'reached' ? 'text-destructive' : '' }}">
                         {{- quota.limit is null ? quota.usage ~ ' · ' ~ ('organization.quotas.unlimited'|trans) : 'organization.quotas.of'|trans({usage: quota.usage, limit: quota.limit}) -}}
                     </dd>
                 </div>
                 {%- if quota.limit is not null %}
-                    <meter class="quota-meter" data-state="{{ state }}" min="0" max="{{ max(quota.limit, 1) }}" value="{{ min(quota.usage, max(quota.limit, 1)) }}" aria-label="{{ ('quota.' ~ quota.name)|trans }}">{{ quota.usage }} / {{ quota.limit }}</meter>
+                    <meter class="quota-meter" data-state="{{ state }}" min="0" max="{{ max(quota.limit, 1) }}" value="{{ min(quota.usage, max(quota.limit, 1)) }}" aria-labelledby="quota-{{ quota.name }}">{{ quota.usage }} / {{ quota.limit }}</meter>
                 {%- endif %}
             </div>
         {%- endfor %}

@@ -19,7 +19,7 @@
             <p class="px-4 py-8 text-center text-sm text-muted-foreground">{{ (cursor ? 'audit.no_older' : 'audit.empty')|trans }}</p>
         {%- else %}
             {#- No row menu here: on a narrow screen the table scrolls inside its card, never the page. -#}
-            <div class="overflow-x-auto" tabindex="0" role="region" aria-label="{{ 'audit.title'|trans }}">
+            <div class="overflow-x-auto" tabindex="0" role="region" aria-labelledby="audit-title">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-xs text-muted-foreground">

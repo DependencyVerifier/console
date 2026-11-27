@@ -9,19 +9,20 @@
     title = null
 -%}
 {%- set config = datatable_config(table) -%}
+{#- The table is named by its visible title; the <section> stays unnamed (no extra region landmark per table). -#}
+{%- set _title_id = 'dt-' ~ config.name ~ '-title' -%}
 <section data-controller="datatable"
      data-datatable-name-value="{{ config.name }}"
      data-datatable-url-value="{{ app.request.requestUri }}"
      data-datatable-columns-value="{{ config.columns|json_encode }}"
      data-datatable-language-value="{{ config.language|json_encode }}"
      data-datatable-page-length-value="{{ config.pageLength }}"
-     {% if title %}aria-label="{{ title }}"{% endif %}
      {{ attributes.defaults({class: 'dt-card w-full rounded-xl border bg-card text-card-foreground'}) }}>
     <div data-datatable-target="header" class="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
-        {%- if title %}<h2 class="text-sm font-semibold">{{ title }}</h2>{% endif %}
+        {%- if title %}<h2 id="{{ _title_id }}" class="text-sm font-semibold">{{ title }}</h2>{% endif %}
         <div class="flex items-center gap-2">{% block actions %}{% endblock %}</div>
     </div>
-    <table data-datatable-target="table" class="w-full caption-bottom text-sm"{% if title %} aria-label="{{ title }}"{% endif %}>
+    <table data-datatable-target="table" class="w-full caption-bottom text-sm"{% if title %} aria-labelledby="{{ _title_id }}"{% endif %}>
         <thead>
             <tr>
                 {%- for column in config.columns -%}

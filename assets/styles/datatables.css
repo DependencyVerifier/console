@@ -60,8 +60,14 @@
     }
 }
 
+/* The search keeps its label for assistive technologies (a placeholder is no name), hidden visually only. */
 .dt-card div.dt-container .dt-search label {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 
 .dt-card table.dataTable,
@@ -95,7 +101,7 @@
 }
 
 .dt-card table.dataTable > tbody > tr:hover > td {
-    background: color-mix(in oklch, var(--muted), transparent 50%);
+    background: color-mix(in oklab, var(--muted), transparent 50%);
 }
 
 /* The last row keeps the rounded bottom of the card when there is no footer. */
@@ -130,10 +136,22 @@
     border-radius: var(--radius-lg, 0.5rem);
 }
 
-/* Narrow screens: the header line wraps instead of centering. No horizontal scroll on the table: it would clip the row
-   menus; the actions being in those menus, a row stays narrow, and the secondary columns (DataTableView::SECONDARY:
-   fingerprints, versions, dates…) are left out. */
-@media (width < 48rem) {
+/* Narrow cards: the header line wraps instead of centering. No horizontal scroll on the table: it would clip the row
+   menus where they are not popovers; the actions being in those menus, a row stays narrow, and the secondary columns
+   (DataTableView::SECONDARY: fingerprints, versions, dates…) are left out. A container query (responsive-table): the
+   width of the card decides, not the viewport, whatever the sidebar and the page grid leave it. */
+.dt-card {
+    container: dt-card / inline-size;
+}
+
+/* A container is a stacking context: a card whose row menu is open (absolutely positioned fallback) goes above the
+   cards after it. */
+.dt-card:has([data-slot='dropdown-menu'][data-state='open']) {
+    position: relative;
+    z-index: 10;
+}
+
+@container dt-card (width < 40rem) {
     .dt-card th.dt-secondary,
     .dt-card td.dt-secondary {
         display: none;
