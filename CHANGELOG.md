@@ -1,5 +1,47 @@
 # Changelog
 
+## 1.1.0 (2026-11-27)
+
+**Exposure**
+- Ends of life of Python, Go, Ruby and Rust runtimes, and of the JDKs by their distribution (Eclipse Temurin, Amazon
+  Corretto, Azul Zulu, Red Hat, Microsoft, Oracle).
+- The findings of an application or a host hide the fixed ones by default ("Show fixed" brings them back).
+- An end of life points to the newest supported cycle, never to the last patch of the cycle that ends ("—" when the
+  installed cycle is already the newest).
+
+**Agents and hosts**
+- A host shows the name its inventories observe, and its row menu offers "Edit" (display name, IP addresses) to whoever
+  holds `host.edit`.
+- A host first known by its hostname takes the identity of its Docker engine once an inventory reports it, so a later
+  enrollment of the same machine finds the same host.
+
+**Accounts and security**
+- Sessions now expire after 2 hours of inactivity (was 30 minutes); the 12-hour absolute limit is unchanged.
+- A new password is typed once, with a "Show password" button, its rules under the field, and the account's email
+  beside it for password managers. The same button is on the sign-in page.
+- Passkeys are offered in the autofill of the email field on the sign-in page, where the browser supports it.
+- New passkeys must be discoverable (resident), so each of them can sign in without the email. Passkeys already
+  registered are unchanged.
+- Removing a passkey also removes it from the password manager, where the browser supports it.
+- A cancelled passkey prompt no longer shows an error; a passkey already on the device has its own message.
+
+**Interface and accessibility**
+- Dark theme for scrollbars and native controls; the theme button names the current theme and the next one, follows
+  the other tabs, and charts take the new colours at once.
+- Skip link to the content, main navigation landmark, focus rings kept in Windows high contrast mode, animations
+  reduced when the system asks for it.
+- Dialogs: a click inside their padding no longer closes them, a form dialog never closes on a click outside (no typed
+  value lost), Enter on its close button closes it, Esc and the back gesture close them with their animation, the page
+  behind no longer scrolls.
+- Row and account menus open above the page where the browser supports it (never cut by a table or the mobile sidebar),
+  and Esc in a menu no longer closes the mobile sidebar too.
+- Tooltips on hover and on keyboard focus instead of `title` attributes: collapsed sidebar, disabled buttons, EPSS,
+  version drift, agent upgrade and key rotation. Identifiers (audit targets, digests) stay whole on the page, shortened
+  on screen; a package shows its purl.
+- After a refused form, the focus goes to the first invalid field.
+- Tables, gauges and loading zones are named by their visible title; secondary columns hide by the width of their card.
+
+## 1.0.3 (2026-11-15)
 ## 1.0.3 (2026-11-15)
 
 **Installation**
