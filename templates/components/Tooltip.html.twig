@@ -14,7 +14,7 @@
     out of reach of the keyboard and of touch.
     tooltip_controller.ts: native `interestfor` + popover="hint" where supported, else a popover it shows itself
     (anchor positioning, app.css), else a box positioned under this wrapper. -#}
-{%- set _tooltip_id = id ?? 'tooltip-' ~ random() -%}
+{%- set _tooltip_id = id ?? ('tooltip-' ~ random()) -%}
 <span
     data-slot="tooltip"
     data-tooltip-describes-value="{{ describes ? 'true' : 'false' }}"

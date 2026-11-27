@@ -130,7 +130,7 @@ final class FindingsChainTest extends IdentityWebTestCase
         $findingUrl = \sprintf('/teams/%s/findings/%s', $teamId, $findingId);
         $page = $this->client->request('GET', $findingUrl);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Command Injection in lodash');
+        self::assertSelectorTextContains('main h1', 'Command Injection in lodash');
         self::assertCount(1, $page->filter(\sprintf('a[href="/teams/%s/advisories/CVE-2021-23337"]', $teamId)), 'Each alias leads to its advisory.');
         self::assertCount(1, $page->filter('a[href="https://osv.dev/vulnerability/GHSA-35jh-r3h4-6jhm"]'));
 

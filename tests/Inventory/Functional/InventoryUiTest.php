@@ -106,7 +106,7 @@ final class InventoryUiTest extends IdentityWebTestCase
         $imageId = $this->fetchString('SELECT id FROM inventory_container_image');
         $image = $this->client->request('GET', \sprintf('/teams/%s/images/%s', $teamId, $imageId));
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString('shop/php:1.4', $image->filter('h1')->text());
+        self::assertStringContainsString('shop/php:1.4', $image->filter('main h1')->text());
         self::assertCount(1, DataTables::draw($this->client, \sprintf('/teams/%s/images/%s', $teamId, $imageId), 'packages')['data']);
         self::assertCount(1, DataTables::draw($this->client, \sprintf('/teams/%s/images/%s', $teamId, $imageId), 'applications')['data']);
     }

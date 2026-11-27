@@ -33,7 +33,7 @@ final class NotificationsUiTest extends IdentityWebTestCase
 
         $crawler = $this->client->request('GET', $page);
         self::assertResponseIsSuccessful();
-        self::assertCount(1, $crawler->filter('a[href="'.$page.'"]'), 'In the sidebar.');
+        self::assertCount(1, $crawler->filter('[data-slot="sidebar"] a[href="'.$page.'"]'), 'In the sidebar.');
         self::assertCount(1, $crawler->filter('[data-dialog-trigger-for="create-webhook"]'));
         self::assertSame([], DataTables::draw($this->client, $page, 'webhooks')['data']);
 
@@ -108,7 +108,7 @@ final class NotificationsUiTest extends IdentityWebTestCase
 
         $crawler = $this->client->request('GET', $page);
         self::assertResponseIsSuccessful();
-        self::assertCount(1, $crawler->filter('a[href="'.$page.'"]'), 'A tab of the project.');
+        self::assertCount(1, $crawler->filter('[data-slot="sidebar"] a[href="'.$page.'"]'), 'A tab of the project.');
 
         $form = $this->client->request('GET', $page.'/rules/new', server: ['HTTP_TURBO_FRAME' => 'create-rule-form'])->filter('form')->form();
         self::assertCount(5, $this->client->getCrawler()->filter('input[name="rule[events][]"]'), 'A project never tells of the agents.');
