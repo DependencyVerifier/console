@@ -1,6 +1,7 @@
 # Installing the console in production
 
-One server with Docker Engine and the Compose plugin, a DNS name pointing to it, ports 80 and 443 open (Caddy
+One server with Docker Engine and the Compose plugin, **2 GB of RAM** (building the images needs about 1 GB available,
+RAM plus free swap: the front assets alone take about 900 MB), a DNS name pointing to it, ports 80 and 443 open (Caddy
 obtains and renews the Let's Encrypt certificate by itself), and an SMTP account with TLS. Everything runs in
 containers: `php` (FrankenPHP + Caddy), `worker` (asynchronous queues), `cron` (scheduled commands), `database`
 (PostgreSQL 18).
@@ -20,7 +21,7 @@ bin/install-console
 ```
 
 The script checks the host first (Docker Engine and the Compose plugin ≥ 2.24, `make`, `git`, `openssl`, ports 80 and
-443, disk space) and stops on anything missing, with the command to install it: it installs nothing on the host
+443, disk space, memory) and stops on anything missing, with the command to install it: it installs nothing on the host
 itself (`bin/install-console --check` runs only these checks).
 
 The first run creates `prod.env` (mode 600) from `prod.env.dist` and stops. Fill `SERVER_NAME`, `DEFAULT_URI`,
