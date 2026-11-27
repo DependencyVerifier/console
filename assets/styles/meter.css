@@ -39,3 +39,10 @@
     border-radius: 9999px;
     background: var(--quota-fill);
 }
+
+/* Forced colors mode drops backgrounds: the native meter comes back, drawn in system colors. */
+@media (forced-colors: active) {
+    .quota-meter {
+        appearance: auto;
+    }
+}
