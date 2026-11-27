@@ -295,3 +295,15 @@ form:has([data-token-kind] input[value="single"]:checked) [data-reusable-only] {
 [data-sidebar-tooltip] > [data-slot='tooltip-content']:not([data-collapsible='icon'] *) {
     display: none !important;
 }
+
+/* Breadcrumb separators (breadcrumbs guide): generated content with an empty alternative text, so assistive
+   technologies only hear the steps. */
+[data-slot='breadcrumb-item'] + [data-slot='breadcrumb-item']::before {
+    content: '›' / '';
+    margin-inline-end: 0.375rem;
+    color: var(--muted-foreground);
+}
+
+[data-slot='breadcrumb-item']:dir(rtl) + [data-slot='breadcrumb-item']::before {
+    content: '‹' / '';
+}

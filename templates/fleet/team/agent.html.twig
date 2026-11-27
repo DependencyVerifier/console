@@ -8,9 +8,7 @@
     <twig:Breadcrumb>
         <twig:Breadcrumb:List>
             <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_team', {teamId: team.id}) }}">{{ team.name }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
-            <twig:Breadcrumb:Separator />
             <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('fleet_team_agents', {teamId: team.id}) }}">{{ 'fleet.agents.title'|trans }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
-            <twig:Breadcrumb:Separator />
             <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ agent.hostname }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
         </twig:Breadcrumb:List>
     </twig:Breadcrumb>

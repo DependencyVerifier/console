@@ -1,6 +1,8 @@
+{#- Breadcrumbs (breadcrumbs guide): a labelled <nav> around an <ol>; the separators are CSS (app.css), so the list
+    counts only the real steps. -#}
 <nav
     data-slot="breadcrumb"
-    {{ attributes.defaults({'aria-label': 'breadcrumb'}) }}
+    {{ attributes.defaults({'aria-label': 'Breadcrumbs'}) }}
 >
     {##- The breadcrumb structure, typically a `Breadcrumb:List`. -#}
     {%- block content %}{% endblock -%}
