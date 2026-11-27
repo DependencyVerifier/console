@@ -65,6 +65,8 @@
         <twig:TeamSwitcher :teams="data.teams" :current="currentTeam" />
     </twig:Sidebar:Header>
     <twig:Sidebar:Content>
+        {#- Navigation landmark (the sidebar itself is an <aside>); flex column so the administration group stays at the bottom. -#}
+        <nav aria-label="{{ 'nav.main'|trans }}" class="flex flex-1 flex-col">
         <twig:NavMain :items="data.navMain" :active="active" :label="currentTeam ? 'nav.team_group'|trans : null" />
         {%- if projectNav|length %}
             <twig:NavMain :items="projectNav" :active="active" :label="'nav.project_group'|trans({name: project.name})" />
@@ -72,6 +74,7 @@
         {%- if data.navSecondary %}
             <twig:NavMain :items="data.navSecondary" :active="active" :label="'nav.administration'|trans" class="mt-auto" />
         {%- endif %}
+        </nav>
     </twig:Sidebar:Content>
     <twig:Sidebar:Footer>
         <twig:NavUser :user="data.user" />

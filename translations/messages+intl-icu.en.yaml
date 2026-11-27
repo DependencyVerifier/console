@@ -27,6 +27,12 @@ nav:
     administration: Administration
     account_security: Account security
     logout: Log out
+    main: Main navigation
+    skip: Skip to content
+theme:
+    system: "Theme: system. Switch to the light theme"
+    light: "Theme: light. Switch to the dark theme"
+    dark: "Theme: dark. Switch to the system theme"
 home:
     title: Overview
     description: "What threatens production first, across your teams and projects."

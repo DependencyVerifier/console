@@ -15,7 +15,7 @@
 {% block main %}
     {{ include('shared/_flashes.html.twig') }}
     <div>
-        <h1 class="text-2xl font-semibold tracking-tight">{{ 'fleet.admin.title'|trans }}</h1>
+        <h1 class="text-2xl font-semibold tracking-tight text-balance">{{ 'fleet.admin.title'|trans }}</h1>
         <p class="mt-1 text-sm text-muted-foreground">{{ 'fleet.admin.description'|trans }}</p>
     </div>
     <twig:DataTable :table="agents" :title="'fleet.admin.title'|trans" />

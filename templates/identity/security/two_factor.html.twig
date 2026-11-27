@@ -5,7 +5,7 @@
 {% block main %}
     <div class="flex flex-col gap-6">
         <div>
-            <h1 class="text-2xl font-semibold tracking-tight">{{ 'identity.two_factor.title'|trans }}</h1>
+            <h1 class="text-2xl font-semibold tracking-tight text-balance">{{ 'identity.two_factor.title'|trans }}</h1>
             <p class="mt-1 text-sm text-muted-foreground">{{ (passkey ? 'identity.two_factor.passkey_description' : (email_code ? 'identity.two_factor.email_description' : 'identity.two_factor.totp_description'))|trans }}</p>
         </div>
 

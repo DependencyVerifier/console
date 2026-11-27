@@ -11,10 +11,12 @@
     {#- Page blocks are rendered outside the component tags: Twig components reserve block names inside their content. -#}
     {%- set _breadcrumb %}{% block breadcrumb %}{% endblock %}{% endset -%}
     {%- set _main %}{% block main %}{% endblock %}{% endset -%}
+    {#- Skip link (WCAG 2.4.1): first focusable element, shown on focus. -#}
+    <a href="#main-content" class="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm font-medium shadow-md ring-2 ring-ring focus:not-sr-only focus:fixed focus:start-2 focus:top-2">{{ 'nav.skip'|trans }}</a>
     <twig:Sidebar:Provider>
         <twig:AppSidebar active="{{ nav_active|default('overview') }}" :team="current_team|default(null)" :project="current_project|default(null)" />
         <twig:Sidebar:Inset>
-            <header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+            <header class="flex min-h-14 shrink-0 items-center gap-2 border-b px-4">
                 <twig:Sidebar:Trigger class="-ms-1">
                     <twig:ux:icon name="lucide:panel-left" />
                 </twig:Sidebar:Trigger>
@@ -24,7 +26,7 @@
                     <twig:ThemeToggle />
                 </div>
             </header>
-            <main class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-6">
+            <main id="main-content" tabindex="-1" class="mx-auto outline-hidden flex w-full max-w-7xl flex-1 flex-col gap-6 p-6">
                 {{ _main }}
             </main>
             <twig:AppFooter />

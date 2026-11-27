@@ -11,7 +11,7 @@
     }) }}
 >
     {%- if showIcon -%}
-        <div class="size-4 animate-pulse rounded-md bg-sidebar-accent/50"></div>
+        <div class="size-4 motion-safe:animate-pulse rounded-md bg-sidebar-accent/50"></div>
     {%- endif -%}
-    <div class="h-4 {{ _skeleton_width }} flex-1 animate-pulse rounded-md bg-sidebar-accent/50"></div>
+    <div class="h-4 {{ _skeleton_width }} flex-1 motion-safe:animate-pulse rounded-md bg-sidebar-accent/50"></div>
 </div>
