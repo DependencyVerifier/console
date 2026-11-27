@@ -4,7 +4,7 @@
         {%- if row.severity in ['critical', 'high', 'medium', 'low'] %}<twig:SeverityBadge severity="{{ row.severity }}" />{% else %}<span class="text-muted-foreground">—</span>{% endif %}
         {%- if row.cvss is not null %}<span class="font-mono text-xs tabular-nums">{{ row.cvss|number_format(1) }}</span>{% endif %}
         {%- if row.knownExploited %}<twig:Badge variant="destructive">{{ 'exposure.kev'|trans }}</twig:Badge>{% endif %}
-        {%- if row.epss is not null %}<span class="text-xs text-muted-foreground tabular-nums" title="{{ 'exposure.epss_help'|trans }}">EPSS {{ (row.epss * 100)|number_format(1) }} %</span>{% endif %}
+        {%- if row.epss is not null %}<twig:Tooltip :text="'exposure.epss_help'|trans"><span class="rounded-sm text-xs text-muted-foreground tabular-nums underline decoration-dotted underline-offset-2 outline-hidden focus-visible:ring-2 focus-visible:ring-ring" tabindex="0">EPSS {{ (row.epss * 100)|number_format(1) }} %</span></twig:Tooltip>{% endif %}
     {%- elseif row.kind == 'eol' %}
         <twig:Badge variant="{{ row.eolLevel == 'expired' ? 'destructive' : 'outline' }}">{{ ('exposure.eol_level.' ~ row.eolLevel)|trans }}</twig:Badge>
         {%- if row.endOfLife %}<span class="text-xs text-muted-foreground tabular-nums">{{ row.endOfLife|date('Y-m-d') }}</span>{% endif %}

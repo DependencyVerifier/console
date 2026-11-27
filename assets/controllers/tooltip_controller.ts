@@ -1,202 +1,124 @@
-/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 
-type Side = 'top' | 'right' | 'bottom' | 'left';
+const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+/** Time to move the pointer from the trigger onto the tooltip before it hides (WCAG 1.4.13, hoverable). */
+const HIDE_DELAY = 150;
 
-const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left'];
-
-// From the Symfony UX Toolkit shadcn kit (Tooltip), converted to TypeScript.
+/**
+ * <twig:Tooltip>: shown on hover and on focus, dismissed with Esc, hoverable, kept while hovered or focused
+ * (WCAG 1.4.13; interest-triggered-tooltips). Three levels, each one a fallback of the previous (Browser Support in
+ * CLAUDE.md):
+ * - `interestfor` on the trigger and `popover="hint"` (else `manual`): the browser shows, hides and dismisses it;
+ * - Popover API with anchor positioning: this controller shows the popover in the top layer, app.css tethers it;
+ * - neither: the tooltip stays a box positioned under the wrapper (it may be clipped by a scrolling ancestor).
+ * Anchor names go through the CSSOM: a `style` attribute would break the CSP.
+ */
 export default class extends Controller<HTMLElement> {
-    static values = {
-        delayDuration: Number,
-        // Using targets does not work if the elements are moved in the DOM (document.body.appendChild)
-        // and using outlets does not work either if elements are children of the controller element.
-        wrapperSelector: String,
-        contentSelector: String,
-        arrowSelector: String,
-    };
-    static targets = ['trigger', 'wrapper'];
+    static targets = ['content'];
 
-    declare readonly hasDelayDurationValue: boolean;
-    declare readonly delayDurationValue: number;
-    declare readonly wrapperSelectorValue: string;
-    declare readonly contentSelectorValue: string;
-    declare readonly arrowSelectorValue: string;
-    declare readonly triggerTarget: HTMLElement;
+    static values = { describes: { type: Boolean, default: true } };
 
-    #elements: { wrapper: HTMLElement; content: HTMLElement; arrow: HTMLElement } | null = null;
-    #side: Side = 'top';
-    #sideOffset = 0;
-    #showTimeout: ReturnType<typeof setTimeout> | null = null;
+    declare readonly contentTarget: HTMLElement;
+    declare readonly describesValue: boolean;
 
-    readonly #dismiss = (): void => {
-        this.hide();
+    #trigger: HTMLElement | null = null;
+    /** 'interest': the browser handles it; 'popover': top layer, shown here; 'box': no popover at all. */
+    #mode: 'interest' | 'popover' | 'box' = 'box';
+    #hideTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    readonly #onKeydown = (event: KeyboardEvent): void => {
+        if ('Escape' === event.key && this.#shown) {
+            // Dismisses the tooltip only: an enclosing dialog stays open.
+            event.preventDefault();
+            event.stopPropagation();
+            this.#hideNow();
+        }
     };
 
     connect(): void {
-        this.#elements = null;
-        const wrapper = document.querySelector<HTMLElement>(this.wrapperSelectorValue);
-        const content = document.querySelector<HTMLElement>(this.contentSelectorValue);
-        const arrow = document.querySelector<HTMLElement>(this.arrowSelectorValue);
-
-        if (null === wrapper || null === content || null === arrow) {
+        const content = this.contentTarget;
+        this.#trigger = [...this.element.querySelectorAll<HTMLElement>(FOCUSABLE)].find((element) => !content.contains(element)) ?? null;
+        if (null === this.#trigger) {
             return;
         }
+        if (this.describesValue) {
+            this.#trigger.setAttribute('aria-describedby', [this.#trigger.getAttribute('aria-describedby'), content.id].filter(Boolean).join(' '));
+        }
 
-        const side = wrapper.getAttribute('data-side');
-        this.#side = SIDES.find((candidate) => candidate === side) ?? 'top';
-        this.#sideOffset = Number.parseInt(wrapper.getAttribute('data-side-offset') ?? '', 10) || 0;
-
-        document.body.appendChild(wrapper);
-        this.#elements = { wrapper, content, arrow };
+        const popover = Object.hasOwn(HTMLElement.prototype, 'popover') && CSS.supports('position-area', 'block-start');
+        if (!popover) {
+            return;
+        }
+        const anchor = `--${content.id}`;
+        this.#trigger.style.setProperty('anchor-name', anchor);
+        content.style.setProperty('position-anchor', anchor);
+        content.removeAttribute('hidden');
+        content.popover = 'hint';
+        if ('hint' !== content.popover) {
+            content.popover = 'manual';
+        }
+        const interest = 'interestForElement' in HTMLButtonElement.prototype && (this.#trigger instanceof HTMLButtonElement || this.#trigger instanceof HTMLAnchorElement);
+        if (interest) {
+            this.#trigger.setAttribute('interestfor', content.id);
+        }
+        this.#mode = interest ? 'interest' : 'popover';
     }
 
     disconnect(): void {
-        this.#clearTimeout();
-        this.#removeDismissListeners();
-
-        const wrapper = this.#elements?.wrapper;
-        if (undefined !== wrapper && wrapper.parentNode === document.body) {
-            this.element.appendChild(wrapper);
-        }
-    }
-
-    wrapperTargetConnected(element: HTMLElement): void {
-        // This case appears when a Live Component re-renders.
-        // Because the original wrapper is moved to <body>, the smart re-render algorithm recreates a new wrapper.
-        // The same wrapper comes back when the controller reconnects, as disconnect() moves it back.
-        const wrapper = this.#elements?.wrapper;
-        if (undefined !== wrapper && element !== wrapper) {
-            wrapper.remove();
-            this.connect();
-        }
+        this.#hideNow();
     }
 
     show(): void {
-        const elements = this.#elements;
-        if (null === elements) {
+        if ('interest' === this.#mode || null === this.#trigger) {
             return;
         }
-
-        this.#clearTimeout();
-
-        const delay = this.hasDelayDurationValue ? this.delayDurationValue : 0;
-
-        this.#showTimeout = setTimeout(() => {
-            elements.wrapper.setAttribute('open', '');
-            elements.content.setAttribute('open', '');
-            elements.arrow.setAttribute('open', '');
-            this.#fitWidthToText(elements.content, elements.arrow);
-            this.#positionElements(elements.wrapper, elements.content, elements.arrow);
-            // The tooltip is portaled to <body> and positioned absolutely, so it cannot follow
-            // the trigger on scroll. Dismiss it instead (capture scrolls from any scroller).
-            window.addEventListener('scroll', this.#dismiss, true);
-            window.addEventListener('resize', this.#dismiss);
-            this.#showTimeout = null;
-        }, delay);
-    }
-
-    hide(): void {
-        const elements = this.#elements;
-        if (null === elements) {
-            return;
-        }
-
-        this.#clearTimeout();
-        this.#removeDismissListeners();
-        elements.wrapper.removeAttribute('open');
-        elements.content.removeAttribute('open');
-        elements.arrow.removeAttribute('open');
-    }
-
-    // A shrink-to-fit box that wraps its text keeps its max width, leaving a gap after the longest line.
-    // Size the content to that line instead.
-    #fitWidthToText(content: HTMLElement, arrow: HTMLElement): void {
-        content.style.width = '';
-        const range = document.createRange();
-        let left = Infinity;
-        let right = -Infinity;
-        for (const node of content.childNodes) {
-            if (node === arrow) {
-                continue;
+        this.#clearHide();
+        if ('popover' === this.#mode) {
+            if (!this.contentTarget.matches(':popover-open')) {
+                this.contentTarget.showPopover();
             }
-            range.selectNodeContents(node);
-            for (const rect of range.getClientRects()) {
-                left = Math.min(left, rect.left);
-                right = Math.max(right, rect.right);
-            }
+        } else {
+            this.contentTarget.hidden = false;
         }
-        if (right <= left) {
+        document.addEventListener('keydown', this.#onKeydown, true);
+    }
+
+    hide(event?: Event): void {
+        if ('interest' === this.#mode) {
             return;
         }
-        // The rects are shrunk by the opening animation (scale-95), scale them back to the layout size.
-        const scale = content.getBoundingClientRect().width / content.offsetWidth;
-        const style = getComputedStyle(content);
-        const padding = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight);
-        // The extra pixel keeps a sub-pixel rounding from wrapping the last word.
-        content.style.width = `${Math.ceil((right - left) / scale + padding) + 1}px`;
+        // Still hovered or focused somewhere inside: keep it.
+        if (event instanceof FocusEvent && event.relatedTarget instanceof Node && this.element.contains(event.relatedTarget)) {
+            return;
+        }
+        this.#clearHide();
+        this.#hideTimeout = setTimeout(() => {
+            if (!this.element.matches(':hover') && !this.element.contains(document.activeElement)) {
+                this.#hideNow();
+            }
+        }, HIDE_DELAY);
     }
 
-    #removeDismissListeners(): void {
-        window.removeEventListener('scroll', this.#dismiss, true);
-        window.removeEventListener('resize', this.#dismiss);
+    get #shown(): boolean {
+        return 'popover' === this.#mode ? this.contentTarget.matches(':popover-open') : !this.contentTarget.hidden;
     }
 
-    #clearTimeout(): void {
-        if (null !== this.#showTimeout) {
-            clearTimeout(this.#showTimeout);
-            this.#showTimeout = null;
+    #hideNow(): void {
+        this.#clearHide();
+        document.removeEventListener('keydown', this.#onKeydown, true);
+        if ('popover' === this.#mode) {
+            if (this.contentTarget.matches(':popover-open')) {
+                this.contentTarget.hidePopover();
+            }
+        } else if ('box' === this.#mode) {
+            this.contentTarget.hidden = true;
         }
     }
 
-    #positionElements(wrapper: HTMLElement, content: HTMLElement, arrow: HTMLElement): void {
-        const triggerRect = this.triggerTarget.getBoundingClientRect();
-        // Unlike getBoundingClientRect(), offsetWidth/offsetHeight ignore the opening animation (scale-95).
-        const contentRect = { width: content.offsetWidth, height: content.offsetHeight };
-        const arrowRect = arrow.getBoundingClientRect();
-
-        let wrapperLeft = 0;
-        let wrapperTop = 0;
-        let arrowLeft: number | null = null;
-        let arrowTop: number | null = null;
-        switch (this.#side) {
-            case 'left':
-                wrapperLeft = triggerRect.left - contentRect.width - arrowRect.width / 2 - this.#sideOffset;
-                wrapperTop = triggerRect.top - contentRect.height / 2 + triggerRect.height / 2;
-                arrowTop = contentRect.height / 2 - arrowRect.height / 2;
-                break;
-            case 'top':
-                wrapperLeft = triggerRect.left - contentRect.width / 2 + triggerRect.width / 2;
-                wrapperTop = triggerRect.top - contentRect.height - arrowRect.height / 2 - this.#sideOffset;
-                arrowLeft = contentRect.width / 2 - arrowRect.width / 2;
-                break;
-            case 'right':
-                wrapperLeft = triggerRect.right + arrowRect.width / 2 + this.#sideOffset;
-                wrapperTop = triggerRect.top - contentRect.height / 2 + triggerRect.height / 2;
-                arrowTop = contentRect.height / 2 - arrowRect.height / 2;
-                break;
-            case 'bottom':
-                wrapperLeft = triggerRect.left - contentRect.width / 2 + triggerRect.width / 2;
-                wrapperTop = triggerRect.bottom + arrowRect.height / 2 + this.#sideOffset;
-                arrowLeft = contentRect.width / 2 - arrowRect.width / 2;
-                break;
-        }
-
-        // Keep a top or bottom tooltip inside the viewport, and move the arrow so it still points at the trigger.
-        if (null !== arrowLeft) {
-            const margin = 16;
-            const maxLeft = document.documentElement.clientWidth - contentRect.width - margin;
-            const clampedLeft = Math.max(margin, Math.min(wrapperLeft, maxLeft));
-            arrowLeft += wrapperLeft - clampedLeft;
-            wrapperLeft = clampedLeft;
-        }
-
-        wrapper.style.transform = `translate3d(${wrapperLeft}px, ${wrapperTop}px, 0)`;
-        if (null !== arrowLeft) {
-            arrow.style.left = `${arrowLeft}px`;
-        }
-        if (null !== arrowTop) {
-            arrow.style.top = `${arrowTop}px`;
+    #clearHide(): void {
+        if (null !== this.#hideTimeout) {
+            clearTimeout(this.#hideTimeout);
+            this.#hideTimeout = null;
         }
     }
 }

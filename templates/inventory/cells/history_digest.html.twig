@@ -1,5 +1,6 @@
 {#- The short digest of the snapshot, and whether it changed since the previous inventory (row: HistoryRow). -#}
 <span class="flex items-center gap-2">
-    <span class="font-mono text-xs" title="{{ value }}">{{ value|slice(7, 12) }}</span>
+    {#- The whole digest stays in the page (copy, search, screen readers); CSS shortens it, hover and focus reveal it. -#}
+    <span class="inline-block max-w-[12ch] truncate align-bottom font-mono text-xs outline-hidden hover:max-w-none focus-visible:max-w-none focus-visible:ring-2 focus-visible:ring-ring" tabindex="0">{{ value|slice(7) }}</span>
     {%- if row.changed %}<twig:Badge variant="secondary" data-history="changed">{{ 'inventory.history.changed'|trans }}</twig:Badge>{% else %}<twig:Badge variant="outline" data-history="unchanged">{{ 'inventory.history.unchanged'|trans }}</twig:Badge>{% endif %}
 </span>

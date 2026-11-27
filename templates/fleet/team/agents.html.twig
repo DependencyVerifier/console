@@ -6,7 +6,7 @@
     {%- if fleet.can('host.order') %}
         <form method="post" action="{{ path('fleet_team_agents_upgrade', {teamId: team.id}) }}">
             <input type="hidden" name="action[_token]" value="{{ csrf_token('agent_upgrade:' ~ team.id) }}">
-            <twig:Button type="submit" variant="outline" title="{{ 'fleet.agents.upgrade_all_help'|trans }}">{{ 'fleet.agents.upgrade_all'|trans }}</twig:Button>
+            <twig:Tooltip :text="'fleet.agents.upgrade_all_help'|trans"><twig:Button type="submit" variant="outline">{{ 'fleet.agents.upgrade_all'|trans }}</twig:Button></twig:Tooltip>
         </form>
     {%- endif %}
     {%- if fleet.can('host.enroll') %}
