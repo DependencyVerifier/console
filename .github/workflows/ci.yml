@@ -35,9 +35,9 @@ jobs:
       - name: Migrate the database
         run: make db-migrate
 
-      # The same targets as before a commit, so the CI and the Makefile never drift.
+      # The targets of `make qa` but Infection (mutation testing, too long for every push): run `make qa` locally.
       - name: Quality gates
-        run: make qa
+        run: make ci
 
       - name: Production asset build
         run: docker compose exec -T node yarn build

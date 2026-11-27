@@ -289,4 +289,7 @@ audit: ## Check PHP and JS dependencies for known vulnerabilities
 	@$(YARN) npm audit --all --recursive
 
 .PHONY: qa
-qa: lint typecheck shell-test phpcs phpstan rector test infection ## Run every quality gate (what CI will run)
+qa: ci infection ## Run every quality gate: what the CI runs, plus mutation testing (run it before committing)
+
+.PHONY: ci
+ci: lint typecheck shell-test phpcs phpstan rector test ## The quality gates of the CI (every gate but Infection, which takes too long there)
