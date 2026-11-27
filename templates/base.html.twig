@@ -3,6 +3,9 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        {#- Both schemes supported; app.css narrows color-scheme to the one the inline script below picks. Static on
+            purpose: Turbo merges the <head> and would restore a meta changed by script. -#}
+        <meta name="color-scheme" content="light dark">
         <title>{% block title %}DependencyVerifier{% endblock %}</title>
         {# Logo and social card: docs/brand/ (favicon.svg, social/og-console.png). #}
         <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">

@@ -33,9 +33,18 @@
 }
 
 /* The wrapper is a div: `focus-visible:` of the copied classes never applies, Tom Select's `focus` class does. */
+/* A solid ring (≥ 3:1, WCAG 1.4.11): the former half-transparent one was about 2:1 on white. An outline, not a
+   box-shadow, so forced colors mode keeps it. */
 .ts-wrapper.focus {
     border-color: var(--ring);
-    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring), transparent 50%);
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+    .ts-wrapper.focus {
+        outline-color: Highlight;
+    }
 }
 
 /* Only a server-side error (aria-invalid on the original input, placed right before the wrapper); Tom Select's own

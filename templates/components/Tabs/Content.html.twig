@@ -17,7 +17,7 @@
     data-active="{{ open ? 'true' : 'false' }}"
     data-state="{{ open ? 'active' : 'inactive' }}"
     {{ attributes.defaults({
-        class: 'flex-1 text-sm outline-none data-[state=inactive]:hidden'|tailwind_classes,
+        class: 'flex-1 text-sm outline-hidden data-[state=inactive]:hidden'|tailwind_classes,
     }) }}
 >
     {##- The default block. -#}

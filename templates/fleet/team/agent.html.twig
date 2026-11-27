@@ -23,7 +23,7 @@
                 <twig:ux:icon name="lucide:server" class="size-5" />
             </span>
             <div class="min-w-0">
-                <h1 class="truncate font-mono text-2xl font-semibold tracking-tight">{{ agent.hostname }}</h1>
+                <h1 class="font-mono text-2xl font-semibold tracking-tight [overflow-wrap:anywhere]">{{ agent.hostname }}</h1>
                 <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
                     {{ include('fleet/cells/agent_status.html.twig', {row: agent}) }}
                     <span aria-hidden="true">·</span>

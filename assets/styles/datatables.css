@@ -50,8 +50,14 @@
 
 .dt-card div.dt-container .dt-search input:focus-visible {
     border-color: var(--ring);
-    outline: 3px solid color-mix(in oklch, var(--ring), transparent 50%);
-    outline-offset: 0;
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+    .dt-card div.dt-container .dt-search input:focus-visible {
+        outline-color: Highlight;
+    }
 }
 
 .dt-card div.dt-container .dt-search label {

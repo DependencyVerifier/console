@@ -6,7 +6,7 @@
 
 {% block main %}
     <div class="flex max-w-xl flex-col gap-6" id="{{ frame_id|default('account-security') }}">
-        <h1 class="text-2xl font-semibold tracking-tight">{{ title_key|trans }}</h1>
+        <h1 class="text-2xl font-semibold tracking-tight text-balance">{{ title_key|trans }}</h1>
         {{ form_start(form, {action: path(action_route), attr: {class: 'flex flex-col gap-4', 'data-turbo': 'false', novalidate: 'novalidate'}}) }}
             {{ form_errors(form) }}
             {% for child in form %}

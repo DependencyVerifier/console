@@ -187,6 +187,23 @@
     html {
         @apply font-sans antialiased;
     }
+
+    /* Native UI (scrollbars, form controls) follows the theme the inline script of base.html.twig picks before the
+       first paint; the static <meta name="color-scheme"> covers the time before this stylesheet. */
+    :root {
+        color-scheme: light;
+    }
+    :root.dark {
+        color-scheme: dark;
+    }
+
+    /* Keeps the x-height of a fallback font close to IBM Plex while the web font loads (newly available: ignored
+       elsewhere). */
+    @supports (font-size-adjust: from-font) {
+        html {
+            font-size-adjust: from-font;
+        }
+    }
 }
 
 /* New enrollment token (Fleet): a single-use token has nothing to set but its environment. Unlayered on purpose:

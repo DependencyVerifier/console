@@ -1,14 +1,18 @@
-{#- Cycles system -> light -> dark. The icon shown follows data-theme-preference. -#}
+{#- Cycles system -> light -> dark. The icon and the action text shown follow data-theme-preference
+    (dark-mode-toggle: the accessible name tells the current theme and what a press does). -#}
 <twig:Button
     variant="ghost"
     size="icon"
     data-controller="theme"
     data-action="theme#cycle"
-    aria-label="Switch theme"
     class="group/theme"
     {{ ...attributes }}
 >
-    <twig:ux:icon name="lucide:monitor" class="hidden group-data-[theme-preference=system]/theme:block" />
-    <twig:ux:icon name="lucide:sun" class="hidden group-data-[theme-preference=light]/theme:block" />
-    <twig:ux:icon name="lucide:moon" class="hidden group-data-[theme-preference=dark]/theme:block" />
+    <twig:ux:icon name="lucide:monitor" aria-hidden="true" class="hidden group-data-[theme-preference=system]/theme:block" />
+    <twig:ux:icon name="lucide:sun" aria-hidden="true" class="hidden group-data-[theme-preference=light]/theme:block" />
+    <twig:ux:icon name="lucide:moon" aria-hidden="true" class="hidden group-data-[theme-preference=dark]/theme:block" />
+    {#- Classes written out in full: Tailwind only sees literal class names. -#}
+    <span class="sr-only hidden group-data-[theme-preference=system]/theme:block">{{ 'theme.system'|trans }}</span>
+    <span class="sr-only hidden group-data-[theme-preference=light]/theme:block">{{ 'theme.light'|trans }}</span>
+    <span class="sr-only hidden group-data-[theme-preference=dark]/theme:block">{{ 'theme.dark'|trans }}</span>
 </twig:Button>
