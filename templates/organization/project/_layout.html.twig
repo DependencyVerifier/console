@@ -8,12 +8,10 @@
     <twig:Breadcrumb>
         <twig:Breadcrumb:List>
             <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_team_projects', {teamId: project.teamId}) }}">{{ 'organization.team.tab.projects'|trans }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
-            <twig:Breadcrumb:Separator />
             {%- if tab == 'overview' %}
                 <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ project.name }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
             {%- else %}
                 <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_project', {teamId: project.teamId, projectId: project.id}) }}">{{ project.name }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
-                <twig:Breadcrumb:Separator />
                 <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ ('organization.project.tab.' ~ tab)|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
             {%- endif %}
         </twig:Breadcrumb:List>

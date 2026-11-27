@@ -12,7 +12,6 @@
                 <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ team.name }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
             {%- else %}
                 <twig:Breadcrumb:Item><twig:Breadcrumb:Link href="{{ path('organization_team', {teamId: team.id}) }}">{{ team.name }}</twig:Breadcrumb:Link></twig:Breadcrumb:Item>
-                <twig:Breadcrumb:Separator />
                 <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ ('organization.team.tab.' ~ tab)|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
             {%- endif %}
         </twig:Breadcrumb:List>
