@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+**Installation**
+- `bin/install-console` checks the memory before building: under 1 GB available (RAM + free swap) it stops with an
+  explanation instead of a build killed with exit code 137 (`yarn install` of the front assets alone needs about
+  900 MB), and it warns under 2 GB of RAM. `INSTALL.md` states the 2 GB.
+
 ## 1.1.0 (2026-11-27)
 
 **Exposure**

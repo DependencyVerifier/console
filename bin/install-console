@@ -38,6 +38,10 @@ PROD_ENV=prod.env
 OWNER_ENV=.docker/database/owner.env
 MIN_COMPOSE_VERSION=2.24.0
 MIN_FREE_DISK_KB=$((5 * 1024 * 1024))
+# Building the images: `yarn install` of the front assets alone is killed below about 900 MB (measured), and the PHP
+# vendors build at the same time. Under 1 GB of available memory (RAM + free swap) the build ends with exit code 137.
+MIN_BUILD_MEMORY_KB=$((1024 * 1024))
+RECOMMENDED_RAM_KB=$((2 * 1024 * 1024))
 
 if [ -t 1 ]; then
     BOLD=$'\033[1m' RED=$'\033[31m' YELLOW=$'\033[33m' GREEN=$'\033[32m' RESET=$'\033[0m'
@@ -152,6 +156,8 @@ check_prerequisites() {
         warn 'ss not found: ports 80/443 not checked'
     fi
 
+    check_memory || errors=$((errors + 1))
+
     local free_kb
     free_kb=$(df -Pk . | awk 'NR == 2 { print $4 }')
     if [ "${free_kb:-0}" -lt "$MIN_FREE_DISK_KB" ]; then
@@ -178,6 +184,30 @@ check_prerequisites() {
 
 # SERVER_NAME is a host name (Caddy terminates TLS and gets its certificate) or only a port such as ":80" (a reverse
 # proxy in front terminates TLS, INSTALL.md "Behind a reverse proxy"): only a host name has a DNS record to check.
+# Memory for the build (available RAM + free swap, what the running containers leave) and for running the console.
+check_memory() {
+    if [ ! -r /proc/meminfo ]; then
+        warn '/proc/meminfo unreadable: memory not checked'
+        return 0
+    fi
+    local total available swap_free usable
+    total=$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)
+    available=$(awk '/^MemAvailable:/ { print $2 }' /proc/meminfo)
+    swap_free=$(awk '/^SwapFree:/ { print $2 }' /proc/meminfo)
+    usable=$(( ${available:-0} + ${swap_free:-0} ))
+    if [ "$usable" -lt "$MIN_BUILD_MEMORY_KB" ]; then
+        fail "only $((usable / 1024)) MB of memory available (RAM + free swap): building the images needs about 1 GB,"
+        fail 'or the build is killed (exit code 137). Give the server more memory (2 GB recommended), or free some during'
+        fail 'the build: docker compose stop worker cron, then run this script again (it starts them again)'
+        return 1
+    fi
+    if [ "${total:-0}" -lt "$RECOMMENDED_RAM_KB" ]; then
+        warn "$((total / 1024)) MB of RAM: 2 GB are recommended to build the images and run PostgreSQL, FrankenPHP and the worker"
+    else
+        ok 'memory'
+    fi
+}
+
 check_public_address() {
     local server_name host
     server_name=$(env_get SERVER_NAME "$PROD_ENV")
