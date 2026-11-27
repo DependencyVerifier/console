@@ -18,11 +18,12 @@
         {% if passkey %}
             <form method="post" action="{{ path('identity_reauthenticate_passkey') }}" class="flex flex-col gap-2" data-turbo="false"
                   data-controller="passkey" data-passkey-options-value="{{ path('identity_reauthenticate_passkey_options') }}"
-                  data-passkey-csrf-value="{{ csrf_token('reauthenticate_passkey') }}" data-passkey-mode-value="get" data-action="submit->passkey#start">
+                  data-passkey-csrf-value="{{ csrf_token('reauthenticate_passkey') }}" data-passkey-mode-value="get" data-passkey-failed-message-value="{{ 'identity.passkey.failed'|trans }}" data-passkey-duplicate-message-value="{{ 'identity.passkey.duplicate'|trans }}" data-action="submit->passkey#start">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('reauthenticate_passkey') }}">
                 <input type="hidden" name="_passkey" data-passkey-target="response">
                 <twig:Button type="submit" class="w-full"><twig:ux:icon name="lucide:key-round" /> {{ 'identity.reauthenticate.passkey'|trans }}</twig:Button>
-                <p class="text-sm text-destructive" role="alert" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
+                {#- Always present and empty: passkey_controller.ts changes its text, so the alert is announced. -#}
+                <p class="text-sm text-destructive empty:hidden" role="alert" data-passkey-target="error"></p>
             </form>
             <p class="text-center text-xs text-muted-foreground">{{ 'identity.reauthenticate.or'|trans }}</p>
         {% endif %}

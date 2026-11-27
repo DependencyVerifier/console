@@ -19,7 +19,7 @@
         {% if passkey %}
         <form method="post" action="{{ checkPathUrl ? checkPathUrl : path(checkPathRoute) }}" class="flex flex-col gap-6" data-turbo="false"
               data-controller="passkey" data-passkey-options-value="{{ path('identity_two_factor_passkey_options') }}"
-              data-passkey-csrf-value="{{ csrf_token(csrfTokenId) }}" data-passkey-mode-value="get" data-action="submit->passkey#start">
+              data-passkey-csrf-value="{{ csrf_token(csrfTokenId) }}" data-passkey-mode-value="get" data-passkey-failed-message-value="{{ 'identity.passkey.failed'|trans }}" data-action="submit->passkey#start">
             <input type="hidden" name="{{ csrfParameterName }}" value="{{ csrf_token(csrfTokenId) }}">
             <input type="hidden" name="{{ authCodeParameterName }}" data-passkey-target="response">
             {% if displayTrustedOption %}
@@ -29,7 +29,8 @@
                 </label>
             {% endif %}
             <twig:Button type="submit" class="w-full"><twig:ux:icon name="lucide:key-round" /> {{ 'identity.two_factor.passkey'|trans }}</twig:Button>
-            <p class="text-sm text-destructive" role="alert" data-passkey-target="error" hidden>{{ 'identity.passkey.failed'|trans }}</p>
+            {#- Always present and empty: passkey_controller.ts changes its text, so the alert is announced. -#}
+            <p class="text-sm text-destructive empty:hidden" role="alert" data-passkey-target="error"></p>
         </form>
         {% else %}
         <form method="post" action="{{ checkPathUrl ? checkPathUrl : path(checkPathRoute) }}" class="flex flex-col gap-6" data-turbo="false">
