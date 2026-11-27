@@ -6,9 +6,10 @@ this guide is the whole path.
 
 ## 0. What you need
 
-- **For the console**: one Linux server with Docker Engine and the Compose plugin (2 vCPU and 4 GB of RAM are enough
-  for a few hundred agents), a DNS name pointing to it (`console.example.com`), ports 80 and 443 open from the
-  Internet (Caddy obtains its Let's Encrypt certificate by itself).
+- **For the console**: one Linux server with Docker Engine and the Compose plugin (1 GB of RAM runs it; 2 vCPU and
+  4 GB of RAM are enough for a few hundred agents), a DNS name pointing to it (`console.example.com`), ports 80 and 443
+  open from the Internet (Caddy obtains its Let's Encrypt certificate by itself), outbound HTTPS to `ghcr.io` and
+  Sigstore: the console image is pulled signed, never built on the server.
 - **An SMTP account with TLS** (`smtps://` or STARTTLS). Mandatory: email is a second factor.
 - **On every monitored server**: only **outbound HTTPS** to the console. No inbound port.
 
@@ -121,7 +122,9 @@ Fleet-wide rules (silent agent, new agent to approve) live in the team's **Notif
 - **Back up PostgreSQL**: `make db-dump DUMP=console-$(date +%F).sql` (with `prod.env` loaded), then copy
   `var/console-….sql` away; keep `prod.env` and `owner.env` safe.
 - **Upgrade the console**: read the release notes, then
-  `git fetch --tags && git checkout v1.x.y && bin/install-console`.
+  `git fetch --tags && git checkout v1.x.y && bin/install-console` (it verifies the signature of the new image, pulls
+  it, restarts and migrates). A bare `docker compose up -d` pulls the latest image too, but without that check nor the
+  migrations: troubleshooting only, see [INSTALL.md](INSTALL.md#5-upgrading).
 - **Upgrade the agents**: systemd agents from the console (**Upgrade the host agents**, or **Upgrade to X.Y.Z** on an
   agent). Container and embedded agents by their image: replace the digest (`ghcr.io/dependencyverifier/agent@sha256:…`
   in `compose.yaml`, or in the `COPY --from=` of the application's Dockerfile) with the one of the new release, never

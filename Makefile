@@ -17,6 +17,9 @@ OWNER_ENV := $(firstword $(wildcard .docker/database/owner.env) .docker/database
 include $(OWNER_ENV)
 export DATABASE_MIGRATIONS_URL
 # Runs bin/console as the owner role: DATABASE_URL is swapped inside the container, never on the host command line.
+# Invariant: DCE and OWNER_CONSOLE stay `docker compose exec` into the running container, never `run`. In production
+# the console image has `pull_policy: always`: a `run` would pull an unverified :latest and give it the owner role,
+# after bin/install-console verified and started another image (bin/tests/install-console.sh checks it).
 OWNER_CONSOLE=$(DCE) -e DATABASE_MIGRATIONS_URL php sh -c 'DATABASE_URL="$$DATABASE_MIGRATIONS_URL" exec bin/console "$$@"' --
 
 .PHONY: help
@@ -269,6 +272,11 @@ rector: ## Show Rector refactorings (dry-run)
 rector-fix: ## Apply Rector refactorings
 	@$(PHP) vendor/bin/rector process
 
+.PHONY: shell-test
+shell-test: ## Test the release rules of bin/install-console and the release workflow (and shellcheck them when installed)
+	@bin/tests/install-console.sh
+	@if command -v shellcheck > /dev/null; then shellcheck -x bin/install-console bin/lib/release.sh bin/tests/install-console.sh && echo 'shellcheck: ok'; fi
+
 .PHONY: lint
 lint: ## Lint container, Twig and YAML
 	@$(CONSOLE) lint:container
@@ -281,4 +289,4 @@ audit: ## Check PHP and JS dependencies for known vulnerabilities
 	@$(YARN) npm audit --all --recursive
 
 .PHONY: qa
-qa: lint typecheck phpcs phpstan rector test infection ## Run every quality gate (what CI will run)
+qa: lint typecheck shell-test phpcs phpstan rector test infection ## Run every quality gate (what CI will run)

@@ -1,9 +1,7 @@
 #syntax=docker/dockerfile:1
 
-# Versions
-FROM dunglas/frankenphp:1-php8.5 AS frankenphp_upstream
-# Same image as the dev `node` service (compose.override.yaml): the front assets of the prod image are built with it.
-FROM node:24-alpine AS node_upstream
+# Versions: tag plus digest, so a moved upstream tag never gets into a signed release (Dependabot updates both).
+FROM dunglas/frankenphp:1-php8.5@sha256:b8e0919047838ea32771ef573d74df9a9128de1e908a999366e26c11bc6e7ba4 AS frankenphp_upstream
 
 # The different stages of this Dockerfile are meant to be built into separate images
 # https://docs.docker.com/build/building/multi-stage/#stop-at-a-specific-build-stage
@@ -125,8 +123,10 @@ RUN composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scri
 
 # Front assets (Vite + Tailwind) of the prod image: public/build is git-ignored, so it is built here, never taken from
 # the build context (.dockerignore). package.json links the Symfony UX packages from vendor/ (file:vendor/symfony/…),
-# and Tailwind scans templates/ for its classes.
-FROM node_upstream AS frankenphp_prod_assets
+# and Tailwind scans templates/ for its classes. Same Node as the dev `node` service (compose.override.yaml). Built once
+# on the platform of the builder: the assets do not depend on the architecture, so a multi-arch build never runs yarn
+# under emulation.
+FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS frankenphp_prod_assets
 
 WORKDIR /app
 
@@ -183,8 +183,10 @@ RUN <<-'EOF'
 	rm -rf /var/lib/apt/lists/*
 EOF
 
-# Prod FrankenPHP image
-FROM debian:13-slim AS frankenphp_prod
+# Prod FrankenPHP image, published as ghcr.io/dependencyverifier/console (.github/workflows/release.yml)
+FROM debian:13-slim@sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0 AS frankenphp_prod
+
+LABEL org.opencontainers.image.source="https://github.com/DependencyVerifier/console"
 
 SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
 

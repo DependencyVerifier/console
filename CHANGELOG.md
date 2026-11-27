@@ -3,9 +3,17 @@
 ## Unreleased
 
 **Installation**
-- `bin/install-console` checks the memory before building: under 1 GB available (RAM + free swap) it stops with an
-  explanation instead of a build killed with exit code 137 (`yarn install` of the front assets alone needs about
-  900 MB), and it warns under 2 GB of RAM. `INSTALL.md` states the 2 GB.
+- The console image is built by the release workflow and published signed on GHCR,
+  `ghcr.io/dependencyverifier/console` (amd64, arm64; `:X.Y.Z` and `:latest`, the highest release): a server no longer
+  builds it, and 1 GB of RAM runs the console. `bin/install-console` verifies the cosign signature of `:latest`
+  (release workflow of this repository, `vX.Y.Z` tag), pulls that digest, refuses a version older than the checkout
+  (release not published yet) or than the one in service (`--allow-downgrade`), starts it with `--pull never`, checks
+  the containers run it, then migrates as before. `docker compose up -d` follows `:latest` (`pull_policy: always`) but
+  checks and migrates nothing: troubleshooting only.
+- `bin/install-console --build` keeps the local build (server without access to GHCR or Sigstore), after checking
+  that about 1 GB of memory is available (`yarn install` of the front assets alone needs about 900 MB) instead of a
+  build killed with exit code 137. `compose.build.yaml` holds the build.
+- The base images of the `Dockerfile` are pinned by digest; `prod.env` and `owner.env` never enter a local build.
 
 ## 1.1.0 (2026-11-27)
 

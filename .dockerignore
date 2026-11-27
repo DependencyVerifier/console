@@ -34,3 +34,6 @@ vendor/
 .env.local
 .env.local.php
 .env.test
+prod.env*
+.docker/database/*.env
+bin/tests/
