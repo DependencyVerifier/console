@@ -1,0 +1,22 @@
+---
+# Local build of the production image (bin/install-console --build): for a server that cannot reach GHCR or Sigstore,
+# or a fork. Needs about 1 GB of memory available (the front assets). Added on top of compose.prod.yaml by the script;
+# a later `docker compose up -d` without this file goes back to the published image.
+x-console-build: &console-build
+  image: ${IMAGES_PREFIX:-}app-php-prod
+  pull_policy: build
+
+services:
+  php:
+    <<: *console-build
+    build:
+      context: .
+      target: frankenphp_prod
+      labels:
+        org.opencontainers.image.version: ${CONSOLE_BUILD_VERSION:-}
+
+  worker:
+    <<: *console-build
+
+  cron:
+    <<: *console-build

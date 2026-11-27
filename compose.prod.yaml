@@ -13,20 +13,25 @@ x-app-environment: &app-environment
   SYMFONY_TRUSTED_PROXIES: ${SYMFONY_TRUSTED_PROXIES:-}
   AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-365}
 
+# The image is built by the release workflow and published on GHCR, never built on the server: `docker compose up -d`
+# pulls the latest release (pull_policy: always). bin/install-console is the verified path: it checks the cosign
+# signature, starts that very image with --pull never, then migrates. compose.build.yaml (bin/install-console --build)
+# builds it locally instead.
+x-console-image: &console-image
+  image: ghcr.io/dependencyverifier/console:latest
+  pull_policy: always
+
 services:
   php:
-    image: ${IMAGES_PREFIX:-}app-php-prod
-    build:
-      context: .
-      target: frankenphp_prod
+    <<: *console-image
     environment: *app-environment
 
   worker:
-    image: ${IMAGES_PREFIX:-}app-php-prod
+    <<: *console-image
     environment: *app-environment
 
   cron:
-    image: ${IMAGES_PREFIX:-}app-php-prod
+    <<: *console-image
     environment: *app-environment
 
   database:

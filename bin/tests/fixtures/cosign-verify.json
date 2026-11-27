@@ -1,0 +1,2 @@
+
+[{"critical":{"identity":{"docker-reference":"ghcr.io/dependencyverifier/agent:latest"},"image":{"docker-manifest-digest":"sha256:91566162dbf73538d64f53a73bdefbb78e4abc456f56d3b030955127b066c4f9"},"type":"https://sigstore.dev/cosign/sign/v1"},"optional":{}}]
