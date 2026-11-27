@@ -58,12 +58,16 @@ curl --proto '=https' --tlsv1.2 -fsSL https://console.example.com/install.sh | s
 The script verifies the SHA-256 of the binary, installs it in `/usr/local/bin/depverify-agent`, creates the
 `depverify-agent` system user and service, and prints **the agent fingerprint**: write it down.
 
-The agent reports the OS packages (dpkg, apk, rpm), PHP and its FPM pools, Node, Composer, and the applications found
-in `/var/www`, `/srv` and `/opt`. If the server also runs containers, add `AGENT_DOCKER=1` (preferably behind a
+The agent reports the OS packages (dpkg, apk, rpm), the runtimes (PHP and its FPM pools, Node, Composer, Python, Go,
+Ruby, Java, Rust, including those installed by a version manager such as nvm, pyenv or sdkman; agent 0.4.0 or later),
+and the applications found in `/var/www`, `/srv` and `/opt`. A version manager in `/root` or in a home of Ubuntu stays
+invisible until the agent user may read it: see the `setfacl` lines of the
+[agent README](https://github.com/DependencyVerifier/agent#readme) (the manager's directory only). If the server also runs containers, add `AGENT_DOCKER=1` (preferably behind a
 read-only socket proxy).
 
-From the agent's page in the console: **Configure** adds application paths or exclusions, **Update** upgrades the
-agent remotely when a new release is available.
+From the agent's page in the console: **Configure** adds application paths or exclusions, **Upgrade to X.Y.Z** upgrades
+the agent remotely once the console holds a newer verified release (**Upgrade the host agents** on the Agents page does
+it for every host agent behind).
 
 ### b) A Docker Compose project: `container` mode, nothing installed on the host
 
@@ -118,8 +122,13 @@ Fleet-wide rules (silent agent, new agent to approve) live in the team's **Notif
   `var/console-….sql` away; keep `prod.env` and `owner.env` safe.
 - **Upgrade the console**: read the release notes, then
   `git fetch --tags && git checkout v1.x.y && bin/install-console`.
-- **Upgrade the agents**: systemd agents from the console (**Update**); container agents by changing the digest of
-  their image.
+- **Upgrade the agents**: systemd agents from the console (**Upgrade the host agents**, or **Upgrade to X.Y.Z** on an
+  agent). Container and embedded agents by their image: replace the digest (`ghcr.io/dependencyverifier/agent@sha256:…`
+  in `compose.yaml`, or in the `COPY --from=` of the application's Dockerfile) with the one of the new release, never
+  `:latest`, after checking it with cosign 3 or later (cosign 2 does not read the signature format of the image):
+  `cosign verify ghcr.io/dependencyverifier/agent@sha256:<digest> --certificate-identity
+  'https://github.com/DependencyVerifier/agent-image/.github/workflows/release.yml@refs/tags/vX.Y.Z'
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com`.
 - **Change the console signing key**: never replace it directly, follow [INSTALL.md](INSTALL.md#6-changing-a-key)
   (`APP_AGENT_SIGNING_KEY_NEXT`, then `make console-key-rotate`).
 

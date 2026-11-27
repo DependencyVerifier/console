@@ -4,7 +4,7 @@
 
 **Exposure**
 - Ends of life of Python, Go, Ruby and Rust runtimes, and of the JDKs by their distribution (Eclipse Temurin, Amazon
-  Corretto, Azul Zulu, Red Hat, Microsoft, Oracle).
+  Corretto, Azul Zulu, Red Hat, Microsoft, Oracle). These runtimes are reported by agent 0.4.0 or later.
 - The findings of an application or a host hide the fixed ones by default ("Show fixed" brings them back).
 - An end of life points to the newest supported cycle, never to the last patch of the cycle that ends ("—" when the
   installed cycle is already the newest).
