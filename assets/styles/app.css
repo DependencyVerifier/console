@@ -211,3 +211,58 @@
 form:has([data-token-kind] input[value="single"]:checked) [data-reusable-only] {
     display: none;
 }
+
+/* Dropdown menus as native popovers (dropdown_menu_controller.ts, only where anchor positioning exists): tethered to
+   their trigger, flipped when the viewport is short, never clipped. Unlayered so it wins over the kit's absolute
+   placement utilities; the `side` / `align` props pick the position area. */
+[data-slot='dropdown-menu-content'][popover] {
+    position: fixed;
+    inset: auto;
+    margin: 0.5rem 0 0;
+    translate: none;
+    width: max-content;
+    overflow: visible;
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: flip-block, flip-inline;
+}
+
+[data-slot='dropdown-menu-content'][popover][data-align='center'] {
+    position-area: block-end;
+}
+
+[data-slot='dropdown-menu-content'][popover][data-align='end'] {
+    position-area: block-end span-inline-start;
+}
+
+[data-slot='dropdown-menu-content'][popover][data-side='top'] {
+    margin: 0 0 0.5rem;
+    position-area: block-start span-inline-end;
+}
+
+[data-slot='dropdown-menu-content'][popover][data-side='right'] {
+    margin: 0 0 0 0.5rem;
+    position-area: inline-end span-block-end;
+}
+
+[data-slot='dropdown-menu-content'][popover][data-side='left'] {
+    margin: 0 0.5rem 0 0;
+    position-area: inline-start span-block-end;
+}
+
+[data-slot='dropdown-menu-content'][popover][data-side='top'][data-align='end'] {
+    position-area: block-start span-inline-start;
+}
+
+[data-slot='dropdown-menu-content'][popover][data-side='right'][data-align='end'] {
+    position-area: inline-end span-block-start;
+}
+
+[data-slot='dropdown-menu-content'][popover][data-side='left'][data-align='end'] {
+    position-area: inline-start span-block-start;
+}
+
+@starting-style {
+    [data-slot='dropdown-menu-content'][popover]:popover-open {
+        opacity: 0;
+    }
+}

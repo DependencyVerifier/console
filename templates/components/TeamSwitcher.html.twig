@@ -26,7 +26,7 @@
                         <twig:ux:icon name="lucide:chevrons-up-down" class="ms-auto" />
                     </twig:Sidebar:MenuButton>
                 </twig:DropdownMenu:Trigger>
-                {#- On mobile the sidebar is a sheet that clips what passes its edge: the menu opens below the button, inside it. -#}
+                {#- On mobile the sidebar is a sheet that clips what passes its edge: the menu opens below the button, inside it. Fallback only: where the menu is a native popover (top layer), app.css places it. -#}
                 <twig:DropdownMenu:Content class="w-max max-md:left-0 max-md:ml-0 max-md:top-full max-md:mt-2 max-md:w-full">
                     <twig:DropdownMenu:Label class="text-xs text-muted-foreground">
                         {{ 'nav.teams'|trans }}
