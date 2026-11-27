@@ -53,6 +53,8 @@ Wiring: `composer.json` PSR-4 (one entry per context), `config/services.yaml` (o
 
 ## UI conventions
 
+- **Browser Support:** Baseline widely available. A newer feature (popover, anchor positioning, `interestfor`, WebAuthn JSON and Signal APIs…) is only a feature-detected progressive enhancement (`@supports`, a JS check): no polyfill, no added dependency, the widely available behaviour stays the fallback.
+
 - Controllers: invokable, `#[Route(path: …, name: RouteCollection::CASE->value)]` with the context's `UI\Controller\RouteCollection` enum (implements `Shared\UI\Routing\RouteCollectionInterface`). Use `->prefixed()` for `path()` / redirects.
 - Templates: `templates/<context>/…` (snake_case). Kit and app components in `templates/components/` (`AppSidebar`, `AppFooter`, `MetaGrid`, `StatusDot`, `SeverityBadge`, `ThemeToggle`, `RomainMillanTag`). Layouts: `shared/layout/app.html.twig` (sidebar shell + footer) and `shared/layout/auth.html.twig`. Page blocks are `breadcrumb` and `main`: `content` is reserved inside component tags.
 - Footer signature: the **Romain-MILLAN-Tag git submodule** (`assets/romain-millan-tag`), imported in `assets/styles/app.css` with `layer(base)` and rendered by `<twig:RomainMillanTag />`. Update it with `git submodule update --remote console/assets/romain-millan-tag`.
