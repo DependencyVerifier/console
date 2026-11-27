@@ -2,7 +2,15 @@ import { Controller } from '@hotwired/stimulus';
 
 type FocusTarget = 'first' | 'last' | false;
 
-// From the Symfony UX Toolkit shadcn kit (DropdownMenu), converted to TypeScript.
+/*
+ * From the Symfony UX Toolkit shadcn kit (DropdownMenu), converted to TypeScript.
+ *
+ * Progressive enhancement (menu, viewport-aware-dropdowns): where both the Popover API and CSS anchor positioning
+ * exist, the content becomes a `popover="auto"` invoked by its trigger button. It then sits in the top layer (no
+ * ancestor, sheet or table clips it), flips when the viewport is short (app.css), and the browser light-dismisses it.
+ * Elsewhere it stays the kit's absolutely positioned box, closed by the document click listener.
+ * A pointer click leaves the focus on the trigger; the keyboard (Enter, Space, arrows) moves it into the menu.
+ */
 export default class extends Controller<HTMLElement> {
     static targets = ['trigger', 'content', 'item'];
 
@@ -17,13 +25,42 @@ export default class extends Controller<HTMLElement> {
     declare readonly itemTargets: HTMLElement[];
     declare readonly openValue: boolean;
 
+    /** The content is a native popover (see the class comment). */
+    #native = false;
+    /** Where the focus goes once the native popover has opened from a click on its trigger. */
+    #focusOnToggle: FocusTarget = false;
+
     readonly #onOutsideClick = (event: MouseEvent): void => {
         if (event.target instanceof Node && !this.element.contains(event.target)) {
             this.close({ focus: false });
         }
     };
 
+    readonly #onToggle = (event: Event): void => {
+        const open = 'open' === (event as ToggleEvent).newState;
+        this.#setState(open);
+        if (open) {
+            this.#focus(this.#focusOnToggle);
+        }
+        this.#focusOnToggle = false;
+    };
+
     connect(): void {
+        this.#native = this.hasTriggerTarget
+            && this.hasContentTarget
+            && this.triggerTarget instanceof HTMLButtonElement
+            && Object.hasOwn(HTMLElement.prototype, 'popover')
+            && CSS.supports('position-area', 'block-end');
+        if (this.#native && this.triggerTarget instanceof HTMLButtonElement) {
+            // Anchor names through the CSSOM: a `style` attribute would break the CSP, a class cannot carry an id.
+            const anchor = `--${this.contentTarget.id || 'dropdown-menu'}`;
+            this.triggerTarget.style.setProperty('anchor-name', anchor);
+            this.contentTarget.style.setProperty('position-anchor', anchor);
+            this.contentTarget.popover = 'auto';
+            this.triggerTarget.popoverTargetElement = this.contentTarget;
+            this.contentTarget.addEventListener('toggle', this.#onToggle);
+        }
+
         this.#setState(this.openValue);
         if (this.openValue) {
             this.open({ focus: false });
@@ -32,31 +69,51 @@ export default class extends Controller<HTMLElement> {
 
     disconnect(): void {
         document.removeEventListener('click', this.#onOutsideClick, true);
+        if (this.#native && this.hasContentTarget) {
+            this.contentTarget.removeEventListener('toggle', this.#onToggle);
+        }
     }
 
     toggle(event?: Event): void {
+        // A click from the keyboard (Enter, Space) has no pointer details: the focus goes into the menu.
+        const fromKeyboard = event instanceof MouseEvent && 0 === event.detail;
+        if (this.#native) {
+            // The trigger's popovertarget opens or closes the popover after this listener: never prevent it.
+            this.#focusOnToggle = fromKeyboard ? 'first' : false;
+
+            return;
+        }
+
         event?.preventDefault();
         if ('open' === this.element.dataset.state) {
             this.close();
         } else {
-            this.open();
+            this.open({ focus: fromKeyboard ? 'first' : false });
         }
     }
 
     open({ focus = 'first' }: { focus?: FocusTarget } = {}): void {
         this.#setState(true);
-        document.addEventListener('click', this.#onOutsideClick, true);
-
-        if ('last' === focus) {
-            this.#focusLastItem();
-        } else if (focus) {
-            this.#focusCurrentOrFirstItem();
+        if (this.#native) {
+            if (!this.contentTarget.matches(':popover-open')) {
+                this.contentTarget.showPopover();
+            }
+        } else {
+            document.addEventListener('click', this.#onOutsideClick, true);
         }
+
+        this.#focus(focus);
     }
 
     close({ focus = true }: { focus?: boolean } = {}): void {
         this.#setState(false);
-        document.removeEventListener('click', this.#onOutsideClick, true);
+        if (this.#native) {
+            if (this.contentTarget.matches(':popover-open')) {
+                this.contentTarget.hidePopover();
+            }
+        } else {
+            document.removeEventListener('click', this.#onOutsideClick, true);
+        }
 
         if (focus && this.hasTriggerTarget) {
             this.triggerTarget.focus();
@@ -135,7 +192,9 @@ export default class extends Controller<HTMLElement> {
     onContentKeydown(event: KeyboardEvent): void {
         switch (event.key) {
             case 'Escape':
+                // Handled here only: a dialog or a sheet around the menu must stay open.
                 event.preventDefault();
+                event.stopPropagation();
                 this.close();
                 break;
             case 'ArrowDown':
@@ -157,6 +216,14 @@ export default class extends Controller<HTMLElement> {
             case 'Tab':
                 this.close({ focus: false });
                 break;
+        }
+    }
+
+    #focus(target: FocusTarget): void {
+        if ('last' === target) {
+            this.#focusLastItem();
+        } else if (target) {
+            this.#focusCurrentOrFirstItem();
         }
     }
 

@@ -1,6 +1,6 @@
 /* datatables.net (dt theme) tuned to the shadcn kit: a quiet bordered card (`.dt-card`, <twig:DataTable>) whose header
    line holds the title, the actions and the search; tokens of the current theme. No `overflow: hidden` on the card:
-   the row menus (⋯) must be able to open past its edge. */
+   the row menus (⋯) must be able to open past its edge where they are not native popovers (dropdown_menu_controller.ts). */
 @import 'datatables.net-dt/css/dataTables.dataTables.css';
 
 .dt-card div.dt-container {

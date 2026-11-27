@@ -1,8 +1,7 @@
-<div
-    role="separator"
-    aria-orientation="horizontal"
+{#- A native <hr> inside role="menu" is exposed as a separator (menu guide: never a styled <div>). -#}
+<hr
     data-slot="dropdown-menu-separator"
     {{ attributes.defaults({
-        class: '-mx-1 my-1 h-px bg-border'|tailwind_classes,
+        class: '-mx-1 my-1 h-px border-0 bg-border'|tailwind_classes,
     }) }}
-></div>
+>

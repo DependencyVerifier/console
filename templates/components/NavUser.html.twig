@@ -22,7 +22,7 @@
                     <twig:ux:icon name="lucide:chevrons-up-down" class="ms-auto size-4" />
                 </twig:Sidebar:MenuButton>
             </twig:DropdownMenu:Trigger>
-            {#- On mobile the sidebar is a sheet that clips what passes its edge: the menu opens above the button, inside it. -#}
+            {#- On mobile the sidebar is a sheet that clips what passes its edge: the menu opens above the button, inside it. Fallback only: where the menu is a native popover (top layer), app.css places it. -#}
             <twig:DropdownMenu:Content class="w-max max-md:left-0 max-md:ml-0 max-md:bottom-full max-md:mb-2 max-md:w-full">
                 <twig:DropdownMenu:Label class="p-0 font-normal">
                     <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
