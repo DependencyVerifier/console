@@ -266,3 +266,32 @@ form:has([data-token-kind] input[value="single"]:checked) [data-reusable-only] {
         opacity: 0;
     }
 }
+
+/* Tooltips as popovers (tooltip_controller.ts, only where anchor positioning exists): tethered to their trigger in the
+   top layer, flipped when the viewport is short. */
+[data-slot='tooltip-content'][popover] {
+    position: fixed;
+    inset: auto;
+    margin: 0 0 0.375rem;
+    translate: none;
+    border: 0;
+    overflow: visible;
+    position-area: block-start;
+    position-try-fallbacks: flip-block, flip-inline;
+}
+
+[data-slot='tooltip-content'][popover][data-side='bottom'] {
+    margin: 0.375rem 0 0;
+    position-area: block-end;
+}
+
+[data-slot='tooltip-content'][popover][data-side='right'] {
+    margin: 0 0 0 0.375rem;
+    position-area: inline-end;
+}
+
+/* Sidebar entries carry their label as a tooltip only when the sidebar is collapsed to icons (the label is visible
+   otherwise, and in the mobile sheet). */
+[data-sidebar-tooltip] > [data-slot='tooltip-content']:not([data-collapsible='icon'] *) {
+    display: none !important;
+}

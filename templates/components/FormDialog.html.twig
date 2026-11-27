@@ -25,11 +25,12 @@
 <twig:Dialog id="{{ id }}" data-dialog-light-dismiss-value="false" data-controller="form-dialog" data-action="turbo:submit-end->form-dialog#submitted turbo:frame-load->form-dialog#focus keydown.enter->form-dialog#submitOnEnter">
     <twig:Dialog:Trigger>
         {%- if disabledReason is not null %}
-            {#- A disabled button gets no hover: the wrapper carries the reason. -#}
-            <span class="inline-flex cursor-not-allowed" title="{{ disabledReason }}" tabindex="0" aria-describedby="{{ id }}-disabled-reason">
-                <twig:Button variant="{{ variant }}" size="{{ size }}" disabled data-dialog-trigger-for="{{ id }}">{{ trigger }}</twig:Button>
-            </span>
-            <span id="{{ id }}-disabled-reason" class="sr-only">{{ disabledReason }}</span>
+            {#- A disabled button gets no hover nor focus: the focusable wrapper carries the reason, as a tooltip. -#}
+            <twig:Tooltip :text="disabledReason" :id="id ~ '-disabled-reason'">
+                <span class="inline-flex cursor-not-allowed rounded-lg outline-hidden focus-visible:ring-2 focus-visible:ring-ring" tabindex="0">
+                    <twig:Button variant="{{ variant }}" size="{{ size }}" disabled data-dialog-trigger-for="{{ id }}">{{ trigger }}</twig:Button>
+                </span>
+            </twig:Tooltip>
         {%- else %}
             <twig:Button variant="{{ variant }}" size="{{ size }}" data-dialog-trigger-for="{{ id }}" :hidden="hiddenTrigger" {{ ...dialog_trigger_attrs|merge({'data-action': 'click->dialog#open click->form-dialog#load'}) }}>{{ trigger }}</twig:Button>
         {%- endif %}

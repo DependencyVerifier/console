@@ -1,31 +1,40 @@
 {%- props
-    ## string Unique identifier for the tooltip.
-    id,
-    ## number Delay in milliseconds before showing the tooltip.
-    delayDuration = 0
+    ## string The tooltip text (translated).
+    text,
+    ## 'top'|'right'|'bottom' Preferred side; it flips when the viewport is short.
+    side = 'top',
+    ## boolean Whether the trigger is described by the tooltip (aria-describedby). False when the trigger already
+    ## carries the same text as its accessible name or description.
+    describes = true,
+    ## string|null Element id of the tooltip; generated when absent.
+    id = null
 -%}
-{%- set _tooltip_id = id -%}
-{%- set _tooltip_trigger_id = id ~ '_trigger' -%}
-{%- set _tooltip_wrapper_id = id ~ '_wrapper' -%}
-{%- set _tooltip_content_id = id ~ '_content' -%}
-{%- set _tooltip_arrow_id = id ~ '_arrow' -%}
-{%- set _tooltip_delay_duration = delayDuration -%}
-{%- do provide('tooltip.triggerId', _tooltip_trigger_id) -%}
-{%- do provide('tooltip.wrapperId', _tooltip_wrapper_id) -%}
-{%- do provide('tooltip.contentId', _tooltip_content_id) -%}
-{%- do provide('tooltip.arrowId', _tooltip_arrow_id) -%}
-<div
-    id="{{ _tooltip_id }}"
+{#- A tooltip shown on hover and on focus, dismissible with Esc, hoverable (WCAG 1.4.13). The trigger is the first
+    focusable element of the content (a link, a button, an element with tabindex). Never a `title` attribute: it is
+    out of reach of the keyboard and of touch.
+    tooltip_controller.ts: native `interestfor` + popover="hint" where supported, else a popover it shows itself
+    (anchor positioning, app.css), else a box positioned under this wrapper. -#}
+{%- set _tooltip_id = id ?? 'tooltip-' ~ random() -%}
+<span
     data-slot="tooltip"
-    data-tooltip-delay-duration-value="{{ _tooltip_delay_duration }}"
-    data-tooltip-wrapper-selector-value="#{{ _tooltip_wrapper_id }}"
-    data-tooltip-content-selector-value="#{{ _tooltip_content_id }}"
-    data-tooltip-arrow-selector-value="#{{ _tooltip_arrow_id }}"
+    data-tooltip-describes-value="{{ describes ? 'true' : 'false' }}"
     {{ attributes.defaults({
-        class: 'relative inline-block'|tailwind_classes,
+        class: 'relative inline-flex'|tailwind_classes,
         'data-controller': 'tooltip',
+        'data-action': 'mouseenter->tooltip#show mouseleave->tooltip#hide focusin->tooltip#show focusout->tooltip#hide',
     }) }}
 >
-    {##- The tooltip structure, typically includes `Tooltip:Trigger` and `Tooltip:Content`. -#}
     {%- block content %}{% endblock -%}
-</div>
+    <span
+        id="{{ _tooltip_id }}"
+        role="tooltip"
+        hidden
+        data-slot="tooltip-content"
+        data-side="{{ side }}"
+        data-tooltip-target="content"
+        class="z-50 w-max max-w-xs rounded-md bg-foreground px-3 py-1.5 text-start text-xs font-normal whitespace-normal text-background shadow-md absolute
+            data-[side=top]:bottom-full data-[side=top]:start-0 data-[side=top]:mb-1.5
+            data-[side=bottom]:top-full data-[side=bottom]:start-0 data-[side=bottom]:mt-1.5
+            data-[side=right]:start-full data-[side=right]:top-1/2 data-[side=right]:-translate-y-1/2 data-[side=right]:ms-1.5"
+    >{{ text }}</span>
+</span>

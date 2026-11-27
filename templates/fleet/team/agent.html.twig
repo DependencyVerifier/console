@@ -41,7 +41,7 @@
             {%- if fleet.can('host.order') and agent.status == 'approved' %}
                 <form method="post" action="{{ path('fleet_agent_rotate_key', {teamId: team.id, agentId: agent.id}) }}">
                     <input type="hidden" name="action[_token]" value="{{ csrf_token('agent_rotate_key:' ~ agent.id) }}">
-                    <twig:Button type="submit" variant="outline" title="{{ 'fleet.agents.rotate_key_help'|trans }}"><twig:ux:icon name="lucide:key-round" />{{ 'fleet.agents.rotate_key'|trans }}</twig:Button>
+                    <twig:Tooltip :text="'fleet.agents.rotate_key_help'|trans"><twig:Button type="submit" variant="outline"><twig:ux:icon name="lucide:key-round" />{{ 'fleet.agents.rotate_key'|trans }}</twig:Button></twig:Tooltip>
                 </form>
                 <form method="post" action="{{ path('fleet_agent_scan', {teamId: team.id, agentId: agent.id}) }}">
                     <input type="hidden" name="action[_token]" value="{{ csrf_token('agent_scan:' ~ agent.id) }}">

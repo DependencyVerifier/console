@@ -7,7 +7,8 @@
     size = 'default',
     ## 'default'|'outline' The visual style variant.
     variant = 'default',
-    ## string Optional title shown when the sidebar is collapsed to icons.
+    ## string Optional label shown as a tooltip when the sidebar is collapsed to icons; also the accessible name, since
+    ## the visible label is hidden in that mode.
     tooltip = null
 -%}
 {%- set style = html_cva(
@@ -24,12 +25,13 @@
         },
     },
 ) -%}
+{%- set _menu_button %}
 <{{ as }}
     data-slot="{{ attributes.render('data-slot')|default('sidebar-menu-button') }}"
     data-size="{{ size }}"
     data-active="{{ active ? 'true' : 'false' }}"
     {% if 'button' == as %}type="button"{% endif %}
-    {% if tooltip %}title="{{ tooltip }}"{% endif %}
+    {% if tooltip %}aria-label="{{ tooltip }}"{% endif %}
     {% if active %}aria-current="page"{% endif %}
     {{ attributes.defaults({
         class: style.apply({variant: variant, size: size})|tailwind_classes,
@@ -38,3 +40,10 @@
     {##- The label and/or icon. -#}
     {%- block content %}{% endblock -%}
 </{{ as }}>
+{%- endset -%}
+{%- if tooltip -%}
+    {#- `contents`: the wrapper takes no box, the button keeps its place in the menu item. -#}
+    <twig:Tooltip :text="tooltip" side="right" :describes="false" class="contents" data-sidebar-tooltip>{{ _menu_button }}</twig:Tooltip>
+{%- else -%}
+    {{ _menu_button }}
+{%- endif -%}

@@ -1,1 +1,5 @@
-<span class="font-mono text-sm" title="{{ row.purl }}">{{ row.fullName }}</span>
+{#- The package and its purl, written out (a `title` would be out of reach of the keyboard and of touch). -#}
+<span class="flex flex-col">
+    <span class="font-mono text-sm">{{ row.fullName }}</span>
+    <span class="font-mono text-xs text-muted-foreground [overflow-wrap:anywhere]">{{ row.purl }}</span>
+</span>

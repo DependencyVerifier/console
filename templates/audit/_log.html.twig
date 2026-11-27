@@ -39,7 +39,7 @@
                                 {%- if entry.ip %}<div class="font-mono text-xs text-muted-foreground">{{ entry.ip }}</div>{% endif -%}
                             </td>
                             <td class="px-4 py-2 font-mono text-xs">{{ entry.action }}</td>
-                            <td class="px-4 py-2"><span class="text-muted-foreground">{{ entry.targetType }}</span>{% if entry.targetId %} <span class="font-mono text-xs" title="{{ entry.targetId }}">{{ entry.targetId|slice(0, 8) }}…</span>{% endif %}</td>
+                            <td class="px-4 py-2"><span class="text-muted-foreground">{{ entry.targetType }}</span>{% if entry.targetId %} <span class="inline-block max-w-[9ch] truncate align-bottom font-mono text-xs outline-hidden hover:max-w-none focus-visible:max-w-none focus-visible:ring-2 focus-visible:ring-ring" tabindex="0">{{ entry.targetId }}</span>{% endif %}</td>
                             <td class="px-4 py-2">
                                 <twig:Badge variant="{{ entry.outcome == 'success' ? 'secondary' : (entry.outcome == 'denied' ? 'outline' : 'destructive') }}">{{ ('audit.outcome.' ~ entry.outcome)|trans }}</twig:Badge>
                                 {%- if entry.reason %}<div class="mt-1 font-mono text-xs text-muted-foreground">{{ entry.reason }}</div>{% endif -%}
