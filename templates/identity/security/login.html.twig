@@ -6,7 +6,7 @@
     <div class="flex flex-col gap-6">
         <div>
             <h1 class="text-2xl font-semibold tracking-tight text-balance">{{ 'identity.login.title'|trans }}</h1>
-            <p class="mt-1 text-sm text-muted-foreground">{{ 'identity.login.description'|trans }}</p>
+            <p id="login-description" class="mt-1 text-sm text-muted-foreground">{{ 'identity.login.description'|trans }}</p>
         </div>
 
         {{ include('shared/_flashes.html.twig') }}
@@ -22,14 +22,21 @@
             <twig:Field:Group>
                 <twig:Field>
                     <twig:Field:Label for="username">{{ 'identity.field.email'|trans }}</twig:Field:Label>
-                    <twig:Input id="username" type="email" name="_username" value="{{ last_username }}" autocomplete="username webauthn" required autofocus />
+                    <twig:Input id="username" type="email" name="_username" value="{{ last_username }}" autocomplete="username webauthn" spellcheck="false" aria-describedby="login-description" required autofocus />
                 </twig:Field>
                 <twig:Field>
                     <div class="flex items-center">
                         <twig:Field:Label for="password">{{ 'identity.field.password'|trans }}</twig:Field:Label>
                         <a href="{{ path('identity_password_forgot') }}" class="ms-auto text-sm text-muted-foreground underline-offset-4 hover:underline">{{ 'identity.login.forgot'|trans }}</a>
                     </div>
-                    <twig:Input id="password" type="password" name="_password" autocomplete="current-password" required />
+                    <div class="relative" data-controller="password-visibility">
+                        <twig:Input id="password" type="password" name="_password" autocomplete="current-password" class="pe-10" data-password-visibility-target="input" required />
+                        <button type="button" aria-pressed="false" aria-label="{{ 'identity.field.show_password'|trans }}" data-action="password-visibility#toggle"
+                                class="group/reveal absolute inset-y-0 end-0 inline-flex w-10 items-center justify-center rounded-e-lg text-muted-foreground outline-hidden hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                            <twig:ux:icon name="lucide:eye" aria-hidden="true" class="size-4 group-aria-pressed/reveal:hidden" />
+                            <twig:ux:icon name="lucide:eye-off" aria-hidden="true" class="hidden size-4 group-aria-pressed/reveal:block" />
+                        </button>
+                    </div>
                 </twig:Field>
                 <twig:Button type="submit" class="w-full">{{ 'identity.login.submit'|trans }}</twig:Button>
             </twig:Field:Group>

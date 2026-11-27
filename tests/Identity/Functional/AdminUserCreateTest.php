@@ -42,8 +42,7 @@ final class AdminUserCreateTest extends IdentityWebTestCase
         $this->client->request('GET', $link);
         $crawler = $this->client->clickLink('Continue');
         $this->client->submit($crawler->filter('form')->form([
-            'new_password[password][first]' => Accounts::PASSWORD,
-            'new_password[password][second]' => Accounts::PASSWORD,
+            'new_password[password]' => Accounts::PASSWORD,
         ]));
         self::assertResponseRedirects('/login');
 
