@@ -5,20 +5,21 @@
 {%- set _dialog_id = inject('dialog.id') -%}
 {%- set _dialog_titleId = inject('dialog.titleId') -%}
 {%- set _dialog_descriptionId = inject('dialog.descriptionId') -%}
-
+{#- Rendered first so aria-describedby only names a description that exists. -#}
+{%- set _dialog_content %}{% block content %}{% endblock %}{% endset -%}
 <dialog
     id="{{ _dialog_id }}"
     aria-labelledby="{{ _dialog_titleId }}"
-    aria-describedby="{{ _dialog_descriptionId }}"
+    {% if ('id="' ~ _dialog_descriptionId ~ '"') in _dialog_content %}aria-describedby="{{ _dialog_descriptionId }}"{% endif %}
     data-slot="dialog-content"
     data-dialog-target="dialog"
     {{ attributes.defaults({
-        class: 'fixed top-1/2 left-1/2 z-50 w-full max-w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-hidden sm:max-w-sm opacity-0 motion-safe:scale-95 transition-all duration-100 backdrop:duration-100 open:grid open:scale-100 open:opacity-100 open:backdrop:bg-black/10 supports-backdrop-filter:open:backdrop:backdrop-blur-xs motion-safe:starting:open:scale-95 starting:open:opacity-0 motion-safe:data-closing:scale-95 data-closing:opacity-0 data-closing:backdrop:bg-transparent supports-backdrop-filter:data-closing:backdrop:backdrop-blur-none'|tailwind_classes,
-        'data-action': 'keydown.esc->dialog#close:prevent click->dialog#closeOnClickOutside',
+        class: 'fixed top-1/2 left-1/2 z-50 w-full max-w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-hidden backdrop:overflow-hidden backdrop:overscroll-contain sm:max-w-sm opacity-0 motion-safe:scale-95 transition-all duration-100 backdrop:duration-100 open:grid open:scale-100 open:opacity-100 open:backdrop:bg-black/10 supports-backdrop-filter:open:backdrop:backdrop-blur-xs motion-safe:starting:open:scale-95 starting:open:opacity-0 motion-safe:data-closing:scale-95 data-closing:opacity-0 data-closing:backdrop:bg-transparent supports-backdrop-filter:data-closing:backdrop:backdrop-blur-none'|tailwind_classes,
+        'data-action': 'cancel->dialog#cancel close->dialog#closed pointerdown->dialog#pointerDown click->dialog#closeOnClickOutside',
     }) }}
 >
     {##- The dialog content, typically includes `Dialog:Header` and optionally `Dialog:Footer`. -#}
-    {%- block content %}{% endblock -%}
+    {{- _dialog_content -}}
     {% if showCloseButton %}
         <twig:Button
             type="button"

@@ -3,21 +3,32 @@ import { Controller } from '@hotwired/stimulus';
 /** Identity token of one closing sequence, so a later open() or disconnect() can cancel it. */
 type ClosingToken = object;
 
-// From the Symfony UX Toolkit shadcn kit (Dialog), converted to TypeScript.
+/*
+ * From the Symfony UX Toolkit shadcn kit (Dialog), converted to TypeScript.
+ *
+ * Every native close request (Esc, the Android back gesture) arrives as `cancel` and goes through the same animated
+ * close(); a close the controller did not start (`close` event) still resets the trigger's aria-expanded. A click on
+ * the backdrop closes the dialog only when the pointer went down and up outside its box: the <dialog> is also the
+ * target of its own padding and of the gaps between its children, and a text selection may end outside it.
+ * `lightDismiss: false` (form dialogs) never closes on the backdrop, so typed values are not lost by a stray click.
+ */
 export default class extends Controller<HTMLElement> {
     static targets = ['trigger', 'dialog'];
 
     static values = {
         open: Boolean,
+        lightDismiss: { type: Boolean, default: true },
     };
 
     declare readonly hasTriggerTarget: boolean;
     declare readonly triggerTarget: HTMLElement;
     declare readonly dialogTarget: HTMLDialogElement;
     declare readonly openValue: boolean;
+    declare readonly lightDismissValue: boolean;
 
     #wasOpen: boolean | null = null;
     #closing: ClosingToken | null = null;
+    #pressedOutside = false;
 
     connect(): void {
         if (this.#wasOpen ?? this.openValue) {
@@ -50,9 +61,32 @@ export default class extends Controller<HTMLElement> {
         }
     }
 
+    pointerDown(event: PointerEvent): void {
+        this.#pressedOutside = event.target === this.dialogTarget && this.#outside(event);
+    }
+
     closeOnClickOutside(event: MouseEvent): void {
-        if (event.target === this.dialogTarget) {
+        const pressedOutside = this.#pressedOutside;
+        this.#pressedOutside = false;
+        if (this.lightDismissValue && pressedOutside && event.target === this.dialogTarget && this.#outside(event)) {
             this.close();
+        }
+    }
+
+    /** Esc or another platform close request: animate it like any other close. */
+    cancel(event: Event): void {
+        if (event.cancelable) {
+            event.preventDefault();
+            this.close();
+        }
+    }
+
+    /** The dialog closed, whoever closed it. */
+    closed(): void {
+        this.#closing = null;
+        this.dialogTarget.removeAttribute('data-closing');
+        if (this.hasTriggerTarget) {
+            this.triggerTarget.setAttribute('aria-expanded', 'false');
         }
     }
 
@@ -103,6 +137,12 @@ export default class extends Controller<HTMLElement> {
         this.dialogTarget
             .querySelector<HTMLElement>('input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])')
             ?.focus();
+    }
+
+    #outside(event: MouseEvent): boolean {
+        const box = this.dialogTarget.getBoundingClientRect();
+
+        return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
     }
 
     #finishClosing(dialog: HTMLDialogElement, closing: ClosingToken): void {

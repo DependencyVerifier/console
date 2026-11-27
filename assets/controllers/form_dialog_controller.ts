@@ -7,7 +7,8 @@ type Closable = { close(): void };
  * The generic form dialog (<twig:FormDialog>): its form comes from its own endpoint into a lazy Turbo Frame.
  * - The first opening makes the frame visible, which loads it; every later opening reloads it, so the CSRF token
  *   is fresh and the errors of a previous attempt are gone.
- * - The first field gets the focus once the form is in.
+ * - While the form loads, the focus is on the dialog's title (never on the close button, where Enter would close it);
+ *   once the form is in, it goes to the first invalid field after a 422, else to the first field.
  * - A successful submission answered by a Turbo Stream closes the dialog; a 422 or a refusal stays in it, and so does
  *   a success answered in the frame itself (a secret shown once, closed by the user).
  */
@@ -21,18 +22,18 @@ export default class extends Controller<HTMLElement> {
         }
 
         this.#opened = true;
+        if (null === this.#field()) {
+            this.element.querySelector<HTMLElement>('[data-slot="dialog-title"]')?.focus();
+        }
     }
 
     focus(): void {
-        this.#frame()
-            ?.querySelector<HTMLElement>('input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])')
-            ?.focus();
+        this.#field()?.focus();
     }
 
     /**
-     * Enter submits the dialog's form wherever the focus is (even on the close button, which a dialog focuses while
-     * its form is still loading), except where Enter means something else: a textarea, a button other than the
-     * close one, an open autocomplete list, a link.
+     * Enter submits the dialog's form wherever the focus is (the title, a field), except where Enter means something
+     * else: a textarea, a button (the close one included), an open autocomplete list, a link.
      */
     submitOnEnter(event: KeyboardEvent): void {
         const target = event.target instanceof HTMLElement ? event.target : null;
@@ -41,10 +42,9 @@ export default class extends Controller<HTMLElement> {
             return;
         }
 
-        const isCloseButton = 'dialog-close' === target.dataset.slot;
         const ownMeaning = target instanceof HTMLTextAreaElement
             || target instanceof HTMLAnchorElement
-            || (target instanceof HTMLButtonElement && !isCloseButton)
+            || target instanceof HTMLButtonElement
             || null !== target.closest('.ts-wrapper.dropdown-active');
         if (ownMeaning) {
             return;
@@ -62,6 +62,13 @@ export default class extends Controller<HTMLElement> {
 
         const dialog = this.application.getControllerForElementAndIdentifier(this.element, 'dialog') as Closable | null;
         dialog?.close();
+    }
+
+    #field(): HTMLElement | null {
+        const frame = this.#frame();
+        const fields = 'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])';
+
+        return frame?.querySelector<HTMLElement>(`:is(${fields})[aria-invalid="true"]`) ?? frame?.querySelector<HTMLElement>(fields) ?? null;
     }
 
     #frame(): ReloadableFrame | null {

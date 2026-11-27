@@ -1,9 +1,10 @@
 {%- set _sheet_titleId = inject('sheet.titleId') -%}
-<h2
+{#- A modal dialog is its own document for assistive technologies: its title is a level-1 heading. -#}
+<h1
     id="{{ _sheet_titleId }}"
     data-slot="sheet-title"
-    {{ attributes.without('id').defaults({class: 'text-base font-medium text-foreground'|tailwind_classes}) }}
+    {{ attributes.without('id').defaults({tabindex: '-1', class: 'text-base font-medium text-foreground outline-hidden'|tailwind_classes}) }}
 >
     {##- The title text of the sheet. -#}
     {%- block content %}{% endblock -%}
-</h2>
+</h1>
