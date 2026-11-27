@@ -56,6 +56,8 @@ jobs:
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          cache-image: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       # The token stays on the runner: never passed to the build (no --secret, no --build-arg), no Actions cache.
@@ -95,6 +97,8 @@ jobs:
         platform: [linux/amd64, linux/arm64]
     steps:
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          cache-image: false
 
       - name: Log in to GHCR
         env:
@@ -112,7 +116,10 @@ jobs:
         run: |
           ref="$IMAGE@$DIGEST"
           docker pull --platform "$PLATFORM" "$ref"
-          label=$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.version"}}' "$ref")
+          # Read in the registry, for this platform: a local `docker inspect` of a multi-platform reference reads the
+          # runner's own platform, not the emulated one.
+          label=$(docker buildx imagetools inspect "$ref" \
+            --format "{{ index (index .Image \"$PLATFORM\").Config.Labels \"org.opencontainers.image.version\" }}")
           [ "$label" = "$VERSION" ] || { echo "::error::version label $label, expected $VERSION"; exit 1; }
           run() {
             docker run --rm --platform "$PLATFORM" --entrypoint php \
@@ -182,8 +189,8 @@ jobs:
           if latest=$(docker buildx imagetools inspect "$IMAGE:latest" --format '{{.Manifest.Digest}}' 2> /dev/null); then
             cosign verify "$IMAGE@$latest" --certificate-identity-regexp "$RELEASE_IDENTITY_REGEXP" \
               --certificate-oidc-issuer "$SIGSTORE_ISSUER" > /dev/null
-            docker pull --quiet --platform linux/amd64 "$IMAGE@$latest" > /dev/null
-            current=$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.version"}}' "$IMAGE@$latest")
+            current=$(docker buildx imagetools inspect "$IMAGE@$latest" \
+              --format '{{ index (index .Image "linux/amd64").Config.Labels "org.opencontainers.image.version" }}')
           fi
           if [ -z "$current" ] || version_lt "$current" "$VERSION"; then
             tag_as latest
