@@ -19,7 +19,7 @@ Follow [INSTALL.md](INSTALL.md), steps 1 and 2. In short:
 
 ```bash
 git clone --recurse-submodules https://github.com/DependencyVerifier/console.git
-cd console && git checkout v1.1.1
+cd console && git checkout v1.1.2
 bin/install-console                  # checks the server, creates prod.env and stops
 # fill SERVER_NAME, DEFAULT_URI, MAILER_DSN, MAILER_FROM in prod.env (the secrets are generated)
 bin/install-console --super-admin you@example.com

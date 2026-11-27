@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2 (2026-11-27)
+
+**Installation**
+- Fixed: the release workflow read the version label of the arm64 image from the platform of the runner, so the smoke
+  test failed and 1.1.1 was never published (its image is neither signed nor tagged): install 1.1.2, which brings
+  everything listed under 1.1.1.
+
 ## 1.1.1 (2026-11-27)
 
 **Installation**
