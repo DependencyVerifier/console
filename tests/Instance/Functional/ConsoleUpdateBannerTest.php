@@ -137,14 +137,31 @@ final class ConsoleUpdateBannerTest extends IdentityWebTestCase
     }
 
     #[Test]
-    public function it_should_send_a_request_without_the_frame_header_to_the_instance_page(): void
+    public function it_should_answer_only_inside_its_turbo_frame(): void
     {
+        $this->running('1.1.0');
         Accounts::create(self::getContainer(), 'root@example.com', superAdmin: true);
         $this->logIn('root@example.com');
 
+        foreach (['no header' => [], 'empty header' => ['HTTP_TURBO_FRAME' => ' ']] as $case => $server) {
+            $page = $this->client->request('GET', self::FRAME, server: $server);
+
+            self::assertResponseStatusCodeSame(404, $case);
+            self::assertCount(0, $page->filter('turbo-frame#console-update'), $case);
+        }
+        self::assertSame([], $this->feeds()->requests, 'Refused before the controller: nothing asked upstream.');
+    }
+
+    #[Test]
+    public function it_should_still_refuse_the_frame_to_anyone_else_before_looking_at_the_header(): void
+    {
+        $jane = Accounts::create(self::getContainer(), 'jane@example.com');
+        Seed::team(self::getContainer(), 'Platform', [[$jane, TeamRole::Admin]]);
+        $this->logIn('jane@example.com');
+
         $this->client->request('GET', self::FRAME);
 
-        self::assertResponseRedirects('/admin/instance', 303);
+        self::assertResponseStatusCodeSame(403);
     }
 
     #[Test]
