@@ -1,6 +1,12 @@
+{%- props
+    ## string The running version (authenticated layout only: the public pages never show it).
+    version = ''
+-%}
 {#- Page footer: copyright + Romain MILLAN signature. The tag takes the muted text color in both themes. -#}
 <footer {{ attributes.defaults({class: 'flex flex-wrap items-center justify-between gap-2 border-t px-6 py-4 text-xs text-muted-foreground'|tailwind_classes}) }}>
-    <span>© {{ 'now'|date('Y') }} DependencyVerifier · Open source, self-hosted</span>
+    <span>© {{ 'now'|date('Y') }} DependencyVerifier · Open source, self-hosted
+        {%- if version is not empty %} · <span data-build-label>{{ 'instance.footer_version'|trans({version: version}) }}</span>{% endif -%}
+    </span>
     <span class="flex items-center gap-1.5 [--rm-tag-filled-color:var(--muted-foreground)] [--rm-tag-stroke-color:transparent]">
         Made by
         <twig:RomainMillanTag size="small" class="opacity-80 transition-opacity hover:opacity-100" />

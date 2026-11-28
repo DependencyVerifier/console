@@ -1,6 +1,10 @@
-# Public sources of Vulnerability (docs/cadrage.md §8): one scoped client each, bounded in time, retried on network
-# errors and 5xx / 429. They only ever receive package names and CVE identifiers, never a version, a host or a team.
-# The User-Agent names the software, never the instance.
+# Outgoing calls of the console, each through a scoped client bounded in time. The User-Agent names the software,
+# never the instance.
+# - Public sources of Vulnerability (docs/cadrage.md §8): retried on network errors and 5xx / 429. They only ever
+#   receive package names and CVE identifiers, never a version, a host or a team.
+# - console_release.client (Instance, the update banner of the super admin; exception to the "no telemetry" rule
+#   decided on 2026-11-27): one anonymous GET of the latest GitHub Release of the console, at most every 12 hours (an
+#   hour after a failure). GitHub sees the IP and the software name, never the version nor an instance identifier.
 framework:
     http_client:
         default_options:
@@ -55,6 +59,14 @@ framework:
                     max_retries: 3
                     delay: 2000
                     multiplier: 3
+            # No retry, no redirect, 5 s in all: the banner is optional, a failure is cached for an hour.
+            console_release.client:
+                base_uri: '%env(default:console_release_default_url:CONSOLE_RELEASE_URL)%'
+                timeout: 5
+                max_duration: 5
+                max_redirects: 0
+                headers:
+                    Accept: 'application/vnd.github+json'
 
 parameters:
     osv_default_url: 'https://api.osv.dev'

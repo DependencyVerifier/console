@@ -65,3 +65,10 @@ audit:
         namespace: Audit\UI\Controller
     type: attribute
     name_prefix: audit_
+
+instance:
+    resource:
+        path: ../src/Instance/UI/Controller/
+        namespace: Instance\UI\Controller
+    type: attribute
+    name_prefix: instance_

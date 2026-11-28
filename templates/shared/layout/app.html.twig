@@ -27,9 +27,14 @@
                 </div>
             </header>
             <main id="main-content" tabindex="-1" data-controller="form-errors" class="mx-auto outline-hidden flex w-full max-w-7xl flex-1 flex-col gap-6 p-6">
+                {#- The update banner: ROLE_SUPER_ADMIN is the same super admin flag the query handler judges by (the handler
+                    stays the judge). Quiet: nothing while loading, nothing if it fails. -#}
+                {%- if is_granted('ROLE_SUPER_ADMIN') %}
+                    {{ include('shared/frame/lazy.html.twig', {id: 'console-update', src: path('instance_console_update_frame'), quiet: true}) }}
+                {%- endif %}
                 {{ _main }}
             </main>
-            <twig:AppFooter />
+            <twig:AppFooter version="{{ build_label() }}" />
         </twig:Sidebar:Inset>
     </twig:Sidebar:Provider>
 {% endblock %}

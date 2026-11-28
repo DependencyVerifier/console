@@ -21,7 +21,9 @@
             "src/Notification/Domain",
             "src/Notification/Application",
             "src/Audit/Domain",
-            "src/Audit/Application"
+            "src/Audit/Application",
+            "src/Instance/Domain",
+            "src/Instance/Application"
         ]
     },
     "logs": {

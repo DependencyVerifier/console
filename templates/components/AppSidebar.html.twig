@@ -49,6 +49,7 @@
         {key: 'admin_teams', title: 'nav.teams'|trans, url: path('organization_admin_teams'), icon: 'lucide:building-2'},
         {key: 'admin_agents', title: 'nav.agents'|trans, url: path('fleet_admin_agents'), icon: 'lucide:radio-tower'},
         {key: 'admin_audit', title: 'nav.audit'|trans, url: path('audit_admin_audit'), icon: 'lucide:scan-search'},
+        {key: 'admin_instance', title: 'nav.instance'|trans, url: path('instance_about'), icon: 'lucide:server'},
     ] : [],
 } -%}
 <twig:Sidebar {{ ...attributes.defaults({collapsible: 'icon'}) }}>

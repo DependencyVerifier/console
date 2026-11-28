@@ -1,0 +1,31 @@
+{% extends 'shared/layout/app.html.twig' %}
+
+{#- The running version, and the update banner alone (the layout already loads it on every page of the super admin;
+    this page is where a request without the Turbo-Frame header lands). Variable: build (BuildLabel). -#}
+
+{% block title %}{{ 'instance.title'|trans }} · DependencyVerifier{% endblock %}
+
+{% block breadcrumb %}
+    <twig:Breadcrumb>
+        <twig:Breadcrumb:List>
+            <twig:Breadcrumb:Item>{{ 'admin.title'|trans }}</twig:Breadcrumb:Item>
+            <twig:Breadcrumb:Item><twig:Breadcrumb:Page>{{ 'instance.title'|trans }}</twig:Breadcrumb:Page></twig:Breadcrumb:Item>
+        </twig:Breadcrumb:List>
+    </twig:Breadcrumb>
+{% endblock %}
+
+{% block main %}
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-balance">{{ 'instance.title'|trans }}</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ 'instance.description'|trans }}</p>
+    </div>
+    <dl class="divide-y rounded-lg border">
+        <div class="flex items-baseline justify-between gap-3 px-4 py-3">
+            <dt class="text-sm">{{ 'instance.version'|trans }}</dt>
+            <dd class="text-sm font-medium tabular-nums" data-instance-version>{{ build.label }}</dd>
+        </div>
+    </dl>
+    {%- if build.version is null %}
+        <p class="text-sm text-muted-foreground">{{ 'instance.no_check'|trans }}</p>
+    {%- endif %}
+{% endblock %}

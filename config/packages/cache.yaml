@@ -15,5 +15,14 @@ framework:
         #app: cache.adapter.apcu
 
         # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+        pools:
+            # The latest release of the console (Instance): one upstream call a day at most, shared by the workers.
+            instance.cache: null
+
+when@test:
+    framework:
+        cache:
+            pools:
+                # Never shared between tests: a fresh pool with each kernel.
+                instance.cache:
+                    adapter: cache.adapter.array

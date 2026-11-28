@@ -21,7 +21,7 @@ use function Symfony\Component\String\u;
  */
 final class LayerDependencyTest extends TestCase
 {
-    private const array CONTEXTS = ['Shared', 'Identity', 'Organization', 'Fleet', 'Inventory', 'Vulnerability', 'Exposure', 'Notification', 'Audit'];
+    private const array CONTEXTS = ['Shared', 'Identity', 'Organization', 'Fleet', 'Inventory', 'Vulnerability', 'Exposure', 'Notification', 'Audit', 'Instance'];
 
     /**
      * Vendor namespaces the Domain layer may use (mapping metadata, identifiers, pure string functions u() / b(), and

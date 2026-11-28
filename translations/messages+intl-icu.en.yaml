@@ -24,6 +24,7 @@ nav:
     settings: Settings
     teams: Teams
     users: Users
+    instance: Instance
     administration: Administration
     account_security: Account security
     logout: Log out
@@ -1072,3 +1073,16 @@ notification:
         confirm: Confirm
         done: "Confirmed: the notifications will reach this address. Each email carries a link to unsubscribe."
         invalid: "This link is expired or was already used. Ask the person who added you for a new one."
+
+instance:
+    title: Instance
+    description: "The console software this server runs."
+    version: Version
+    no_check: "This build has no release version (a development or local build): the console does not check for updates."
+    footer_version: "Version {version}"
+    update:
+        title: "Version {latest} of the console is available"
+        current: "You are running {current}."
+        notes: Release notes
+        how: How to upgrade
+        dismiss: Hide until the next version
