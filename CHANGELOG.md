@@ -5,7 +5,7 @@
 **Instance**
 - The super admin sees a banner when a newer release of the console is published, with its release notes and a link
   to the upgrade steps (INSTALL.md §5); closing it hides it until the next version (in this browser). The console asks
-  GitHub for its latest release at most once a day (an hour after a failure), anonymously: GitHub sees the IP of the
+  GitHub for its latest release at most every 12 hours (an hour after a failure), anonymously: GitHub sees the IP of the
   server and the software name, never the version nor an instance identifier. Nothing is shown if GitHub is
   unreachable.
 - The version of the console is shown in the footer of the signed-in pages (never on the public pages), and on the

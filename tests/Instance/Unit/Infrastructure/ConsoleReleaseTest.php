@@ -115,7 +115,7 @@ final class ConsoleReleaseTest extends TestCase
     }
 
     #[Test]
-    public function it_should_ask_upstream_once_a_day_and_rebuild_the_same_release_from_the_cache(): void
+    public function it_should_ask_upstream_every_twelve_hours_and_rebuild_the_same_release_from_the_cache(): void
     {
         $calls = 0;
         $http = new MockHttpClient(static function () use (&$calls): MockResponse {
@@ -130,7 +130,7 @@ final class ConsoleReleaseTest extends TestCase
         $second = $source->latest();
 
         self::assertSame(1, $calls, 'The second read is served by the cache.');
-        self::assertEqualsWithDelta(86400, $cache->expiresInSeconds(), 5.0, 'One day.');
+        self::assertEqualsWithDelta(43200, $cache->expiresInSeconds(), 5.0, 'Twelve hours.');
         self::assertEquals($first, $second);
         self::assertSame(self::NOTES.'v1.2.0', $second?->notesUrl->toString(), 'html_url is never read.');
         self::assertSame('1.2.0', $cache->getItem(CachedConsoleReleaseSource::CACHE_KEY)->get(), 'Only the normalized version is stored.');

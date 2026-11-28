@@ -12,7 +12,7 @@ use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
- * The only implementation of the port: at most one upstream call a day per instance (an hour after a failure), the
+ * The only implementation of the port: at most one upstream call every 12 hours per instance (an hour after a failure), the
  * stampede protection of CacheInterface::get keeping it to one call when several super admins arrive together.
  * The cache holds the normalized version string only (validated before storing), never a verdict nor a Domain
  * object: after an upgrade the banner disappears at once.
@@ -20,7 +20,7 @@ use Symfony\Contracts\Cache\ItemInterface;
 final readonly class CachedConsoleReleaseSource implements LatestConsoleReleaseSource
 {
     public const string CACHE_KEY = 'instance.console_release.v1';
-    public const int SUCCESS_TTL = 86400;
+    public const int SUCCESS_TTL = 43200;
     public const int FAILURE_TTL = 3600;
 
     public function __construct(

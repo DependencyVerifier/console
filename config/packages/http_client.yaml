@@ -3,7 +3,7 @@
 # - Public sources of Vulnerability (docs/cadrage.md §8): retried on network errors and 5xx / 429. They only ever
 #   receive package names and CVE identifiers, never a version, a host or a team.
 # - console_release.client (Instance, the update banner of the super admin; exception to the "no telemetry" rule
-#   decided on 2026-11-27): one anonymous GET of the latest GitHub Release of the console, at most once a day (an
+#   decided on 2026-11-27): one anonymous GET of the latest GitHub Release of the console, at most every 12 hours (an
 #   hour after a failure). GitHub sees the IP and the software name, never the version nor an instance identifier.
 framework:
     http_client:
