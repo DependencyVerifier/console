@@ -12,6 +12,8 @@ services:
     build:
       context: .
       target: frankenphp_prod
+      args:
+        APP_VERSION: ${CONSOLE_BUILD_VERSION:-dev}
       labels:
         org.opencontainers.image.version: ${CONSOLE_BUILD_VERSION:-}
 

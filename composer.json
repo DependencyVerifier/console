@@ -87,7 +87,8 @@
             "Vulnerability\\": "src/Vulnerability/",
             "Exposure\\": "src/Exposure/",
             "Notification\\": "src/Notification/",
-            "Audit\\": "src/Audit/"
+            "Audit\\": "src/Audit/",
+            "Instance\\": "src/Instance/"
         }
     },
     "autoload-dev": {

@@ -1,6 +1,8 @@
 {#- A lazy frame with its Skeleton placeholder and the translated error template (decision 31).
-    Variables: id, src, rows (number of skeleton lines). -#}
+    Variables: id, src, rows (number of skeleton lines), quiet (optional zone: no skeleton, no error template, so a
+    failure leaves it empty; frame-state stays, to keep Turbo's "Content missing" out). -#}
 <turbo-frame id="{{ id }}" src="{{ src }}" loading="lazy" data-controller="frame-state" data-action="turbo:frame-missing->frame-state#missing turbo:fetch-request-error->frame-state#failed">
+    {%- if not (quiet|default(false)) %}
     {#- An indeterminate progress bar named "Loading" (progress guide): an aria-label on a plain <div> is ignored. -#}
     <div class="flex flex-col gap-3" role="progressbar" aria-label="{{ 'frame.loading'|trans }}">
         {%- for i in 1..(rows|default(4)) -%}
@@ -16,4 +18,5 @@
             </twig:Alert:Description>
         </twig:Alert>
     </template>
+    {%- endif %}
 </turbo-frame>

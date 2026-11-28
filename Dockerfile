@@ -246,6 +246,13 @@ RUN install -d -o www-data -g 0 -m 775 /app/var/agent-releases && chmod g=u /app
 
 COPY --link --chmod=755 frankenphp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 
+# The version the console announces (footer, update banner of the super admin), late so that a new version only
+# rebuilds this layer: `--build-arg APP_VERSION=X.Y.Z` in the release workflow, CONSOLE_BUILD_VERSION in a local build,
+# `dev` otherwise (no update check). The OCI version label stays separate on purpose: derived from this argument it
+# would read `dev` instead of empty, and bin/install-console reads that label.
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
+
 # www-data, numeric so runtimes can verify runAsNonRoot
 USER 33
 

@@ -5,12 +5,17 @@ name: Release
 #   build    the image, pushed by digest only (no tag), with provenance and SBOM;
 #   smoke    that digest starts on both platforms;
 #   publish  sign it (cosign keyless), verify the signature, tag it X.Y.Z, then latest when X.Y.Z is higher than the
-#            version of the signed image latest designates.
+#            version of the signed image latest designates;
+#   release-notes  only when latest designates this image (read again right before writing): the GitHub Release
+#            vX.Y.Z, notes from the CHANGELOG.md section `## X.Y.Z`, marked Latest. The update banner of the consoles
+#            reads releases/latest, so it never announces an image that is not signed and tagged latest.
 # bin/install-console verifies the signature against this workflow and the tag:
 #   cosign verify ghcr.io/dependencyverifier/console@sha256:<digest>
 #     --certificate-identity 'https://github.com/DependencyVerifier/console/.github/workflows/release.yml@refs/tags/vX.Y.Z'
 #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
-# A failed run tags and signs nothing: fix it on main and release a higher version, never move a published tag.
+# A failed run tags and signs nothing: fix it on main and release a higher version, never move a published tag. Only
+# release-notes may fail after the publication: re-run it (it creates the Release only while latest is still this
+# image). Never create a Release by hand: it could announce an image that does not exist.
 
 on:
   push:
@@ -53,6 +58,8 @@ jobs:
           is_release_tag "$TAG" || { echo "::error::$TAG is not a release tag (vX.Y.Z)"; exit 1; }
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
             || { echo "::error::$TAG is not on main"; exit 1; }
+          changelog_section "${TAG#v}" > /dev/null \
+            || { echo "::error::CHANGELOG.md has no section ## ${TAG#v} (rename ## Unreleased before tagging)"; exit 1; }
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -60,7 +67,8 @@ jobs:
           cache-image: false
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      # The token stays on the runner: never passed to the build (no --secret, no --build-arg), no Actions cache.
+      # The token stays on the runner: never passed to the build (no --secret, no Actions cache). The only build
+      # argument is the version, public (the tag, the label, the provenance).
       - name: Log in to GHCR
         env:
           TOKEN: ${{ github.token }}
@@ -76,6 +84,7 @@ jobs:
             --target frankenphp_prod \
             --platform linux/amd64,linux/arm64 \
             --label "org.opencontainers.image.version=$VERSION" \
+            --build-arg "APP_VERSION=$VERSION" \
             --provenance=mode=max --sbom=true \
             --output "type=image,name=$IMAGE,push-by-digest=true,push=true" \
             --metadata-file metadata.json \
@@ -121,6 +130,12 @@ jobs:
           label=$(docker buildx imagetools inspect "$ref" \
             --format "{{ index (index .Image \"$PLATFORM\").Config.Labels \"org.opencontainers.image.version\" }}")
           [ "$label" = "$VERSION" ] || { echo "::error::version label $label, expected $VERSION"; exit 1; }
+          # APP_VERSION (the update banner) twice: as written in the registry for this platform, then as the console
+          # reads it at runtime on this platform.
+          docker buildx imagetools inspect "$ref" --format "{{ json (index .Image \"$PLATFORM\").Config.Env }}" \
+            | grep -qF "\"APP_VERSION=$VERSION\"" || { echo "::error::APP_VERSION is not $VERSION in the image config"; exit 1; }
+          env_version=$(docker run --rm --platform "$PLATFORM" --entrypoint printenv "$ref" APP_VERSION)
+          [ "$env_version" = "$VERSION" ] || { echo "::error::APP_VERSION $env_version, expected $VERSION"; exit 1; }
           run() {
             docker run --rm --platform "$PLATFORM" --entrypoint php \
               -e APP_SECRET="$(openssl rand -hex 32)" \
@@ -143,6 +158,8 @@ jobs:
       contents: read
       packages: write
       id-token: write
+    outputs:
+      latest_is_this: ${{ steps.tag.outputs.latest_is_this }}
     # One publication at a time, never cancelled: latest is compared and moved by a single run.
     concurrency:
       group: console-publish
@@ -172,6 +189,7 @@ jobs:
             --certificate-oidc-issuer "$SIGSTORE_ISSUER" > /dev/null
 
       - name: Tag X.Y.Z, and latest when it is the highest version
+        id: tag
         env:
           DIGEST: ${{ needs.build.outputs.digest }}
           VERSION: ${{ needs.build.outputs.version }}
@@ -199,3 +217,61 @@ jobs:
             echo "latest stays $current ($VERSION is not higher)"
           fi
           echo "Published $IMAGE:$VERSION@$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          # A hint only, to skip release-notes for nothing: a re-run reuses this output, so release-notes reads the
+          # state again before writing anything.
+          resolved=$(docker buildx imagetools inspect "$IMAGE:latest" --format '{{.Manifest.Digest}}')
+          if [ "$resolved" = "$DIGEST" ]; then
+            echo 'latest_is_this=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'latest_is_this=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  # The GitHub Release read by the update banner. contents: write and nothing else: no id-token, no packages, no
+  # third-party action (docker buildx and gh are the ones of the runner: never add a setup-* action to this job). The
+  # anonymous read of latest needs the GHCR package to be public (else this job fails closed). A short window remains
+  # between that read and the creation (accepted: it heals with the next release). Its own concurrency group, never
+  # console-publish (a pending job of a shared group is cancelled by a newer one): if a job waiting here was cancelled,
+  # re-run release-notes of the version latest designates. The token is given to the last step only.
+  release-notes:
+    name: GitHub Release
+    needs: [build, publish]
+    if: needs.publish.outputs.latest_is_this == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: console-release-notes
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Notes from the CHANGELOG
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          . bin/lib/release.sh
+          changelog_section "$VERSION" > "$RUNNER_TEMP/notes.md"
+
+      # The state is read again right before writing: a higher version may have taken latest in the meantime, and then
+      # this version gets no Release (releases/latest never goes back).
+      - name: Create the Release while latest is this image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          latest=$(docker buildx imagetools inspect "$IMAGE:latest" --format '{{.Manifest.Digest}}')
+          if [ "$latest" != "$DIGEST" ]; then
+            echo "latest is no longer $VERSION: no Release" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if existing=$(gh release view "v$VERSION" --json isDraft,isPrerelease,name 2> /dev/null); then
+            echo "::warning::The Release v$VERSION already exists ($existing): left as is, check that it is final and Latest"
+            exit 0
+          fi
+          gh release create "v$VERSION" --title "Console $VERSION" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag --latest
+          echo "Release v$VERSION created" >> "$GITHUB_STEP_SUMMARY"

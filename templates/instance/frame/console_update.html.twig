@@ -1,0 +1,21 @@
+{#- The update banner (inner content of the console-update frame). No command: the upgrade path is INSTALL.md §5.
+    Hidden for this version once dismissed (localStorage, in the browser only). Variable: update (AvailableUpdate). -#}
+<div data-controller="dismissible-update" data-dismissible-update-version-value="{{ update.latestVersion }}">
+    <twig:Alert data-console-update="{{ update.latestVersion }}">
+        <twig:ux:icon name="lucide:info" />
+        <twig:Alert:Title>{{ 'instance.update.title'|trans({latest: update.latestVersion}) }}</twig:Alert:Title>
+        <twig:Alert:Description>
+            <p>
+                {{ 'instance.update.current'|trans({current: update.currentVersion}) }}
+                <a href="{{ update.notesUrl }}" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4">{{ 'instance.update.notes'|trans }}</a>
+                ·
+                <a href="https://github.com/DependencyVerifier/console/blob/main/INSTALL.md#5-upgrading" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4">{{ 'instance.update.how'|trans }}</a>
+            </p>
+        </twig:Alert:Description>
+        <twig:Alert:Action>
+            <button type="button" class="rounded-md p-1 text-muted-foreground hover:text-foreground" data-action="dismissible-update#dismiss" aria-label="{{ 'instance.update.dismiss'|trans }}">
+                <twig:ux:icon name="lucide:x" class="size-4" />
+            </button>
+        </twig:Alert:Action>
+    </twig:Alert>
+</div>

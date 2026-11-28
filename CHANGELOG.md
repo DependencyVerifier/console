@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+**Instance**
+- The super admin sees a banner when a newer release of the console is published, with its release notes and a link
+  to the upgrade steps (INSTALL.md §5); closing it hides it until the next version (in this browser). The console asks
+  GitHub for its latest release at most once a day (an hour after a failure), anonymously: GitHub sees the IP of the
+  server and the software name, never the version nor an instance identifier. Nothing is shown if GitHub is
+  unreachable.
+- The version of the console is shown in the footer of the signed-in pages (never on the public pages), and on the
+  new Administration › Instance page.
+
+**Installation**
+- The image carries its version (`APP_VERSION`, checked by the smoke test on both platforms); a local build
+  (`bin/install-console --build`) takes the version of the checkout, `dev` outside a release tag (no update check).
+- The release workflow creates the GitHub Release of each version that becomes `:latest`, with its notes from this
+  file, once the image is signed and tagged: a tag without its `## X.Y.Z` section here stops the release before
+  anything is published.
+
 ## 1.1.2 (2026-11-27)
 
 **Installation**

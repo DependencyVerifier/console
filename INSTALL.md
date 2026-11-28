@@ -88,6 +88,14 @@ git fetch --tags && git checkout v1.x.y      # read the release notes first
 bin/install-console                          # verifies and pulls the new image, restarts, migrates
 ```
 
+The console tells the super admin when a newer release is out: a banner at the top of the pages, with the release
+notes and a link to this section (closing it hides it until the next version, in that browser). To know, the console
+asks GitHub for its latest release (`api.github.com`, anonymously) at most once a day per server, an hour after a
+failure: GitHub sees the IP of the server and the software name, never its version nor an instance identifier. The
+banner may appear up to a day after a release. The version running is in the footer of the signed-in pages and on
+Administration › Instance. The banner only informs: the steps above stay the way to upgrade, and the signature check
+below stays the proof of where the image comes from.
+
 `bin/install-console` is the only recommended way: it checks the signature and migrates the database. The services
 follow `ghcr.io/dependencyverifier/console:latest` (`pull_policy: always`), so a bare `docker compose up -d` also pulls
 the latest release, **without** checking its signature and **without** migrating: keep it for troubleshooting, and run
