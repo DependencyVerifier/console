@@ -12,7 +12,7 @@ containers: `php` (FrankenPHP + Caddy), `worker` (asynchronous queues), `cron` (
 ```bash
 git clone --recurse-submodules https://github.com/DependencyVerifier/console.git
 cd console
-git checkout v1.1.2   # a release tag, never main
+git checkout v1.2.0   # a release tag, never main
 ```
 
 The checkout holds the scripts and the Compose files; the application itself is the image
