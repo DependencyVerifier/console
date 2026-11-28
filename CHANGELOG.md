@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 (2026-11-28)
 
 **Instance**
 - The super admin sees a banner when a newer release of the console is published, with its release notes and a link
